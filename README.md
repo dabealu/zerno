@@ -1,74 +1,97 @@
 # zerno
 
-Automated Arch Linux installation with Sway window manager.
-
-## Quick Start
-
-1. Download latest release or build from source
-2. Run `sudo zerno install-base` from Arch Linux live environment
-3. Reboot into new system
-4. Run `sudo zerno install-full`
+Desktop as a Sode: automated Arch Linux installation with Sway window manager.
+Based on: https://github.com/dabealu/arch-sway
 
 ## Installation Media
 
 Options:
-- **ISO**: Create USB with `zerno boot-dev <dev> <iso>`
-- **Arch ISO + binary**: Copy `zerno` to storage partition, boot vanilla Arch ISO, run from there
+- zerno build-iso             - create iso with zerno bin included
+- zerno boot-dev <dev> <iso>  - format device creating storage and boot partitions
 
-## Commands
+## Quick Start
 
-```
-b, install-base   base system installation (chroot stage)
-i, install-full   desktop/full installation (after reboot)
-s, sync           sync configs and desktop settings
-q, qemu           install and configure QEMU/KVM
-u, update-bin     rebuild binary from source
-m, build-iso      create ISO with zerno binary included
-f, boot-dev <dev> <iso>  format USB drive with ISO
-e, steam <vga>    install Steam (vga: intel, nvidia, amd)
-v, version        print version
-r, repo-pull      clone or update repo in ~/src/zerno
-```
+- Run `sudo zerno install-base` from Arch Linux live environment
+- Reboot into new system
+- Run `sudo zerno install-full`
 
-## Configuration
+## Notes and Troubleshooting 
 
-Config stored in `~/.zerno/parameters.json`. Default timezone: `Asia/Singapore`.
-
-## Building from Source
-
-```bash
-git clone https://github.com/dabealu/zerno.git ~/src/zerno
-cd ~/src/zerno
-./build.sh all
-```
-
-## Notes
-
-### WiFi Setup (during install-base)
+### Manual wifi configuration
 ```bash
 ip link set wlan0 up
 wpa_passphrase "SSID" "password" | wpa_supplicant -B -i wlan0 -c /dev/stdin
 dhcpcd
 ```
+`wavemon` can help to scan wifi networks
 
-### VM Support
-- Use QXL video: `WLR_NO_HARDWARE_CURSORS=1 sway`
-- SSH available in Arch ISO: `scp zerno root@archiso:/tmp/`
+### Running on VM
+- select `QXL` video device in QEMU, run sway via `WLR_NO_HARDWARE_CURSORS=1 sway`
+- archiso environment have sshd and root password access enabled - easy to upload binary and start installation using `scp`/`ssh`
 
-### Troubleshooting
+### Flashing black screen during installation
+laptop may enter into loop with flashing black screen after selecting install from boot menu.
+select `install`, but press `e` instead of `enter` to edit kernel parameters, add `nomodeset` parameter:
+```s
+linux /boot/vmlinuz-linux ... nomodeset 
+initrd ...
+```
+press `ctrl+x` to save and load.
 
-**Flashing black screen**: Add `nomodeset` kernel parameter at boot.
+ref: https://wiki.archlinux.org/title/Kernel_parameters
 
-**CPU performance**: Add `mitigations=off` to disable security mitigations.
+### Disable mitigations
+this may increase CPU performance, but **potentially dangerous**.
+disable hardware vulnerability mitigations by setting `mitigations=off` kernel parameter.
 
-**Touchpad/Mouse in TTY**: Install `gpm`.
+### Pipewire
+https://wiki.archlinux.org/title/PipeWire
+set flag to enable WebRTC in chrome: `chrome://flags/#enable-webrtc-pipewire-capturer`
 
-## Features
+### Bluetooth pairing
+```bash
+bluetoothctl
+agent KeyboardOnly
+default-agent
+power on
+scan on
+pair 00:12:34:56:78:90
+connect 00:12:34:56:78:90
+```
+ref: https://wiki.archlinux.org/title/bluetooth#Pairing
 
-- Sway window manager
-- PipeWire audio
-- OpenCode editor
-- Steam gaming support
-- QEMU/KVM virtualization
-- Docker
-- Rust toolchain
+### Screen resolution
+run `swaymsg -t get_outputs` to get list of outputs and `man sway-output` for more options.
+use `wdisplays` for GUI configuration.
+
+### Appearance
+use `lxappearance` to set GTK theme and appearance settings.
+lxappearance stores config in `~/.gtkrc-2.0`.
+more themes: https://wiki.archlinux.org/title/GTK#Themes
+
+### Connecting android devices via USB
+based on: https://wiki.archlinux.org/title/Media_Transfer_Protocol
+
+install dependencies:
+`sudo pacman -Sy android-udev android-file-transfer`
+restart may be needed.
+
+connect phone, select `File Transfer` (MTP), keep screen unlocked.
+mount phone storage:
+```s
+mkdir -p ~/mnt
+aft-mtp-mount ~/mnt
+```
+
+### Keybindings
+use `wev` to get key code
+```s
+yay -Sy wev
+```
+
+### TODO
+- encrypted volume
+- intel integrated graphics
+cat /etc/modprobe.d/i915.conf
+options i915 enable_psr=0 enable_guc=0 enable_fbc=0
+- CPU governor - set permanently to `performance` by default
