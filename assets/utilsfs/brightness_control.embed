@@ -1,0 +1,202 @@
+// control brightness of *external* dispaly via i2c-dev/ddcutil
+package main
+
+import (
+	"bytes"
+	"fmt"
+	"log"
+	"os"
+	"os/exec"
+	"strconv"
+	"strings"
+)
+
+const (
+	flagErrorMessage = "flag must be specified, one of: increase, decrease, min, max"
+	atMinMessage     = "Already at min value"
+	atMaxMessage     = "Already at max value"
+	displayNumber    = "1"
+)
+
+var valueFile = "/.brightness.value"
+
+func main() {
+	if len(os.Args) < 2 {
+		log.Fatal(flagErrorMessage)
+	}
+
+	loadModule()
+
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		log.Fatalf("failed to get $HOME: %s", err)
+	}
+	valueFile = homeDir + valueFile
+
+	action := os.Args[1]
+	switch action {
+	case "increase":
+		increase()
+	case "decrease":
+		decrease()
+	case "min":
+		min()
+	case "max":
+		max()
+	default:
+		log.Fatal(flagErrorMessage)
+	}
+}
+
+func runCmd(com string, args ...string) (error, string, string) {
+	cmd := exec.Command(com, args...)
+	bufOut, bufErr := bytes.Buffer{}, bytes.Buffer{}
+	cmd.Stdout, cmd.Stderr = &bufOut, &bufErr
+	err := cmd.Run()
+	return err, bufOut.String(), bufErr.String()
+}
+
+func grep(txt, search string) (int, bool) {
+	txtlen, searchlen := len(txt), len(search)
+	found := false
+	k := 0
+	for i := 0; i < txtlen; i++ {
+		if txt[i] == search[0] {
+			k = i
+			for j := 0; j < searchlen; j++ {
+				if txt[k] != search[j] {
+					break
+				}
+				k++
+			}
+			if k-i == searchlen {
+				found = true
+				break
+			}
+		}
+	}
+	return k, found
+}
+
+func loadModule() {
+	const moduleName = "i2c-dev"
+	err, outstr, errstr := runCmd("lsmod")
+	if err != nil {
+		log.Fatalf("%s:\n%s", err, errstr)
+	}
+	_, found := grep(outstr, "i2c_dev")
+	if !found {
+		log.Printf("loading module %s", moduleName)
+		if err, _, errstr := runCmd("sudo", "modprobe", moduleName); err != nil {
+			log.Fatalf("%s:\n%s", err, errstr)
+		}
+	}
+}
+
+func getValue() int {
+	valbytes, err := os.ReadFile(valueFile)
+	if err == nil {
+		if val, err := strconv.Atoi(string(valbytes)); err == nil {
+			return val
+		}
+	}
+	err, outstr, _ := runCmd("sudo", "ddcutil", "--display", displayNumber, "getvcp", "10")
+	if err == nil {
+		startIdx, startFound := grep(outstr, "Brightness")
+		endIdx, endFound := 0, false
+		if startFound {
+			endIdx, endFound = grep(outstr[startIdx:], "\n")
+		}
+		if startFound && endFound {
+			words := strings.Split(outstr[startIdx:endIdx], " ")
+			for j, w := range words {
+				if w == "=" {
+					if val, err := strconv.Atoi(words[j+1]); err == nil {
+						return val
+					}
+				}
+			}
+		}
+	}
+	return 100
+}
+
+func saveValue(val int) {
+	if err := os.WriteFile(valueFile, []byte(fmt.Sprintf("%d", val)), 0644); err != nil {
+		notification("Failed to save value")
+		log.Fatalln(err)
+	}
+}
+
+func setValue(val int) {
+	if err, _, errstr := runCmd("sudo", "ddcutil", "--display", displayNumber, "setvcp", "10", fmt.Sprintf("%d", val)); err != nil {
+		notification("Failed to set value")
+		log.Fatalf("%s: %s", err, errstr)
+	}
+	notification(fmt.Sprintf("Set to %d", val))
+}
+
+func increase() {
+	val := getValue()
+	if val < 100 {
+		val = calculateNewValue(val, true)
+		setValue(val)
+	} else {
+		notification(atMaxMessage)
+	}
+	saveValue(val)
+}
+
+func decrease() {
+	val := getValue()
+	if val > 0 {
+		val = calculateNewValue(val, false)
+		setValue(val)
+	} else {
+		notification(atMinMessage)
+	}
+	saveValue(val)
+}
+
+func max() {
+	if getValue() < 100 {
+		setValue(100)
+	} else {
+		notification(atMaxMessage)
+	}
+	saveValue(100)
+}
+
+func min() {
+	if getValue() > 0 {
+		setValue(0)
+	} else {
+		notification(atMinMessage)
+	}
+	saveValue(0)
+}
+
+func calculateNewValue(val int, increase bool) int {
+	if increase {
+		val += 33
+	} else {
+		val -= 33
+	}
+	if val < 0 {
+		val = 0
+	}
+	if val > 100 {
+		val = 100
+	}
+	if val >= 95 {
+		val = 100
+	}
+	if val <= 5 {
+		val = 0
+	}
+	return val
+}
+
+func notification(msg string) {
+	runCmd("notify-send", "--app-name=brightness-control", "--urgency=low", "Brightness control", msg)
+}

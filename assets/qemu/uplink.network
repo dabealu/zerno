@@ -1,0 +1,4 @@
+[Match]
+Name={{.NetDev}}
+[Network]
+Bridge=br0
