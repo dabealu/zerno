@@ -221,6 +221,40 @@ func FormatDevice(devPath, isoPath string) error {
 	return nil
 }
 
+// ensureMultilib removes any existing [multilib] sections (commented or not) and
+// appends a clean one at end; pacman uses last definition so this is idempotent.
+func ensureMultilib() error {
+	content, err := steps.ReadFile("/etc/pacman.conf")
+	if err != nil {
+		return err
+	}
+
+	lines := strings.Split(content, "\n")
+	var newLines []string
+	skipUntilNextSection := false
+
+	for _, line := range lines {
+		multilibRe := regexp.MustCompile(`#?\[multilib\]`)
+		if multilibRe.MatchString(line) {
+			skipUntilNextSection = true
+			continue
+		}
+		if skipUntilNextSection {
+			if strings.HasPrefix(strings.TrimSpace(line), "[") {
+				skipUntilNextSection = false
+				newLines = append(newLines, line)
+			}
+			continue
+		}
+		newLines = append(newLines, line)
+	}
+
+	newLines = append(newLines, "[multilib]")
+	newLines = append(newLines, "Include = /etc/pacman.d/mirrorlist")
+
+	return steps.WriteFile("/etc/pacman.conf", strings.Join(newLines, "\n"))
+}
+
 func InstallSteam(vgaType string) error {
 	driverPackages := map[string]string{
 		"intel":  "vulkan-intel",
@@ -233,7 +267,7 @@ func InstallSteam(vgaType string) error {
 		return fmt.Errorf("unknown vga type: %s", vgaType)
 	}
 
-	if err := steps.ReplaceBlock("/etc/pacman.conf", `#\[multilib\]`, `#Include = /etc/pacman.d/mirrorlist`, "[multilib]\nInclude = /etc/pacman.d/mirrorlist"); err != nil {
+	if err := ensureMultilib(); err != nil {
 		return err
 	}
 

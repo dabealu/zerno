@@ -113,46 +113,6 @@ func ReplaceLine(path, pattern, replacement string) error {
 	return WriteFile(path, strings.Join(lines, "\n"))
 }
 
-func ReplaceBlock(path, start, end, replacement string) error {
-	log.Printf("replacing block in %s", path)
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-
-	startRe := regexp.MustCompile(start)
-	endRe := regexp.MustCompile(end)
-
-	lines := strings.Split(string(data), "\n")
-	var newLines []string
-	foundBlock := false
-	inBlock := false
-
-	for _, line := range lines {
-		if !inBlock && startRe.MatchString(line) {
-			newLines = append(newLines, line)
-			inBlock = true
-			continue
-		}
-		if inBlock {
-			if endRe.MatchString(line) {
-				newLines = append(newLines, replacement)
-				newLines = append(newLines, line)
-				inBlock = false
-				foundBlock = true
-				continue
-			}
-		} else {
-			newLines = append(newLines, line)
-		}
-	}
-
-	if !foundBlock {
-		return nil
-	}
-	return WriteFile(path, strings.Join(newLines, "\n"))
-}
-
 func AskConfirmation(msg string) bool {
 	for {
 		fmt.Printf("%s [yn] ", msg)

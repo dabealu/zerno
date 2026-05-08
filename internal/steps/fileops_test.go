@@ -197,59 +197,6 @@ baz qux`
 	}
 }
 
-func TestReplaceBlock(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.txt")
-
-	content := `start
-[old section]
-block line 1
-block line 2
-[end section]
-end`
-
-	os.WriteFile(path, []byte(content), 0644)
-
-	// Replace block between [old section] and [end section]
-	err := ReplaceBlock(path, `\[old section\]`, `\[end section\]`, "new block content")
-	if err != nil {
-		t.Fatalf("ReplaceBlock() error = %v", err)
-	}
-
-	result, _ := ReadFile(path)
-	expected := `start
-[old section]
-new block content
-[end section]
-end`
-
-	if result != expected {
-		t.Errorf("ReplaceBlock() = %q, want %q", result, expected)
-	}
-}
-
-func TestReplaceBlock_NotFound(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.txt")
-
-	content := `start
-middle
-end`
-
-	os.WriteFile(path, []byte(content), 0644)
-
-	// Block not found - should not modify
-	err := ReplaceBlock(path, `\[nonexistent\]`, `\[end\]`, "replacement")
-	if err != nil {
-		t.Fatalf("ReplaceBlock() error = %v", err)
-	}
-
-	result, _ := ReadFile(path)
-	if result != content {
-		t.Errorf("ReplaceBlock() should not modify when block not found")
-	}
-}
-
 func TestChmod(t *testing.T) {
 	tmpfile := filepath.Join(t.TempDir(), "test.txt")
 	if err := os.WriteFile(tmpfile, []byte("content"), 0644); err != nil {

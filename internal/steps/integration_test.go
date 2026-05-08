@@ -71,44 +71,6 @@ PROD=true
 	}
 }
 
-func TestIntegration_ReplaceBlock_ConfigSection(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.txt")
-
-	content := `[Package]
-Name=test
-Version=1.0
-
-[Settings]
-enabled=false
-timeout=30
-
-[Other]
-key=value`
-
-	os.WriteFile(path, []byte(content), 0644)
-
-	// Replace entire [Settings] block
-	if err := ReplaceBlock(path, `\[Settings\]`, `\[Other\]`, "[Settings]\nenabled=true\ntimeout=60"); err != nil {
-		t.Fatalf("ReplaceBlock error = %v", err)
-	}
-
-	result, _ := ReadFile(path)
-
-	if !strings.Contains(result, "enabled=true") {
-		t.Error("ReplaceBlock should add enabled=true")
-	}
-	if !strings.Contains(result, "timeout=60") {
-		t.Error("ReplaceBlock should add timeout=60")
-	}
-	if strings.Contains(result, "enabled=false") {
-		t.Error("ReplaceBlock should remove old enabled=false")
-	}
-	if strings.Contains(result, "timeout=30") {
-		t.Error("ReplaceBlock should remove old timeout=30")
-	}
-}
-
 func TestIntegration_CopyFile_PreservesContent(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "source.txt")
