@@ -473,8 +473,23 @@ func utilsFontsThemes() Task {
 	return Task{
 		Name: "install_utilities_fonts_themes",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "grim slurp ddcutil lxappearance syslinux lshw pciutils usbutils noto-fonts noto-fonts-cjk noto-fonts-emoji materia-gtk-theme papirus-icon-theme"
-			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
+			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils noto-fonts noto-fonts-cjk noto-fonts-emoji materia-gtk-theme papirus-icon-theme"
+			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
+				return err
+			}
+
+			homeDir := fmt.Sprintf("/home/%s", cfg.Username)
+			gtkDir := filepath.Join(homeDir, ".config", "gtk-3.0")
+			if err := os.MkdirAll(gtkDir, 0755); err != nil {
+				return err
+			}
+
+			dst := filepath.Join(gtkDir, "settings.ini")
+			if err := assets.Restore("files/gtk-3.0-settings.ini", dst); err != nil {
+				return err
+			}
+
+			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, gtkDir))
 			return err
 		},
 	}
