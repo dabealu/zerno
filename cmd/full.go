@@ -432,7 +432,7 @@ func desktopApps() Task {
 	return Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "code evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar opencode"
+			pkgs := "evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar opencode"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},
@@ -443,28 +443,24 @@ func configureIDE() Task {
 	return Task{
 		Name: "configure_editor",
 		RunFunc: func(cfg *config.Config) error {
-			extensions := []string{
-				"golang.go",
-				"rust-lang.rust-analyzer",
-				"GitHub.github-vscode-theme",
-				"PKief.material-icon-theme",
-				"ecmel.vscode-html-css",
+			pkgs := "neovim ripgrep fd fzf nodejs simdjson ttf-jetbrains-mono-nerd"
+			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
+				return err
 			}
 
-			for _, ext := range extensions {
-				if _, err := steps.RunShell(fmt.Sprintf("sudo -u %s -- code --install-extension %s", cfg.Username, ext)); err != nil {
-					return err
-				}
+			nvimDst := fmt.Sprintf("/home/%s/.config/nvim", cfg.Username)
+			if _, err := steps.RunShell("rm -rf " + nvimDst); err != nil {
+				return err
+			}
+			if err := os.MkdirAll(nvimDst, 0755); err != nil {
+				return err
+			}
+			if err := assets.RestoreDir("nvim", nvimDst); err != nil {
+				return err
 			}
 
-			for _, confFile := range []string{"settings.json", "keybindings.json"} {
-				dst := fmt.Sprintf("/home/%s/.config/Code - OSS/User/%s", cfg.Username, confFile)
-				if err := assets.Restore("files/"+confFile, dst); err != nil {
-					return err
-				}
-			}
-
-			return nil
+			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, nvimDst))
+			return err
 		},
 	}
 }

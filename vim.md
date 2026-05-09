@@ -7,7 +7,7 @@ Neovim configuration targeting Go, Terraform, Bash, YAML.
 Dependencies:
 ```sh
 # node required for bash and yaml LSPs, node depends on simdjson
-pacman -Sy neovim ripgrep fd fzf lazygit nodejs simdjson ttf-jetbrains-mono-nerd
+pacman -Sy neovim ripgrep fd fzf nodejs simdjson ttf-jetbrains-mono-nerd
 ```
 
 Copy configs:
@@ -79,7 +79,7 @@ Update plugins: `:lua vim.pack.update()`
 ## Keybindings
 
 Leader key is **Space**.
-See [CHEATSHEET.md](CHEATSHEET.md) for the full keybinding reference.
+See [vim-cheatsheet.md](vim-cheatsheet.md) for the full keybinding reference.
 
 ### Most Important
 
@@ -218,3 +218,143 @@ iTerm2 translates `Ctrl+Left/Right` into `<M-b>`/`<M-f>` (readline sequences).
 Alacritty sends actual `<C-Left>`/`<C-Right>`.
 Both are mapped in `keymaps.lua` — no switching needed.
 
+## Notes
+
+### Registers: Multiple Clipboards
+
+Vim has 26+ named registers (a-z) plus special ones. Think of them as labeled
+slots you can yank/delete into and paste from independently.
+
+**Using named registers** — prefix any yank/delete/paste with `"X` (quote + letter):
+
+| Command | What it does |
+|---------|-------------|
+| `"ayy` | Yank line into register `a` |
+| `"ap` | Paste from register `a` |
+| `"bdiw` | Delete word into register `b` |
+| `:reg` | Show all register contents |
+
+**Special registers worth knowing:**
+
+| Register | Contents | Use case |
+|----------|----------|----------|
+| `"` | Default (last yank or delete) | Normal `p` uses this |
+| `0` | Last **yank only** (ignores deletes) | `"0p` after accidental `dd` overwrites clipboard |
+| `+` | System clipboard | Linked via `unnamedplus` — same as Cmd+C/V |
+| `_` | Black hole (discards) | `"_d` = true delete without touching clipboard |
+| `/` | Last search pattern | |
+| `.` | Last inserted text | |
+
+**The "0 trick**: When you yank something, then delete other text (which overwrites
+the default register), `"0p` still has your original yank. This is an alternative
+to the visual-paste-without-yanking approach.
+
+**In insert mode**: `Ctrl+r` then a register letter pastes from that register
+without leaving insert mode. E.g. `Ctrl+r 0` pastes last yank, `Ctrl+r +`
+pastes system clipboard.
+
+**When to use named registers**: Rarely needed in practice. The main scenario is
+collecting multiple things to paste later (e.g. `"a` gets a function name, `"b`
+gets a URL, then paste each where needed). Most daily work uses just the default
+register + the `"0` trick.
+
+### Surround: Add/Change/Delete Surrounding Chars
+
+Three operations, all from normal mode:
+
+| Command | Before | After |
+|---------|--------|-------|
+| `ys iw "` | `hello` | `"hello"` |
+| `ys iw }` | `hello` | `{hello}` |
+| `cs " '` | `"hello"` | `'hello'` |
+| `cs ( [` | `(hello)` | `[hello]` |
+| `ds "` | `"hello"` | `hello` |
+| `ds (` | `(hello)` | `hello` |
+
+Pattern: **ys** (add) + text object + delimiter, **cs** (change) + old + new, **ds** (delete) + delimiter.
+
+In visual mode: select text, then `S` + delimiter wraps selection.
+
+Useful for Go/Terraform: `ysiw"` to quote a word, `cs"` + `` ` `` to switch quote style,
+`ds{` to unwrap a block.
+
+## Buffers & Windows
+
+### The Three Concepts
+
+#### Buffer = an open file
+
+Defaults:
+```
+:ls              Show all open buffers
+:b <name>        Switch to buffer by partial name (Tab to autocomplete)
+:bd              Close (delete) current buffer
+```
+
+Config:
+- `<leader>fb` opens a fuzzy-searchable list of all buffers (your "tab switcher")
+- `[b` / `]b` cycles through buffers (like Ctrl+Tab in VSCode)
+- `<leader>bd` closes the current buffer
+
+#### Window = a visible area showing a buffer
+
+A window is a viewport into a buffer.
+```
+<C-w>v           Split vertically (side by side)
+<C-w>s           Split horizontally (stacked)
+<C-w>h/j/k/l    Move between windows
+<C-w>q           Close current window
+```
+
+`Ctrl+h/j/k/l` moves between windows (no need for `<C-w>` prefix).
+
+#### Tab = a layout of windows
+
+It's a separate workspace layout — a collection of windows.
+`:tabnew` creates a new tab page, `gt`/`gT` switches between them.
+
+### Daily Workflow
+
+#### Open a file
+- `<leader>ff` — fuzzy find by filename
+- `<leader>e` — sidebar file explorer
+- `-` — oil.nvim, navigate directories as editable buffers
+
+#### Switch to another open file
+- `<leader>fb` — fuzzy search open buffers
+- `[b` / `]b` — cycle through buffers in order
+
+#### See two files side by side
+- Open first file, then `<C-w>v` to split, then `<leader>ff` to open second file
+- Or: `<leader>e`, navigate to second file, press `<C-v>` to open in vertical split
+
+#### Browse/manage files (Oil.nvim)
+- `-` — opens the parent directory of the current file as an editable buffer
+- `Enter` on a file — opens it
+- `-` again — goes up one more directory
+- `/pattern` — search for a filename (normal vim search works here)
+- Rename: edit the filename text, then `:w` to apply
+- Delete: `dd` on a file line, then `:w` to apply
+- Create: `o` to add a new line, type the filename, then `:w`
+- `q` — close oil
+
+#### Close a file
+- `<leader>bd` — close the buffer
+
+#### See openened files
+- `<leader>fb` — shows all buffers with fuzzy search
+- `:ls` — shows all buffers in a list
+
+### Scrolling (No Trackpad Swipe)
+
+Neovim doesn't use trackpad scrolling.
+
+| Key | What it does | Think of it as... |
+|-----|-------------|-------------------|
+| `Ctrl+d` | Half page down | Your scroll-down gesture |
+| `Ctrl+u` | Half page up | Your scroll-up gesture |
+| `Ctrl+f` | Full page down | Fast scan forward |
+| `Ctrl+b` | Full page up | Fast scan backward |
+| `{` / `}` | Jump between code blocks | Skip to next function/section |
+| `gg` / `G` | Top / bottom of file | Instant jump to extremes |
+| `zz` | Center current line | Re-orient after jumping |
