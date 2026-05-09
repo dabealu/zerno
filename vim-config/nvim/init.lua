@@ -24,6 +24,7 @@ vim.pack.add({
   { src = "https://github.com/Bekaboo/dropbar.nvim", version = vim.version.range("~14") },
   { src = "https://github.com/rebelot/kanagawa.nvim" },
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
+  { src = "https://github.com/folke/trouble.nvim" },
 })
 
 -- Load plugin configurations
@@ -35,4 +36,5 @@ require("plugins.surround")
 require("plugins.scrollbar")
 require("plugins.dropbar")
 require("plugins.lualine")
+require("plugins.trouble")
 require("plugins.ui")

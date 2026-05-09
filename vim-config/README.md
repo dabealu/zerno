@@ -20,7 +20,8 @@ nvim/
     surround.lua            ← add/change/delete surrounding chars
     scrollbar.lua           ← scrollbar with git/diagnostic markers
     dropbar.lua             ← breadcrumb navigation bar
-    statusline.lua          ← custom statusline (branch, diagnostics, LSP)
+    lualine.lua             ← statusline (branch, diagnostics, LSP, mode)
+    trouble.lua             ← diagnostic/symbol tree viewer
     ui.lua                  ← which-key, colorscheme
 ```
 
@@ -46,7 +47,10 @@ Update plugins: `:lua vim.pack.update()`
 | [nvim-surround](https://github.com/kylechui/nvim-surround) | Surround operations | Add/change/delete quotes, brackets, tags (`ys`, `cs`, `ds`) |
 | [nvim-scrollbar](https://github.com/petertriho/nvim-scrollbar) | Scrollbar with markers | Shows git changes and diagnostics in scrollbar |
 | [dropbar.nvim](https://github.com/Bekaboo/dropbar.nvim) | Breadcrumb bar | File path + code structure navigation at top of window |
-| [github-nvim-theme](https://github.com/projekt0n/github-nvim-theme) | Colorscheme | Clean light/dark GitHub-style theme |
+| [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) | Filetype icons | Icons for file explorers, pickers, which-key |
+| [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | Colorscheme | Dark, warm/rusty theme (dragon variant) |
+| [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) | Statusline | Lightweight, themed statusline with mode/branch/etc |
+| [trouble.nvim](https://github.com/folke/trouble.nvim) | Diagnostic viewer | Tree-structured diagnostics, symbols, references |
 
 ### LSP Servers (auto-installed by Mason)
 

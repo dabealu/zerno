@@ -9,6 +9,8 @@ require("which-key").setup({
     { "<leader>g", group = "git" },
     { "<leader>b", group = "buffer" },
     { "<leader>t", group = "toggle" },
+    { "<leader>x", group = "troubleshoot" },
+    { "<leader>c", group = "code" },
   },
 })
 

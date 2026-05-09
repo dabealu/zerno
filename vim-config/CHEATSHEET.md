@@ -166,6 +166,15 @@
 | `<leader>ld` | Diagnostics list (errors, warnings) |
 | `[d` / `]d` | Previous / next diagnostic |
 
+### Diagnostics / Code
+
+| Key | Action |
+|-----|--------|
+| `<leader>xx` | Toggle project diagnostics (all files) |
+| `<leader>xX` | Toggle buffer diagnostics (current file) |
+| `<leader>cs` | Document symbols outline (sidebar) |
+| `<leader>cl` | LSP references / definitions (sidebar) |
+
 ### Git
 
 | Key | Action |
@@ -271,6 +280,7 @@ FIND:   /=search  n/N=next/prev  *=search word  <leader>ff=find file
 
 LSP:    gd=definition  gr=references  gi=implementation  K=hover
         <leader>lr=rename  <leader>la=code action  <leader>lf=format
+        <leader>xx=diagnostics  <leader>cs=symbols outline
 
 GIT:    [h/]h=prev/next hunk  <leader>gb=blame  <leader>gp=preview
 
