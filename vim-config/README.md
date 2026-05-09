@@ -2,6 +2,19 @@
 
 Neovim configuration targeting Go, Terraform, Bash, YAML.
 
+## Installation
+
+Dependencies:
+```sh
+# node required for bash and yaml LSPs, node depends on simdjson
+pacman -Sy neovim ripgrep fd fzf lazygit nodejs simdjson ttf-jetbrains-mono-nerd
+```
+
+Copy configs:
+```sh
+cp -r nvim ~/.config/nvim
+```
+
 ## Architecture
 
 ```
