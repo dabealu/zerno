@@ -1,6 +1,6 @@
 # zerno
 
-Desktop as a Sode: automated Arch Linux installation with Sway window manager.
+Desktop as a Code: automated Arch Linux installation with Sway window manager and Neovim.
 Based on: https://github.com/dabealu/arch-sway
 
 ## Installation Media
