@@ -41,7 +41,7 @@ Each task is a function returning a `Task` struct with cfg parameter:
 func myTask(cfg *config.Config) Task {
     return Task{
         Name: "task_name",
-        Run: func(cfg *config.Config) error {
+        RunFunc: func(cfg *config.Config) error {
             // implementation
             return nil
         },
@@ -55,6 +55,7 @@ Tasks are executed via `runTaskList(tasks, cfg)`.
 
 1. Add file/template to `assets/` directory
 2. Use `assets.Restore("path/in/assets", "/destination/path")` or `assets.RestoreTemplate("path/in/assets", "/destination/path", cfg)`
+3. For directories (like `nvim/`), use `assets.RestoreDir("path/in/assets", "/destination/path")`
 
 ### Utils Source Files
 

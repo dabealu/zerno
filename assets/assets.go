@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-//go:embed base conf files qemu sysctl.d utilsfs
+//go:embed base conf files qemu sysctl.d utilsfs nvim
 var assetsDir embed.FS
 
 func Restore(path, dst string) error {
@@ -46,4 +46,28 @@ func RestoreTemplate(path, dst string, data any) error {
 		return err
 	}
 	return os.WriteFile(dst, buf.Bytes(), 0644)
+}
+
+func RestoreDir(srcDir, dstDir string) error {
+	entries, err := assetsDir.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		srcPath := srcDir + "/" + entry.Name()
+		dstPath := filepath.Join(dstDir, entry.Name())
+		if entry.IsDir() {
+			if err := os.MkdirAll(dstPath, 0755); err != nil {
+				return err
+			}
+			if err := RestoreDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			if err := Restore(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

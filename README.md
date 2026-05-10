@@ -1,6 +1,6 @@
 # zerno
 
-Desktop as a Sode: automated Arch Linux installation with Sway window manager.
+Desktop as a Code: automated Arch Linux installation with Sway window manager and Neovim.
 Based on: https://github.com/dabealu/arch-sway
 
 ## Installation Media
@@ -32,7 +32,7 @@ dhcpcd
 ### Flashing black screen during installation
 laptop may enter into loop with flashing black screen after selecting install from boot menu.
 select `install`, but press `e` instead of `enter` to edit kernel parameters, add `nomodeset` parameter:
-```s
+```bash
 linux /boot/vmlinuz-linux ... nomodeset 
 initrd ...
 ```
@@ -78,16 +78,21 @@ restart may be needed.
 
 connect phone, select `File Transfer` (MTP), keep screen unlocked.
 mount phone storage:
-```s
+```bash
 mkdir -p ~/mnt
 aft-mtp-mount ~/mnt
 ```
 
 ### Keybindings
 use `wev` to get key code
-```s
+```bash
 yay -Sy wev
 ```
+
+### Neovim
+Neovim is installed during Phase 1 (base) and configured during Phase 2 (full).
+Config is embedded from `assets/nvim/`.
+See `vim.md` for detailed documentation, plugins, and keybindings.
 
 ### TODO
 - encrypted volume
