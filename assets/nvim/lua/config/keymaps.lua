@@ -68,3 +68,14 @@ map("n", "[d", vim.diagnostic.goto_prev, { desc = "Previous diagnostic" })
 
 -- Oil.nvim: open parent directory
 map("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory (Oil)" })
+
+-- Maximize/unmaximize current window via tab split
+map("n", "<C-w>m", function()
+  if vim.g.maximized then
+    vim.cmd("tabclose")
+    vim.g.maximized = nil
+  else
+    vim.g.maximized = true
+    vim.cmd("tab split")
+  end
+end, { desc = "Toggle maximize window" })

@@ -258,6 +258,7 @@
 | `<C-w>v` | Vertical split |
 | `<C-w>s` | Horizontal split |
 | `Ctrl+h/j/k/l` | Navigate between splits (our config) |
+| `<C-w>m` | Maximize/unmaximize current window (tab split) |
 | `<C-w>q` | Close split |
 | `<C-w>=` | Equalize split sizes |
 | `Ctrl+arrows` | Resize splits (our config) |
