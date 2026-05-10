@@ -443,7 +443,7 @@ func configureIDE() Task {
 	return Task{
 		Name: "configure_editor",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "neovim ripgrep fd fzf nodejs simdjson ttf-jetbrains-mono-nerd"
+			pkgs := "ripgrep fd fzf nodejs simdjson ttf-jetbrains-mono-nerd"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
@@ -456,6 +456,10 @@ func configureIDE() Task {
 				return err
 			}
 			if err := assets.RestoreDir("nvim", nvimDst); err != nil {
+				return err
+			}
+
+			if err := steps.Symlink("/usr/bin/nvim", "/usr/local/bin/vim"); err != nil {
 				return err
 			}
 
