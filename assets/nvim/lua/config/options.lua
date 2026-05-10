@@ -32,7 +32,7 @@ opt.colorcolumn = "120"
 
 -- Terminal title (shows in iTerm2/Alacritty tab header)
 opt.title = true
-opt.titlestring = "%{&modified ? '● ' : ''}%{fnamemodify(getcwd(), ':t')} - %t"
+opt.titlestring = "%{&modified ? '● ' : '○ '}%{fnamemodify(getcwd(), ':t')} - %t"
 
 -- Hide command line (commands appear in popup instead)
 opt.cmdheight = 0
