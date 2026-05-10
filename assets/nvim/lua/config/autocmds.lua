@@ -69,9 +69,6 @@ end
 autocmd("VimLeavePre", {
   group = augroup("session-save", { clear = true }),
   callback = function()
-    local cwd = vim.fn.getcwd()
-    if cwd == vim.env.HOME then return end
-
     -- Only save if at least one real file buffer exists
     local has_file_buf = false
     for _, buf in ipairs(vim.api.nvim_list_bufs()) do
