@@ -11,6 +11,7 @@ require("which-key").setup({
     { "<leader>t", group = "toggle" },
     { "<leader>x", group = "troubleshoot" },
     { "<leader>c", group = "code" },
+    { "<leader>o", group = "opencode" },
   },
 })
 

@@ -35,6 +35,7 @@ nvim/
     dropbar.lua             ← breadcrumb navigation bar
     lualine.lua             ← statusline (branch, diagnostics, LSP, mode)
     trouble.lua             ← diagnostic/symbol tree viewer
+    opencode.lua            ← AI assistant in embedded terminal
     ui.lua                  ← which-key, colorscheme
 ```
 
@@ -64,6 +65,7 @@ Update plugins: `:lua vim.pack.update()`
 | [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | Colorscheme | Dark, warm/rusty theme (dragon variant) |
 | [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) | Statusline | Lightweight, themed statusline with mode/branch/etc |
 | [trouble.nvim](https://github.com/folke/trouble.nvim) | Diagnostic viewer | Tree-structured diagnostics, symbols, references |
+| [opencode.nvim](https://github.com/nickjvandyke/opencode.nvim) | AI assistant | In-terminal OpenCode with LSP context, ask/select/operator |
 
 ### LSP Servers (auto-installed by Mason)
 

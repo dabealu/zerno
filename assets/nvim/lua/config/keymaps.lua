@@ -4,6 +4,9 @@ local bmap = require("config.utils").map
 -- Clear search highlight on Esc
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 
+-- Double Esc in terminal mode → normal mode
+map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode (to normal mode)" })
+
 -- Buffer navigation
 bmap("n", "<leader>bb", "<cmd>e #<CR>", "Switch to last buffer")
 bmap("n", "<leader>bd", "<cmd>bdelete<CR>", "Delete buffer")

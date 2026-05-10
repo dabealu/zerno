@@ -25,6 +25,7 @@ vim.pack.add({
   { src = "https://github.com/rebelot/kanagawa.nvim" },
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
   { src = "https://github.com/folke/trouble.nvim" },
+  { src = "https://github.com/nickjvandyke/opencode.nvim" }, -- last tested: v0.8.2
 })
 
 -- Load plugin configurations
@@ -37,4 +38,5 @@ require("plugins.scrollbar")
 require("plugins.dropbar")
 require("plugins.lualine")
 require("plugins.trouble")
+require("plugins.opencode")
 require("plugins.ui")

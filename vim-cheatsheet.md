@@ -10,6 +10,8 @@
 | `Esc` | Return to normal mode |
 | `v` | Enter visual mode (select text) |
 | `V` | Enter visual line mode (select whole lines) |
+| `i` (on terminal buffer) | Enter terminal mode (interact with OC, terminal) |
+| `<Esc><Esc>` (terminal mode) | Exit terminal mode back to Normal |
 
 ### Movement (Normal Mode)
 
@@ -175,6 +177,20 @@
 | `<leader>cs` | Document symbols outline (sidebar) |
 | `<leader>cl` | LSP references / definitions (sidebar) |
 
+### OpenCode
+
+| Key | Action |
+|-----|--------|
+| `<C-.>` | Toggle opencode terminal |
+| `go` + motion | Use opencode on a text object |
+| `goo` | Use opencode on current line |
+| `<leader>oa` | Ask opencode |
+| `<leader>os` | OpenCode action menu |
+| `<leader>ot` | Toggle opencode terminal |
+| `<leader>ok` | Explain symbol under cursor |
+| `<C-a>` | Increment number |
+| `<C-x>` | Decrement number |
+
 ### Git
 
 | Key | Action |
@@ -285,5 +301,7 @@ LSP:    gd=definition  gr=references  gi=implementation  K=hover
 GIT:    [h/]h=prev/next hunk  <leader>gb=blame  <leader>gp=preview
 
 FILES:  <leader>e=explorer  -=oil  <leader>p=projects
+
+OC:     <C-.>=toggle  <leader>oa=ask  <leader>ok=explain
 ```
 
