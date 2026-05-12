@@ -1,6 +1,6 @@
 require("lualine").setup({
   options = {
-    theme = "kanagawa",
+    theme = "auto",
   },
   sections = {
     lualine_a = { "mode" },

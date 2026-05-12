@@ -15,9 +15,9 @@ require("which-key").setup({
   },
 })
 
--- Colorscheme: kanagawa (dragon — warm, rusty, very dark)
-vim.cmd.colorscheme("kanagawa-dragon")
+-- Colorscheme: github-nvim-theme
+--   github_dark_default  - Darkest, higher contrast
+--   github_dark_dimmed   - Darker background but lower contrast, dimmer
+--   github_dark_high_contrast - Even higher contrast
+vim.cmd.colorscheme("github_dark_default")
 
--- Make whitespace chars (listchars) more visible
-local ws_fg = vim.o.background == "dark" and "#4a4a4a" or "#b0b0b0"
-vim.api.nvim_set_hl(0, "Whitespace", { fg = ws_fg })

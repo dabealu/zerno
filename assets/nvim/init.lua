@@ -22,7 +22,7 @@ vim.pack.add({
   { src = "https://github.com/nvim-tree/nvim-web-devicons" },
   { src = "https://github.com/petertriho/nvim-scrollbar" }, -- no tags available
   { src = "https://github.com/Bekaboo/dropbar.nvim", version = vim.version.range("~14") },
-  { src = "https://github.com/rebelot/kanagawa.nvim" },
+  { src = "https://github.com/projekt0n/github-nvim-theme" },
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
   { src = "https://github.com/folke/trouble.nvim" },
   { src = "https://github.com/nickjvandyke/opencode.nvim" }, -- last tested: v0.8.2

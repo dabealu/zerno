@@ -25,6 +25,8 @@ bmap("n", "<leader>fr", function() Snacks.picker.recent() end, "Recent files")
 bmap("n", "<leader>f/", function() Snacks.picker.lines() end, "Search in current buffer")
 bmap("n", "<leader>fh", function() Snacks.picker.help() end, "Help tags")
 bmap("n", "<leader>fn", function() Snacks.notifier.show_history() end, "Notification history")
+bmap("n", "<leader>fG", function() Snacks.picker.git_status() end, "Git status (changed files)")
+bmap("n", "<leader>fL", function() Snacks.picker.git_log() end, "Git log (commits)")
 
 -- File explorer
 bmap("n", "<leader>e", function() Snacks.explorer() end, "Toggle file explorer")

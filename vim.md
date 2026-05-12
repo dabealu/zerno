@@ -62,7 +62,6 @@ Update plugins: `:lua vim.pack.update()`
 | [nvim-scrollbar](https://github.com/petertriho/nvim-scrollbar) | Scrollbar with markers | Shows git changes and diagnostics in scrollbar |
 | [dropbar.nvim](https://github.com/Bekaboo/dropbar.nvim) | Breadcrumb bar | File path + code structure navigation at top of window |
 | [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) | Filetype icons | Icons for file explorers, pickers, which-key |
-| [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | Colorscheme | Dark, warm/rusty theme (dragon variant) |
 | [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) | Statusline | Lightweight, themed statusline with mode/branch/etc |
 | [trouble.nvim](https://github.com/folke/trouble.nvim) | Diagnostic viewer | Tree-structured diagnostics, symbols, references |
 | [opencode.nvim](https://github.com/nickjvandyke/opencode.nvim) | AI assistant | In-terminal OpenCode with LSP context, ask/select/operator |
