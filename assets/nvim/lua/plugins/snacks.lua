@@ -1,6 +1,12 @@
 require("snacks").setup({
   picker = {
     enabled = true,
+    layout = { fullscreen = true },
+    sources = {
+      explorer = {
+        jump = { close = true }, -- Close explorer when opening files (directories stay open)
+      },
+    },
   },
   explorer = {
     enabled = true,
@@ -28,8 +34,8 @@ bmap("n", "<leader>fn", function() Snacks.notifier.show_history() end, "Notifica
 bmap("n", "<leader>fG", function() Snacks.picker.git_status() end, "Git status (changed files)")
 bmap("n", "<leader>fL", function() Snacks.picker.git_log() end, "Git log (commits)")
 
--- File explorer
-bmap("n", "<leader>e", function() Snacks.explorer() end, "Toggle file explorer")
+-- File explorer (fullscreen, closes on file open, stays open for directories)
+bmap("n", "<leader>e", function() Snacks.picker.explorer() end, "Toggle file explorer")
 
 -- Project picker (scans ~/src/ for repos)
 bmap("n", "<leader>p", function() Snacks.picker.projects() end, "Open project")

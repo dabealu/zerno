@@ -15,9 +15,7 @@ require("which-key").setup({
   },
 })
 
--- Colorscheme: github-nvim-theme
---   github_dark_default  - Darkest, higher contrast
---   github_dark_dimmed   - Darker background but lower contrast, dimmer
---   github_dark_high_contrast - Even higher contrast
-vim.cmd.colorscheme("github_dark_default")
+-- Colorscheme: kanagawa (dragon — warm, rusty, dark)
+-- Dragon is the darkest default variant
+vim.cmd.colorscheme("kanagawa-dragon")
 
