@@ -36,6 +36,7 @@ opt.titlestring = "%{&modified ? '● ' : '○ '}%{fnamemodify(getcwd(), ':t')} 
 
 -- Hide command line (commands appear in popup instead)
 opt.cmdheight = 0
+opt.showcmdloc = "statusline"
 
 -- Splits
 opt.splitright = true

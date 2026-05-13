@@ -8,7 +8,7 @@ require("lualine").setup({
     lualine_c = { {
       "filename",
       symbols = { modified = "●" },
-    } },
+    }, "%S" },
     lualine_x = { "diagnostics", "lsp_client_name" },
     lualine_y = { "progress" },
     lualine_z = { "location" },
