@@ -6,6 +6,27 @@ require("snacks").setup({
       explorer = {
         jump = { close = true }, -- Close explorer when opening files (directories stay open)
       },
+      lsp_symbols = {
+        filter = {
+          default = {
+            "Class",
+            "Constructor",
+            "Enum",
+            "Field",
+            "Function",
+            "Interface",
+            "Method",
+            "Module",
+            "Namespace",
+            "Package",
+            "Property",
+            "Struct",
+            "Trait",
+            "Variable",
+            "Constant",
+          },
+        },
+      },
     },
   },
   explorer = {
@@ -42,5 +63,6 @@ bmap("n", "<leader>p", function() Snacks.picker.projects() end, "Open project")
 
 -- LSP pickers (defined here because they use Snacks.picker)
 bmap("n", "<leader>ls", function() Snacks.picker.lsp_symbols() end, "Document symbols")
+bmap("n", "<leader>lS", function() Snacks.picker.lsp_workspace_symbols() end, "Workspace symbols")
 bmap("n", "<leader>ld", function() Snacks.picker.diagnostics() end, "Diagnostics")
 
