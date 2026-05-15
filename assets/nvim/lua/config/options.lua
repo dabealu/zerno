@@ -53,7 +53,7 @@ opt.mouse = "a"
 
 -- Faster update time (default 4000ms is too slow for gitsigns and LSP)
 opt.updatetime = 250
-opt.timeoutlen = 1000
+opt.timeoutlen = 750
 
 -- Nerd Font
 vim.g.have_nerd_font = true

@@ -23,7 +23,7 @@ if vim.fn.executable("swaymsg") ~= 1 then
   return
 end
 
-local group = vim.api.nvim_create_augroup("sway-im-select", { clear = true })
+local group = vim.api.nvim_create_augroup("keyboard-auto-layout", { clear = true })
 
 vim.api.nvim_create_autocmd({ "InsertLeave", "CmdlineLeave" }, {
   group = group,
