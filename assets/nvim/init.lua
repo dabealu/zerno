@@ -29,6 +29,7 @@ vim.pack.add({
 })
 
 -- Load plugin configurations
+require("plugins.auto_layout") -- auto-switches keyboard layout
 require("plugins.snacks")
 require("plugins.lsp")
 require("plugins.git")

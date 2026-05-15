@@ -48,16 +48,12 @@ opt.clipboard = "unnamedplus"
 -- Persistent undo (survives closing and reopening files)
 opt.undofile = true
 
--- Russian keyboard layout support in normal/visual mode
--- Maps Russian keys to their positional English equivalents
-opt.langmap = "ФИСВУАПРШОЛДЬТЩЗЙКЫЕГМЦЧНЯ;ABCDEFGHIJKLMNOPQRSTUVWXYZ,фисвуапршолдьтщзйкыегмцчня;abcdefghijklmnopqrstuvwxyz"
-
 -- Mouse support (allows clicking to position cursor if mouse reporting is enabled in terminal)
 opt.mouse = "a"
 
 -- Faster update time (default 4000ms is too slow for gitsigns and LSP)
 opt.updatetime = 250
-opt.timeoutlen = 400
+opt.timeoutlen = 1000
 
 -- Nerd Font
 vim.g.have_nerd_font = true

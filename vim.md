@@ -209,9 +209,8 @@ If LSP isn't working for a file:
 
 ### Clipboard
 
-`opt.clipboard = "unnamedplus"` requires a system clipboard provider:
-- **macOS**: Works out of the box (pbcopy/pbpaste)
-- **Linux (Wayland/Sway)**: Install `wl-clipboard` (`pacman -S wl-clipboard`)
+`opt.clipboard = "unnamedplus"` requires a system clipboard provider,
+install `wl-clipboard` (`pacman -S wl-clipboard`)
 
 ### Terminal keycodes
 

@@ -87,7 +87,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
       vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
     end
 
-    -- Navigation (no leader, high frequency — langmap handles Russian)
+    -- Navigation (no leader, high frequency — im-select ensures English)
     map("gd", vim.lsp.buf.definition, "Go to definition")
     map("gr", vim.lsp.buf.references, "Go to references")
     map("gi", vim.lsp.buf.implementation, "Go to implementation")

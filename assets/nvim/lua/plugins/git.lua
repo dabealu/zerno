@@ -7,7 +7,7 @@ require("gitsigns").setup({
       vim.keymap.set(mode, keys, func, { buffer = bufnr, desc = desc })
     end
 
-    -- Hunk navigation (langmap handles Russian)
+    -- Hunk navigation (im-select switches to English in Normal mode)
     map("n", "]h", gs.next_hunk, "Next git hunk")
     map("n", "[h", gs.prev_hunk, "Previous git hunk")
 
