@@ -3,10 +3,7 @@
 # Read `man 5 sway` for a complete reference.
 
 ### Appearance and fonts
-set $font       "pango:JetBrainsMono Nerd Font Mono"
-set $font-size  12
-
-font $font $font-size
+font pango:JetBrainsMono Nerd Font Mono 12
 
 # Set thin border for all windows
 default_border normal 2
@@ -317,7 +314,7 @@ bindsym --to-code {
     $mod+z exec wl-paste -p | translate
 
     # Start menu (a program launcher)
-    $mod+d exec bemenu-run -b -p '▪' --fn '$font $font-size' --tb '$urgent' --tf '$white' --hb '$urgent' --hf '$white'
+    $mod+d exec bemenu-run -b -p '▪' --fn 'JetBrainsMono Nerd Font Mono 12' --tb '$urgent' --tf '$white' --hb '$urgent' --hf '$white'
 }
 
 # set GTK theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts

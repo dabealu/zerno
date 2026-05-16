@@ -60,21 +60,21 @@
         }
     },
     "cpu": {
-        "format": " {usage}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {usage}%",
         "tooltip": true,
         "states": {
             "critical": 95
         }
     },
     "memory": {
-        "format": " {}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {}%",
         "states": {
             "critical": 95
         }
     },
     "disk": {
         "interval": 30,
-        "format": " {percentage_used}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {percentage_used}%",
         "path": "/",
         "states": {
             "warning": 85,
@@ -87,18 +87,13 @@
             "warning": 20,
             "critical": 10
         },
-        "format": " {capacity}%",
-        "format-charging": " {capacity}%",
-        "format-plugged": " {capacity}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
+        "format-charging": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
+        "format-plugged": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
         "format-alt": "bat: {time}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
-        "format-icons": ["", "", "", "", ""],
-        "states": {
-            "good": 95,
-            "warning": 20,
-            "critical": 10
-        }
+        "format-icons": ["", "", "", "", ""]
     },
     "network": {
         // "interface": "wlp2*", // (Optional) To force the use of this interface
@@ -110,12 +105,12 @@
     },
     "pulseaudio": {
         "scroll-step": 1, // %, can be a float
-        "format": " {volume}%  {format_source}",
-        "format-bluetooth": " {volume}%  {format_source}",
-        "format-bluetooth-muted": " {format_source}",
-        "format-muted": " {format_source}",
+        "format": "<span font-size='16pt' rise='-2000'></span> {volume}% <span font-size='16pt' rise='-2000'></span> {format_source}",
+        "format-bluetooth": "<span font-size='16pt' rise='-2000'></span> {volume}% <span font-size='16pt' rise='-2000'></span> {format_source}",
+        "format-bluetooth-muted": "<span font-size='16pt' rise='-2000'></span> {format_source}",
+        "format-muted": "<span font-size='16pt' rise='-2000'></span> {format_source}",
         "format-source": "{volume}%",
-        "format-source-muted": "",
+        "format-source-muted": "<span font-size='16pt' rise='-2000'></span>",
         "on-click": "pavucontrol"
     }
 }
