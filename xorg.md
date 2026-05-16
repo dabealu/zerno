@@ -5,6 +5,7 @@ in case app requires Xorg or works poorly on wayland.
 - install xorg and LXDE:
 ```sh
 pacman -Sy xorg xorg-xinit lxde
+```
 
 - copy xinitrc
 ```sh

@@ -37,6 +37,7 @@ nvim/
     trouble.lua             ← diagnostic/symbol tree viewer
     opencode.lua            ← AI assistant in embedded terminal
     ui.lua                  ← which-key, colorscheme
+    auto_layout.lua         ← automatic keyboard layout switching via swaymsg
 ```
 
 ### Plugin Manager: vim.pack (native)

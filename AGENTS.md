@@ -91,6 +91,11 @@ Utilities are stored as `.embed` files in `assets/utilsfs/`. They are embedded a
 - Use `internal/testutils` for `TempFile()`, `TempDir()`, `WriteFile()` helpers
 - Set `HOME` env var for tests needing config directories
 
+## Neovim Config
+
+Neovim configuration is in `assets/nvim/` (embedded, deployed via `install-full`).
+See [vim.md](vim.md) for plugin docs, keybindings, and [vim-cheatsheet.md](vim-cheatsheet.md) for a quick reference.
+
 ## Design Decisions
 
 - **No external dependencies** - use stdlib where possible
