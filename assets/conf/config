@@ -3,7 +3,7 @@
 # Read `man 5 sway` for a complete reference.
 
 ### Appearance and fonts
-set $font       "pango:Noto Sans"
+set $font       "pango:JetBrainsMono Nerd Font Mono"
 set $font-size  12
 
 font $font $font-size

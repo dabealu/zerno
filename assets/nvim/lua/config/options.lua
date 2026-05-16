@@ -28,7 +28,7 @@ opt.scrolloff = 8
 opt.sidescrolloff = 8
 opt.wrap = true
 opt.showmode = false
-opt.colorcolumn = "120"
+opt.colorcolumn = "100"
 
 -- Terminal title (shows in iTerm2/Alacritty tab header)
 opt.title = true

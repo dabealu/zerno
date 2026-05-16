@@ -60,30 +60,45 @@
         }
     },
     "cpu": {
-        "format": "cpu: {usage}%",
-        "tooltip": true
+        "format": " {usage}%",
+        "tooltip": true,
+        "states": {
+            "critical": 95
+        }
     },
     "memory": {
-        "format": "mem: {}%"
+        "format": " {}%",
+        "states": {
+            "critical": 95
+        }
     },
     "disk": {
         "interval": 30,
-        "format": "rootfs: {percentage_used}%",
-        "path": "/"
+        "format": " {percentage_used}%",
+        "path": "/",
+        "states": {
+            "warning": 85,
+            "critical": 95
+        }
     },
     "battery": {
         "states": {
             "good": 95,
-            "warning": 30,
-            "critical": 15
+            "warning": 20,
+            "critical": 10
         },
-        "format": "bat: {capacity}%",
-        "format-charging": "chr: {capacity}%",
-        "format-plugged": "plg: {capacity}%",
+        "format": " {capacity}%",
+        "format-charging": " {capacity}%",
+        "format-plugged": " {capacity}%",
         "format-alt": "bat: {time}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
-        "format-icons": ["", "", "", "", ""]
+        "format-icons": ["", "", "", "", ""],
+        "states": {
+            "good": 95,
+            "warning": 20,
+            "critical": 10
+        }
     },
     "network": {
         // "interface": "wlp2*", // (Optional) To force the use of this interface
@@ -95,12 +110,12 @@
     },
     "pulseaudio": {
         "scroll-step": 1, // %, can be a float
-        "format": "vol: {volume}% mic: {format_source}",
-        "format-bluetooth": "vol: {volume}% mic: {format_source}",
-        "format-bluetooth-muted": "muted {format_source}",
-        "format-muted": "muted {format_source}",
+        "format": " {volume}%  {format_source}",
+        "format-bluetooth": " {volume}%  {format_source}",
+        "format-bluetooth-muted": " {format_source}",
+        "format-muted": " {format_source}",
         "format-source": "{volume}%",
-        "format-source-muted": "muted",
+        "format-source-muted": "",
         "on-click": "pavucontrol"
     }
 }

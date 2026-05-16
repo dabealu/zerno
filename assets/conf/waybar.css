@@ -2,8 +2,8 @@
     border: none;
     border-radius: 0;
     /* `otf-font-awesome` is required to be installed for icons */
-    font-family: Noto Sans, Helvetica, Arial, sans-serif;
-    font-size: 16;
+    font-family: JetBrainsMono Nerd Font Mono, sans-serif;
+    font-size: 12pt;
     min-height: 0;
 }
 
@@ -89,7 +89,10 @@ window#waybar.hidden {
     }
 }
 
-#battery.critical:not(.charging) {
+#battery.critical:not(.charging),
+#cpu.critical,
+#memory.critical,
+#disk.critical {
     background-color: #900200;
     color: #ffffff;
     animation-name: blink;
@@ -97,6 +100,10 @@ window#waybar.hidden {
     animation-timing-function: linear;
     animation-iteration-count: infinite;
     animation-direction: alternate;
+}
+
+#disk.warning {
+    background-color: #c25c02;
 }
 
 label:focus {
