@@ -9,12 +9,12 @@ set $font-size  12
 font $font $font-size
 
 # Set thin border for all windows
-default_border normal 1
+default_border normal 2
 # gaps inner 1
 # gaps outer 1
 
-# Show window class in title
-for_window [class=".*"] title_format "<b>%class</b> : %title"
+# Show app title in the window header
+for_window [class=".*"] title_format "<span foreground='#777777'> ▪ </span>%title"
 
 # open pop-up windows in floating mode
 for_window [window_role="pop-up"] floating enable
@@ -33,10 +33,8 @@ set $ws9 "9: 9 "
 set $ws0 "0: 0 "
 
 # Apps placement
-# swaymsg -t get_tree to get app_id/class
-assign [class="Google-chrome"]          $ws1
-assign [class="Slack"]                  $ws2
-assign [class="code-oss"]               $ws3
+# swaymsg -t get_tree to get app_id
+assign [app_id="google-chrome"]         $ws1
 assign [app_id="org.telegram.desktop"]  $ws2
 assign [app_id="thunar"]                $ws4
 
@@ -57,7 +55,7 @@ set $term alacritty --config-file ~/.config/sway/alacritty.toml
 ### Output configuration
 # Default wallpaper
 # output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
-output * bg  #000000 solid_color
+output * bg  #1a1a1a solid_color
 
 # Set resolution, run `swaymsg -t get_outputs` to list outputs
 # output HDMI-A-1 resolution 1920x1080 position 1920,0
@@ -224,7 +222,7 @@ set $white #ffffff
 set $gray #404040
 set $dark #202020
 set $black #000000
-set $urgent #008000
+set $urgent #c25c02
 
 # Frame colors          border    background   text     indicator   child_border
 client.focused          $gray     $gray        $white   $black      $black
@@ -319,7 +317,7 @@ bindsym --to-code {
     $mod+z exec wl-paste -p | translate
 
     # Start menu (a program launcher)
-    $mod+d exec bemenu-run -b -p '>' --fn '$font $font-size' --tb '$urgent' --tf '$white' --hb '$urgent' --hf '$white'
+    $mod+d exec bemenu-run -b -p '▪' --fn '$font $font-size' --tb '$urgent' --tf '$white' --hb '$urgent' --hf '$white'
 }
 
 # set GTK theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts

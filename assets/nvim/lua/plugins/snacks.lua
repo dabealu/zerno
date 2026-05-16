@@ -65,4 +65,7 @@ bmap("n", "<leader>p", function() Snacks.picker.projects() end, "Open project")
 bmap("n", "<leader>ls", function() Snacks.picker.lsp_symbols() end, "Document symbols")
 bmap("n", "<leader>lS", function() Snacks.picker.lsp_workspace_symbols() end, "Workspace symbols")
 bmap("n", "<leader>ld", function() Snacks.picker.diagnostics() end, "Diagnostics")
+bmap("n", "<leader>lt", function()
+  vim.api.nvim_feedkeys(":set filetype=", "n", false)
+end, "Set filetype")
 

@@ -36,11 +36,11 @@ window#waybar.hidden {
 }
 
 #workspaces button.urgent {
-    background-color: #008000;
+    background-color: #c25c02;
 }
 
 #mode {
-    background-color: #008000;
+    background-color: #c25c02;
 }
 
 #clock,
