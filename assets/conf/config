@@ -52,7 +52,7 @@ set $term alacritty --config-file ~/.config/sway/alacritty.toml
 ### Output configuration
 # Default wallpaper
 # output * bg /usr/share/backgrounds/sway/Sway_Wallpaper_Blue_1920x1080.png fill
-output * bg  #1a1a1a solid_color
+output * bg  #232323 solid_color
 
 # Set resolution, run `swaymsg -t get_outputs` to list outputs
 # output HDMI-A-1 resolution 1920x1080 position 1920,0

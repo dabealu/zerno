@@ -95,7 +95,7 @@ func swayPackages() Task {
 	return Task{
 		Name: "install_sway_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "sway swaylock swayidle waybar brightnessctl xorg-xwayland bemenu-wayland libnotify dunst wl-clipboard alacritty ghostty"
+			pkgs := "sway swaybg swaylock swayidle waybar brightnessctl xorg-xwayland bemenu-wayland libnotify dunst wl-clipboard alacritty ghostty"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},
