@@ -11,7 +11,6 @@ import (
 func TestIntegration_SaveLoad_JSON(t *testing.T) {
 	dir := t.TempDir()
 	cfg := &Config{
-		EFI:           true,
 		BlockDevice:   "nvme0n1",
 		PartNum:       2,
 		PartNumPrefix: "p",
@@ -46,9 +45,6 @@ func TestIntegration_SaveLoad_JSON(t *testing.T) {
 		t.Fatalf("json.Unmarshal error = %v", err)
 	}
 
-	if loaded.EFI != cfg.EFI {
-		t.Errorf("EFI mismatch: got %v, want %v", loaded.EFI, cfg.EFI)
-	}
 	if loaded.BlockDevice != cfg.BlockDevice {
 		t.Errorf("BlockDevice mismatch: got %v, want %v", loaded.BlockDevice, cfg.BlockDevice)
 	}

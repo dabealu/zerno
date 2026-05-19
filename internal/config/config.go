@@ -11,7 +11,6 @@ import (
 )
 
 type Config struct {
-	EFI           bool
 	BlockDevice   string
 	PartNum       int
 	PartNumPrefix string
@@ -75,8 +74,8 @@ func Prompt() (*Config, error) {
 
 	fmt.Println("enter parameters:")
 
-	if _, err := os.Stat("/sys/firmware/efi"); err == nil {
-		cfg.EFI = true
+	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
+		return nil, fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
 	}
 
 	devices, err := listBlockDevices()
@@ -107,9 +106,6 @@ func Prompt() (*Config, error) {
 		cfg.PartNumPrefix = ""
 	}
 	cfg.PartNum = 2
-	if !cfg.EFI {
-		cfg.PartNum = 1
-	}
 
 	prompt("timezone", &cfg.Timezone, "Asia/Singapore")
 	prompt("hostname", &cfg.Hostname, "dhost")

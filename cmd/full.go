@@ -235,23 +235,11 @@ func hibernation() Task {
 	return Task{
 		Name: "enable_hibernation_and_suspend",
 		RunFunc: func(cfg *config.Config) error {
-			mkinit, err := steps.ReadFile("/etc/mkinitcpio.conf")
+			rootUUID, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/")
 			if err != nil {
 				return err
 			}
-			lines := strings.Split(string(mkinit), "\n")
-			for i, line := range lines {
-				if strings.HasPrefix(line, "HOOKS=") && !strings.HasSuffix(strings.TrimSpace(line), "resume)") {
-					lines[i] = strings.TrimRight(line, ")") + " resume)"
-					break
-				}
-			}
-			if err := steps.WriteFile("/etc/mkinitcpio.conf", strings.Join(lines, "\n")); err != nil {
-				return err
-			}
-			if _, err := steps.RunShell("mkinitcpio -p linux"); err != nil {
-				return err
-			}
+			rootUUID = strings.TrimSpace(rootUUID)
 
 			swapDevice, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/swapfile")
 			if err != nil {
@@ -274,12 +262,17 @@ func hibernation() Task {
 				}
 			}
 
-			grubParams := fmt.Sprintf(`GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet resume=UUID=%s resume_offset=%s"`, strings.TrimSpace(swapDevice), strings.TrimSpace(offset))
-			if err := steps.ReplaceLine("/etc/default/grub", `GRUB_CMDLINE_LINUX_DEFAULT=.*`, grubParams); err != nil {
+			cmdline := fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",
+				rootUUID, swapDevice, strings.TrimSpace(offset))
+			if err := steps.WriteFile("/etc/kernel/cmdline", cmdline); err != nil {
 				return err
 			}
-			_, err = steps.RunCmd("grub-mkconfig", "-o", "/boot/grub/grub.cfg")
-			return err
+
+			if _, err := steps.RunShell("mkinitcpio -p linux"); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 }
