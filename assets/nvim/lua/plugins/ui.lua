@@ -15,7 +15,5 @@ require("which-key").setup({
   },
 })
 
--- Colorscheme: kanagawa (dragon — warm, rusty, dark)
--- Dragon is the darkest default variant
-vim.cmd.colorscheme("kanagawa-dragon")
+vim.cmd.colorscheme("kanagawa-wave")
 
