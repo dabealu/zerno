@@ -1,6 +1,6 @@
-# steam, amdgpu, vulkan
+# steam
 
-TODO: try gamemode - https://github.com/FeralInteractive/gamemode
+## amdgpu and vulkan
 
 enable multilib in `/etc/pacman.conf`:
 ```ini
@@ -60,3 +60,33 @@ links:
 https://wiki.archlinux.org/title/AMDGPU#Enable_Southern_Islands_(SI)_and_Sea_Islands_(CIK)_support
 https://wiki.archlinux.org/title/steam#Installation
 https://wiki.archlinux.org/title/Vulkan#AMDGPU_-_ERROR_INITIALIZATION_FAILED_after_vulkaninfo
+
+
+## desktop environment
+in case app requires Xorg or works poorly on wayland.
+
+- install xorg, LXDE and copy xinitrc:
+```sh
+pacman -Sy xorg xorg-xinit lxde
+cp /etc/X11/xinit/xinitrc ~/.xinitrc
+```
+- edit `~/.xinitrc` and at the bottom of the file comment `twm &` and lines below
+- add `exec startlxde`
+- start desktop environment with `startx`
+
+## optimizations
+
+worth to try gamemod+gamescope together with cachyos kernel.
+this is a minimal effort optimizations bundled in a few easy to use tools.
+example command for a Steam command line:
+
+```sh
+gamemoderun gamescope -w 1280 -h 720 -W 1920 -H 1080 -F fsr -- %command%
+```
+- gamemoderun - sets CPU governor to performance, raises GPU power state, bumps IO/nice priority
+- gamescope - sandboxed compositor that decouples game rendering from your desktop compositor
+- -w 1280 -h 720 - game renders internally at 720p (saves GPU horsepower)
+- -W 1920 -H 1080 - output is scaled up to your 1080p display
+- -F fsr - uses AMD FidelityFX Super Resolution for the upscaling (sharpens 720p → 1080p)
+- -- %command% - the -- separator; everything after is the actual game launch command
+
