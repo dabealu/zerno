@@ -36,7 +36,7 @@ func UpdateBin() error {
 		VERSION=$(date +%%d%%m%%Y-%%H%%M%%S) && \
 		cd %s && \
 		go fmt ./... && \
-		go build -ldflags "-X main._version=$VERSION" -o %s/zerno ./cmd && \
+		go build -ldflags "-X main.version=$VERSION" -o %s/zerno ./cmd && \
 		echo "Built version: $VERSION"`, repoDir, repoDir))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -121,7 +121,7 @@ func CreateISO() error {
 	}
 
 	profiledefPath := filepath.Join(relengCopyDir, "profiledef.sh")
-	if err := steps.ReplaceLine(profiledefPath, `file_permissions=\("`, `file_permissions=(\n  ["/usr/local/bin/zerno"]="0:0:755"`); err != nil {
+	if err := steps.ReplaceLine(profiledefPath, `file_permissions=\(`, "file_permissions=(\n  [\"/usr/local/bin/zerno\"]=\"0:0:755\""); err != nil {
 		return err
 	}
 

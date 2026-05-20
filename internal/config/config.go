@@ -1,6 +1,7 @@
 package config
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -217,7 +218,8 @@ func getNetDevName(isoDev string) string {
 
 func prompt(label string, value *string, fallback string) {
 	fmt.Printf("%s [%s]: ", label, fallback)
-	fmt.Scanln(value)
+	input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
+	*value = strings.TrimSpace(input)
 	if *value == "" {
 		*value = fallback
 	}
