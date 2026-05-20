@@ -78,8 +78,13 @@ cp /etc/X11/xinit/xinitrc ~/.xinitrc
 
 worth to try gamemod+gamescope together with cachyos kernel.
 this is a minimal effort optimizations bundled in a few easy to use tools.
-example command for a Steam command line:
 
+both packages available in arch extra repo:
+```sh
+pacman -Sy gamescope gamemode lib32-gamemode
+```
+
+example command for a Steam command line:
 ```sh
 gamemoderun gamescope -w 1280 -h 720 -W 1920 -H 1080 -F fsr -- %command%
 ```
