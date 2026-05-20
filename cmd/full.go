@@ -80,7 +80,19 @@ func netplan() Task {
 			if _, err := steps.RunShell("netplan apply"); err != nil {
 				return err
 			}
-			time.Sleep(3 * time.Second)
+			if _, err := steps.RunShell("systemctl enable netplan-configure"); err != nil {
+				return err
+			}
+
+			// Wait for network (up to ~60s)
+			for i := 0; i < 60; i++ {
+				out, _ := steps.RunCmd("ip", "route", "show", "default")
+				if strings.TrimSpace(out) != "" {
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
+
 			out, err := steps.RunCmd("netplan", "get", "all")
 			if err != nil {
 				return fmt.Errorf("netplan apply verification failed: %w", err)
@@ -131,6 +143,7 @@ func swayConfigs() Task {
 				"conf/config":                 swayDir + "/config",
 				"conf/dunstrc":                swayDir + "/dunstrc",
 				"conf/libinput-gestures.conf": swayDir + "/libinput-gestures.conf",
+				"conf/power-menu.sh":          swayDir + "/power-menu.sh",
 				"conf/waybar.css":             swayDir + "/waybar.css",
 				"conf/waybar.json":            swayDir + "/waybar.json",
 				"conf/waybar.sh":              swayDir + "/waybar.sh",
@@ -164,6 +177,9 @@ func swayConfigs() Task {
 				return err
 			}
 			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/waybar.sh"), 0755); err != nil {
+				return err
+			}
+			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/power-menu.sh"), 0755); err != nil {
 				return err
 			}
 
@@ -235,23 +251,11 @@ func hibernation() Task {
 	return Task{
 		Name: "enable_hibernation_and_suspend",
 		RunFunc: func(cfg *config.Config) error {
-			mkinit, err := steps.ReadFile("/etc/mkinitcpio.conf")
+			rootUUID, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/")
 			if err != nil {
 				return err
 			}
-			lines := strings.Split(string(mkinit), "\n")
-			for i, line := range lines {
-				if strings.HasPrefix(line, "HOOKS=") && !strings.HasSuffix(strings.TrimSpace(line), "resume)") {
-					lines[i] = strings.TrimRight(line, ")") + " resume)"
-					break
-				}
-			}
-			if err := steps.WriteFile("/etc/mkinitcpio.conf", strings.Join(lines, "\n")); err != nil {
-				return err
-			}
-			if _, err := steps.RunShell("mkinitcpio -p linux"); err != nil {
-				return err
-			}
+			rootUUID = strings.TrimSpace(rootUUID)
 
 			swapDevice, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/swapfile")
 			if err != nil {
@@ -274,12 +278,17 @@ func hibernation() Task {
 				}
 			}
 
-			grubParams := fmt.Sprintf(`GRUB_CMDLINE_LINUX_DEFAULT="loglevel=3 quiet resume=UUID=%s resume_offset=%s"`, strings.TrimSpace(swapDevice), strings.TrimSpace(offset))
-			if err := steps.ReplaceLine("/etc/default/grub", `GRUB_CMDLINE_LINUX_DEFAULT=.*`, grubParams); err != nil {
+			cmdline := fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",
+				rootUUID, swapDevice, strings.TrimSpace(offset))
+			if err := steps.WriteFile("/etc/kernel/cmdline", cmdline); err != nil {
 				return err
 			}
-			_, err = steps.RunCmd("grub-mkconfig", "-o", "/boot/grub/grub.cfg")
-			return err
+
+			if _, err := steps.RunShell("mkinitcpio -p linux"); err != nil {
+				return err
+			}
+
+			return nil
 		},
 	}
 }
@@ -296,8 +305,14 @@ func cpuGovernor() Task {
 			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "cpupower"); err != nil {
 				return err
 			}
-			if err := steps.ReplaceLine("/etc/default/cpupower", `#governor='ondemand'`, `governor='performance'`); err != nil {
-				return err
+			if !steps.FileExists("/etc/default/cpupower") {
+				if err := steps.WriteFile("/etc/default/cpupower", "# cpupower defaults\ngovernor='performance'\n"); err != nil {
+					return err
+				}
+			} else {
+				if err := steps.ReplaceLine("/etc/default/cpupower", `#governor='ondemand'`, `governor='performance'`); err != nil {
+					return err
+				}
 			}
 			if _, err := steps.RunCmd("systemctl", "enable", "cpupower"); err != nil {
 				return err
@@ -389,8 +404,20 @@ func aurPackages() Task {
 	return Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "google-chrome wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git pinta"
+			pkgs := "wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git pinta"
 			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy %s'`, cfg.Username, pkgs)
+			_, err := steps.RunShell(script)
+			return err
+		},
+	}
+}
+
+func aurChrome() Task {
+	return Task{
+		Name: "install_aur_chrome",
+		RunFunc: func(cfg *config.Config) error {
+			fmt.Println("installing google-chrome (may take a while)...")
+			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy google-chrome'`, cfg.Username)
 			_, err := steps.RunShell(script)
 			return err
 		},
@@ -473,7 +500,7 @@ func utilsFontsThemes() Task {
 	return Task{
 		Name: "install_utilities_fonts_themes",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils noto-fonts noto-fonts-cjk noto-fonts-emoji materia-gtk-theme papirus-icon-theme"
+			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils materia-gtk-theme papirus-icon-theme"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
@@ -557,6 +584,7 @@ func installFullTasksExt(cfg *config.Config) []Task {
 		desktopApps(),
 		utilsFontsThemes(),
 		installUtils(),
+		aurChrome(),
 		userSrcDir(),
 		migrateUserConfig(cfg),
 		info("installation complete: reboot and run `de`"),

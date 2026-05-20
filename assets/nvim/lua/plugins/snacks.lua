@@ -1,6 +1,7 @@
 require("snacks").setup({
   picker = {
     enabled = true,
+    hidden = true,
     layout = { fullscreen = true },
     sources = {
       explorer = {

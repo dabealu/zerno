@@ -94,6 +94,16 @@ Neovim is installed during Phase 1 (base) and configured during Phase 2 (full).
 Config is embedded from `assets/nvim/`.
 See `vim.md` for detailed documentation, plugins, and keybindings.
 
+### Boot: systemd-boot + UKI
+Zerno uses systemd-boot with Unified Kernel Images (UKIs). Kernel cmdline is embedded in the UKI via `/etc/kernel/cmdline`. systemd-boot auto-discovers UKIs in `/efi/EFI/Linux/`. A pacman hook preserves the previous kernel as fallback on upgrades. See `AGENTS.md` for full boot architecture.
+
+### Secure Boot
+Zerno always creates Secure Boot keys and signs all EFI binaries via `sbctl`. Works with Secure Boot OFF (signatures ignored). To enable Secure Boot:
+```bash
+sudo sbctl enroll-keys -m
+```
+Then enable Secure Boot in your UEFI firmware settings.
+
 ### TODO
 - encrypted volume
 - intel integrated graphics

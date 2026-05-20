@@ -232,21 +232,8 @@ client.background       $black
 # Use waybar instead of default swaybar
 exec_always ~/.config/sway/waybar.sh
 
-# Power control shutdown/reboot/suspend:
-set $mode_system [S]uspend   [H]ibernate   [E]xit   [L]ock   [R]eboot   [P]oweroff
-
-mode "$mode_system" {
-    # --release prevents stale key state from re-triggering sleep on resume
-    bindsym --release --to-code s exec systemctl suspend, mode "default"
-    bindsym --release --to-code h exec systemctl hibernate, mode "default"
-    bindsym --to-code e exec swaymsg exit
-    bindsym --to-code l exec swaylock -l -k --color "$black", mode "default"
-    bindsym --to-code r exec systemctl reboot -i
-    bindsym --to-code p exec systemctl poweroff -i
-    bindsym --to-code Return mode "default"
-    bindsym --to-code Escape mode "default"
-}
-bindsym --to-code $mod+Escape mode "$mode_system"
+# Power control - bemenu-based menu
+bindsym --to-code $mod+Escape exec ~/.config/sway/power-menu.sh
 
 # Screen lock
 bindsym --to-code $mod+Control+b exec swaylock --color "$black"

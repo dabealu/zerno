@@ -9,7 +9,6 @@ import (
 
 func TestConfigSaveLoad(t *testing.T) {
 	cfg := &Config{
-		EFI:           true,
 		BlockDevice:   "sda",
 		PartNum:       2,
 		PartNumPrefix: "",
@@ -46,9 +45,6 @@ func TestConfigSaveLoad(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if loaded.EFI != cfg.EFI {
-		t.Errorf("EFI = %v, want %v", loaded.EFI, cfg.EFI)
-	}
 	if loaded.Hostname != cfg.Hostname {
 		t.Errorf("Hostname = %v, want %v", loaded.Hostname, cfg.Hostname)
 	}
@@ -117,7 +113,6 @@ func TestConfigPartialFields(t *testing.T) {
 
 func TestConfigJSONRoundtrip(t *testing.T) {
 	cfg := &Config{
-		EFI:           true,
 		BlockDevice:   "nvme0n1",
 		PartNum:       2,
 		PartNumPrefix: "p",
