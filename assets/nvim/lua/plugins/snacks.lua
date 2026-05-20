@@ -1,9 +1,10 @@
 require("snacks").setup({
   picker = {
     enabled = true,
-    hidden = true,
     layout = { fullscreen = true },
     sources = {
+      files = { hidden = true },
+      grep = { hidden = true },
       explorer = {
         jump = { close = true }, -- Close explorer when opening files (directories stay open)
       },
