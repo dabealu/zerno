@@ -33,7 +33,7 @@ PATH="$PATH:/home/$USER/bin"
 # done
 function prompt_command() {
     [[ $? -ne 0 ]] && local CLR_EXIT='\[\e[0;31;1m\]' || local CLR_EXIT='\[\e[0;32;1m\]'
-    PS1="\[\e[37;1m\]\t \w ${CLR_EXIT}>\[\e[0m\] "
+    PS1="\[\e[37;1m\]\t \w ${CLR_EXIT}›\[\e[0m\] "
 }
 
 PROMPT_COMMAND="prompt_command"
