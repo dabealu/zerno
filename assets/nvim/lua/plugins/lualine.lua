@@ -9,7 +9,16 @@ require("lualine").setup({
       "filename",
       symbols = { modified = "●" },
     }, "%S" },
-    lualine_x = { "diagnostics", "lsp_client_name" },
+    lualine_x = { "filetype", "diagnostics", {
+      "lsp_status",
+      icon = "",
+      symbols = {
+        spinner = { "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏" },
+        done = "",
+        separator = " "
+      },
+      show_name = true,
+    } },
     lualine_y = { "progress" },
     lualine_z = { "location" },
   },
@@ -22,3 +31,4 @@ require("lualine").setup({
     lualine_z = { "location" },
   },
 })
+
