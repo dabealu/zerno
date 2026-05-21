@@ -26,6 +26,7 @@ vim.pack.add({
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
   { src = "https://github.com/folke/trouble.nvim" },
   { src = "https://github.com/nickjvandyke/opencode.nvim" }, -- last tested: v0.8.2
+  { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
 })
 
 -- Load plugin configurations
@@ -40,4 +41,5 @@ require("plugins.dropbar")
 require("plugins.lualine")
 require("plugins.trouble")
 require("plugins.opencode")
+require("plugins.treesitter")
 require("plugins.ui")

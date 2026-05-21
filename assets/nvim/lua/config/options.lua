@@ -55,5 +55,10 @@ opt.mouse = "a"
 opt.updatetime = 250
 opt.timeoutlen = 750
 
+-- Treesitter-based folding
+opt.foldmethod = "expr"
+opt.foldexpr = "v:lua.vim.treesitter.foldexpr()"
+opt.foldlevel = 99
+
 -- Nerd Font
 vim.g.have_nerd_font = true

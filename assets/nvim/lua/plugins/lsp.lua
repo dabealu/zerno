@@ -1,14 +1,7 @@
 -- Mason: auto-install LSP servers
 require("mason").setup()
 require("mason-lspconfig").setup({
-  ensure_installed = {
-    "gopls",
-    "terraformls",
-    "bashls",
-    "yamlls",
-    "jsonls",
-    "lua_ls",
-  },
+  automatic_installation = true,
   automatic_enable = true,
 })
 
@@ -72,15 +65,13 @@ vim.lsp.config("yamlls", {
   },
 })
 
--- Enable all configured servers
-vim.lsp.enable({
-  "gopls",
-  "terraformls",
-  "bashls",
-  "yamlls",
-  "jsonls",
-  "lua_ls",
-})
+-- Stubs for servers that need no custom config (Mason picks up from vim.lsp.config)
+vim.lsp.config("bashls", {})
+vim.lsp.config("jsonls", {})
+vim.lsp.config("terraformls", {})
+vim.lsp.config("pyright", {})
+vim.lsp.config("taplo", {})
+vim.lsp.config("marksman", {})
 
 -- LSP keymaps (set when an LSP client attaches to a buffer)
 vim.api.nvim_create_autocmd("LspAttach", {
@@ -92,7 +83,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
       vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
     end
 
-    -- Navigation (no leader, high frequency — im-select ensures English)
+    -- Navigation (no leader, high frequency)
     map("gd", vim.lsp.buf.definition, "Go to definition")
     map("gr", vim.lsp.buf.references, "Go to references")
     map("gi", vim.lsp.buf.implementation, "Go to implementation")

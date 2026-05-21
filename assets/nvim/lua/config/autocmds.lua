@@ -55,6 +55,14 @@ autocmd("BufReadPost", {
   end,
 })
 
+-- Enable treesitter highlighting for buffers that have a parser
+autocmd("FileType", {
+  group = augroup("treesitter-highlight", { clear = true }),
+  callback = function()
+    pcall(vim.treesitter.start)
+  end,
+})
+
 -- Auto-session: save/restore open buffers per project directory
 -- Sessions are stored in ~/.local/share/nvim/sessions/
 local session_dir = vim.fn.stdpath("data") .. "/sessions/"

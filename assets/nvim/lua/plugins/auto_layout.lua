@@ -29,7 +29,7 @@ vim.api.nvim_create_autocmd({ "InsertLeave", "CmdlineLeave" }, {
   group = group,
   callback = function()
     local current = get_layout()
-    vim.g.im_select_saved = current
+    vim.g.saved_layout = current
     if current ~= "0" then
       set_layout("0")
     end
@@ -39,7 +39,7 @@ vim.api.nvim_create_autocmd({ "InsertLeave", "CmdlineLeave" }, {
 vim.api.nvim_create_autocmd("InsertEnter", {
   group = group,
   callback = function()
-    local saved = vim.g.im_select_saved
+    local saved = vim.g.saved_layout
     if saved and saved ~= "0" then
       set_layout(saved)
     end

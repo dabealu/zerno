@@ -137,7 +137,7 @@ func pacstrap() Task {
 	return Task{
 		Name: "pacstrap_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "linux linux-firmware base base-devel efibootmgr dosfstools sbctl systemd-ukify systemd-resolvconf wpa_supplicant netplan dbus-python python-rich openssh dnsutils curl git unzip neovim sudo man man-pages tmux sysstat bash-completion go lsof strace"
+			pkgs := "linux linux-firmware base base-devel efibootmgr dosfstools sbctl systemd-ukify systemd-resolvconf wpa_supplicant netplan dbus-python python-rich openssh dnsutils curl git unzip neovim sudo man man-pages tmux sysstat bash-completion go lsof strace tree-sitter-cli"
 			_, err := steps.RunShell("pacstrap /mnt " + pkgs)
 			return err
 		},
