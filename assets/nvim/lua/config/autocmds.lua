@@ -15,7 +15,9 @@ autocmd("BufWritePre", {
   pattern = { "*.go", "*.tf", "*.tfvars" },
   callback = function()
     if vim.bo.filetype == "go" then
-      local params = vim.lsp.util.make_range_params()
+      local clients = vim.lsp.get_clients({ bufnr = 0 })
+      local position_encoding = clients[1] and clients[1].config.position_encoding or "utf-16"
+      local params = vim.lsp.util.make_range_params(0, position_encoding)
       params.context = { only = { "source.organizeImports" } }
       local result = vim.lsp.buf_request_sync(0, "textDocument/codeAction", params, 1000)
       for _, res in pairs(result or {}) do

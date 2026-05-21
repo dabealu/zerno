@@ -21,8 +21,11 @@ require("blink.cmp").setup({
     documentation = { auto_show = true },
     accept = { auto_brackets = { enabled = true } },
   },
+  snippets = {
+    preset = "default",
+  },
   sources = {
-    default = { "lsp", "path", "buffer" },
+    default = { "lsp", "snippets", "path", "buffer" },
   },
 })
 

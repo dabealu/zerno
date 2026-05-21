@@ -41,6 +41,21 @@ require("snacks").setup({
   indent = {
     enabled = true,
   },
+  scope = {
+    enabled = true,
+  },
+  words = {
+    enabled = true,
+  },
+  bigfile = {
+    enabled = true,
+  },
+  statuscolumn = {
+    enabled = true,
+  },
+  gitbrowse = {
+    enabled = true,
+  },
 })
 
 local bmap = require("config.utils").map
@@ -58,6 +73,13 @@ bmap("n", "<leader>fL", function() Snacks.picker.git_log() end, "Git log (commit
 
 -- File explorer (fullscreen, closes on file open, stays open for directories)
 bmap("n", "<leader>e", function() Snacks.picker.explorer() end, "Toggle file explorer")
+
+-- Words navigation (LSP references)
+bmap("n", "]w", function() Snacks.words.jump(vim.v.count1) end, "Next LSP reference")
+bmap("n", "[w", function() Snacks.words.jump(-vim.v.count1) end, "Prev LSP reference")
+
+-- Git: open in browser
+bmap("n", "<leader>gB", function() Snacks.gitbrowse() end, "Open in browser")
 
 -- Project picker (scans ~/src/ for repos)
 bmap("n", "<leader>p", function() Snacks.picker.projects() end, "Open project")

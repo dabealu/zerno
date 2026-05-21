@@ -154,6 +154,7 @@
 | `gD` | Go to declaration |
 | `gy` | Go to type definition |
 | `K` | Hover documentation |
+| `[w` / `]w` | Previous / next LSP reference highlight |
 | `Ctrl+o` | Jump back (after gd/gr/gi) |
 | `Ctrl+i` | Jump forward |
 
@@ -188,6 +189,7 @@
 | `<leader>fr` | Recent files |
 | `<leader>f/` | Search in current buffer |
 | `<leader>fh` | Help tags |
+| `<leader>fT` | Find TODOs / FIXMEs / HACKs (trouble) |
 | `<leader>fG` | Git status (changed files) |
 | `<leader>fL` | Git log (commits) |
 | `<leader>ls` | Document symbols (current file) |
@@ -208,6 +210,7 @@
 | `<leader>vc` | Command history |
 | `<leader>vv` | Version info |
 | `<leader>vn` | Notification history |
+| `<leader>vB` | Disable bigfile mode for current buffer |
 | `<leader>v?` | Open vim cheatsheet |
 
 ### OpenCode
@@ -236,6 +239,7 @@
 | `<leader>gb` | Blame current line |
 | `<leader>gd` | Diff current file |
 | `<leader>gn` / `<leader>gN` | Next / previous hunk (leader version) |
+| `<leader>gB` | Open file/repo in browser (GitHub/GitLab) |
 
 ---
 
@@ -285,6 +289,25 @@
 | `@@` | Replay last macro |
 | `10@a` | Play macro 10 times |
 
+### Scope Text Objects
+
+`d`/`c`/`y`/`v` + `ii`/`ai` — operate on blocks of code at the same indentation level (treesitter-aware).
+
+| Key | Action |
+|-----|--------|
+| `dii` | Delete inner scope (function body without signature/braces) |
+| `dai` | Delete full scope (entire function including signature/braces) |
+| `vii` | Visual select inner scope |
+| `[i` / `]i` | Jump to top / bottom edge of current scope |
+
+Example (cursor inside `main()`):
+```
+func main() {        ← [i (top edge)
+    fmt.Println("a") ← ii (inner scope)
+    fmt.Println("b")
+}                     ← ]i (bottom edge)
+```
+
 ### Splits
 
 | Key | Action |
@@ -331,12 +354,17 @@ FIND:   /=search  n/N=next/prev  *=search word  <leader>ff=find file
 
 LSP:    gd=definition  gr=references  gi=implementation  K=hover
         <leader>lr=rename  <leader>la=code action  <leader>lf=format
-        <leader>xx=diagnostics  <leader>cs=symbols outline
+        <leader>cx=diagnostics  <leader>cs=symbols outline
+        [w/]w=prev/next reference
 
-GIT:    [h/]h=prev/next hunk  <leader>gb=blame  <leader>gp=preview
+GIT:    [h/]h=prev/next hunk  <leader>gb=blame  <leader>gp=preview  <leader>gB=browse
 
-FILES:  <leader>e=explorer  -=oil  <leader>p=projects
+FILES:  <leader>e=explorer  -=oil  <leader>p=projects  <leader>fT=todos
 
 OC:     <C-.>=toggle  <leader>oa=ask  <leader>ok=explain
+
+VIM:    <leader>vm=messages  <leader>vh=health  <leader>vM=Mason  <leader>vB=disable bigfile
+
+CODE:   <leader>cs=symbols  <leader>cl=refs  <leader>cx=diagnostics  <leader>cb=buf diag
 ```
 

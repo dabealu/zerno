@@ -1,3 +1,5 @@
+vim.loader.enable()
+
 -- Set leader key BEFORE loading anything (required by which-key and keymaps)
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
@@ -27,6 +29,9 @@ vim.pack.add({
   { src = "https://github.com/folke/trouble.nvim" },
   { src = "https://github.com/nickjvandyke/opencode.nvim" }, -- last tested: v0.8.2
   { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
+  { src = "https://github.com/rafamadriz/friendly-snippets" },
+  { src = "https://github.com/nvim-lua/plenary.nvim" },
+  { src = "https://github.com/folke/todo-comments.nvim" },
 })
 
 -- Load plugin configurations
@@ -42,5 +47,6 @@ require("plugins.lualine")
 require("plugins.trouble")
 require("plugins.opencode")
 require("plugins.treesitter")
+require("plugins.todo-comments")
 require("plugins.vim")
 require("plugins.ui")
