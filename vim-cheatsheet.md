@@ -163,19 +163,52 @@
 |-----|--------|
 | `<leader>lr` | Rename symbol (across codebase) |
 | `<leader>la` | Code action (quick fixes, refactors) |
+| `<leader>le` | Show error details (float) |
 | `<leader>lf` | Format buffer |
-| `<leader>ls` | Document symbols (functions, types in current file) |
-| `<leader>ld` | Diagnostics list (errors, warnings) |
+| `<leader>lt` | Set filetype manually |
 | `[d` / `]d` | Previous / next diagnostic |
 
-### Diagnostics / Code
+### Code (Trouble)
 
 | Key | Action |
 |-----|--------|
-| `<leader>xx` | Toggle project diagnostics (all files) |
-| `<leader>xX` | Toggle buffer diagnostics (current file) |
 | `<leader>cs` | Document symbols outline (sidebar) |
 | `<leader>cl` | LSP references / definitions (sidebar) |
+| `<leader>cx` | Toggle project diagnostics |
+| `<leader>cb` | Toggle buffer diagnostics |
+
+### Picker (Snacks)
+
+| Key | Action |
+|-----|--------|
+| `<leader>ff` | Find files |
+| `<leader>fg` | Grep across project |
+| `<leader>fw` | Grep word under cursor |
+| `<leader>fb` | Find buffer |
+| `<leader>fr` | Recent files |
+| `<leader>f/` | Search in current buffer |
+| `<leader>fh` | Help tags |
+| `<leader>fG` | Git status (changed files) |
+| `<leader>fL` | Git log (commits) |
+| `<leader>ls` | Document symbols (current file) |
+| `<leader>lS` | Workspace symbols (all files) |
+| `<leader>ld` | Diagnostics list |
+| `<leader>p` | Switch project (scans ~/src/) |
+| `<leader>e` | Toggle file explorer |
+
+### Vim Reflection
+
+| Key | Action |
+|-----|--------|
+| `<leader>vm` | Show messages |
+| `<leader>vh` | Health check |
+| `<leader>vM` | Mason LSP manager |
+| `<leader>vs` | Script names |
+| `<leader>vr` | Registers |
+| `<leader>vc` | Command history |
+| `<leader>vv` | Version info |
+| `<leader>vn` | Notification history |
+| `<leader>v?` | Open vim cheatsheet |
 
 ### OpenCode
 
@@ -202,6 +235,7 @@
 | `<leader>gp` | Preview hunk (see the diff) |
 | `<leader>gb` | Blame current line |
 | `<leader>gd` | Diff current file |
+| `<leader>gn` / `<leader>gN` | Next / previous hunk (leader version) |
 
 ---
 
