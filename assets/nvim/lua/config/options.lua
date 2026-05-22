@@ -62,3 +62,6 @@ opt.foldlevel = 99
 
 -- Nerd Font
 vim.g.have_nerd_font = true
+
+-- Disable unused providers
+vim.g.loaded_perl_provider = 0

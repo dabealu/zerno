@@ -470,8 +470,12 @@ func configureIDE() Task {
 	return Task{
 		Name: "configure_editor",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "ripgrep fd fzf nodejs npm simdjson ttf-jetbrains-mono-nerd"
+			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
+				return err
+			}
+
+			if _, err := steps.RunShell("npm install -g neovim"); err != nil {
 				return err
 			}
 

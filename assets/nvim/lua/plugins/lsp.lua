@@ -1,3 +1,6 @@
+-- Go templates: register as gotmpl filetype (gopls already handles this filetype)
+vim.filetype.add({ extension = { gotmpl = "gotmpl" } })
+
 -- Mason: auto-install LSP servers
 require("mason").setup()
 require("mason-lspconfig").setup({
@@ -88,14 +91,14 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
     -- Navigation (no leader, high frequency)
     map("gd", vim.lsp.buf.definition, "Go to definition")
-    map("gr", vim.lsp.buf.references, "Go to references")
+    vim.keymap.set("n", "gr", vim.lsp.buf.references, { buffer = event.buf, desc = "Go to references", nowait = true })
     map("gi", vim.lsp.buf.implementation, "Go to implementation")
     map("gD", vim.lsp.buf.declaration, "Go to declaration")
     map("gy", vim.lsp.buf.type_definition, "Go to type definition")
     map("K", vim.lsp.buf.hover, "Hover documentation")
 
     -- LSP actions (leader group — bilingual)
-    bmap("n", "<leader>lr", vim.lsp.buf.rename, "Rename symbol", buf_opts)
+    bmap("n", "<leader>ln", vim.lsp.buf.rename, "Rename symbol", buf_opts)
     bmap("n", "<leader>la", vim.lsp.buf.code_action, "Code action", buf_opts)
     bmap("n", "<leader>le", vim.diagnostic.open_float, "Show error details", buf_opts)
     bmap("n", "<leader>lf", function() vim.lsp.buf.format({ async = false }) end, "Format buffer", buf_opts)
