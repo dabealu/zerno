@@ -66,7 +66,11 @@ Utilities are stored as `.embed` files in `assets/utilsfs/`. They are embedded a
 ```bash
 ./build.sh all      # fmt, vet, test, build
 ./build.sh test     # run tests
+./build.sh vet      # run go vet
+./build.sh fmt      # format code
 ./build.sh build    # build binary
+./build.sh coverage # run tests with coverage report
+./build.sh run      # run the built binary
 ./build.sh clean    # cleanup
 ```
 
@@ -81,7 +85,7 @@ Utilities are stored as `.embed` files in `assets/utilsfs/`. They are embedded a
 | update-bin | u | Compile new bin from local repo |
 | build-iso | m | Create iso with zerno bin included |
 | boot-dev | f | Format device creating storage and boot partitions |
-| steam | e | (sudo) Install steam, vga: intel, nvidia, amd |
+| steam <vga> | e | (sudo) Install steam, vga: intel, nvidia, amd |
 | version | v | Print version and exit |
 | repo-pull | r | Clone or update repo in ~/src/zerno |
 
@@ -121,8 +125,8 @@ Power on → firmware → systemd-boot on ESP → menu →
 ### Kernel cmdline
 - Stored in `/etc/kernel/cmdline` (not `/etc/default/grub`)
 - Baked into the UKI by mkinitcpio's `systemd` hook
-- Base install writes: `loglevel=3 quiet`
-- `hibernation()` appends: `resume=UUID=... resume_offset=...`
+- Base install writes: `loglevel=6 root=UUID=...`
+- `hibernation()` rewrites with: `loglevel=6 root=UUID=... resume=UUID=... resume_offset=...`
 - Future LUKS: add `rd.luks.name=...` from a separate task
 
 ### mkinitcpio hooks

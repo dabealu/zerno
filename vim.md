@@ -38,6 +38,9 @@ nvim/
     opencode.lua            ← AI assistant in embedded terminal
     ui.lua                  ← which-key, colorscheme
     auto_layout.lua         ← automatic keyboard layout switching via swaymsg
+    treesitter.lua          ← treesitter parser config and highlights
+    todo-comments.lua       ← highlight TODO/FIXME/HACK comments
+    vim.lua                 ← vim reflection commands (health, mason, etc.)
 ```
 
 ### Plugin Manager: vim.pack (native)
@@ -66,6 +69,11 @@ Update plugins: `:lua vim.pack.update()`
 | [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) | Statusline | Lightweight, themed statusline with mode/branch/etc |
 | [trouble.nvim](https://github.com/folke/trouble.nvim) | Diagnostic viewer | Tree-structured diagnostics, symbols, references |
 | [opencode.nvim](https://github.com/nickjvandyke/opencode.nvim) | AI assistant | In-terminal OpenCode with LSP context, ask/select/operator |
+| [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | Colorscheme | Dark theme with pastel colors, inspired by the kanagawa wave |
+| [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) | Treesitter | Enhanced syntax highlighting and text objects |
+| [friendly-snippets](https://github.com/rafamadriz/friendly-snippets) | Snippets | Collection of pre-made code snippets for LSP |
+| [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) | Utilities | Lua utility functions (dependency for other plugins) |
+| [todo-comments.nvim](https://github.com/folke/todo-comments.nvim) | Todo highlights | Highlight and search TODO/FIXME/HACK/NOTE comments |
 
 ### LSP Servers (auto-installed by Mason)
 
