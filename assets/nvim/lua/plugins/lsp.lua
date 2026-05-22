@@ -83,8 +83,6 @@ vim.lsp.config("marksman", {})
 vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("lsp-keymaps", { clear = true }),
   callback = function(event)
-    local bmap = require("config.utils").map
-    local buf_opts = { buffer = event.buf }
     local map = function(keys, func, desc)
       vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
     end
@@ -97,10 +95,10 @@ vim.api.nvim_create_autocmd("LspAttach", {
     map("gy", vim.lsp.buf.type_definition, "Go to type definition")
     map("K", vim.lsp.buf.hover, "Hover documentation")
 
-    -- LSP actions (leader group — bilingual)
-    bmap("n", "<leader>ln", vim.lsp.buf.rename, "Rename symbol", buf_opts)
-    bmap("n", "<leader>la", vim.lsp.buf.code_action, "Code action", buf_opts)
-    bmap("n", "<leader>le", vim.diagnostic.open_float, "Show error details", buf_opts)
-    bmap("n", "<leader>lf", function() vim.lsp.buf.format({ async = false }) end, "Format buffer", buf_opts)
+    -- LSP actions (leader group)
+    vim.keymap.set("n", "<leader>ln", vim.lsp.buf.rename, { buffer = event.buf, desc = "Rename symbol" })
+    vim.keymap.set("n", "<leader>la", vim.lsp.buf.code_action, { buffer = event.buf, desc = "Code action" })
+    vim.keymap.set("n", "<leader>le", vim.diagnostic.open_float, { buffer = event.buf, desc = "Show error details" })
+    vim.keymap.set("n", "<leader>lf", function() vim.lsp.buf.format({ async = false }) end, { buffer = event.buf, desc = "Format buffer" })
   end,
 })

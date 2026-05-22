@@ -1,5 +1,4 @@
 local map = vim.keymap.set
-local bmap = require("config.utils").map
 
 -- Clear search highlight on Esc
 map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
@@ -8,12 +7,12 @@ map("n", "<Esc>", "<cmd>nohlsearch<CR>", { desc = "Clear search highlight" })
 map("t", "<Esc><Esc>", "<C-\\><C-n>", { desc = "Exit terminal mode (to normal mode)" })
 
 -- Buffer navigation
-bmap("n", "<leader>bb", "<cmd>e #<CR>", "Switch to last buffer")
-bmap("n", "<leader>bd", "<cmd>bdelete<CR>", "Delete buffer")
-bmap("n", "<leader>bn", "<cmd>bnext<CR>", "Next buffer")
-bmap("n", "<leader>bp", "<cmd>bprevious<CR>", "Previous buffer")
-bmap("n", "<leader>bl", "<cmd>ls<CR>", "List all buffers")
-bmap("n", "<leader>be", "<cmd>enew<CR>", "New empty buffer")
+map("n", "<leader>bb", "<cmd>e #<CR>", { desc = "Switch to last buffer" })
+map("n", "<leader>bd", "<cmd>bdelete<CR>", { desc = "Delete buffer" })
+map("n", "<leader>bn", "<cmd>bnext<CR>", { desc = "Next buffer" })
+map("n", "<leader>bp", "<cmd>bprevious<CR>", { desc = "Previous buffer" })
+map("n", "<leader>bl", "<cmd>ls<CR>", { desc = "List all buffers" })
+map("n", "<leader>be", "<cmd>enew<CR>", { desc = "New empty buffer" })
 
 -- Window navigation (Ctrl+hjkl to move between splits)
 map("n", "<C-h>", "<C-w>h", { desc = "Move to left split" })
@@ -43,15 +42,15 @@ map("n", "N", "Nzzzv", { desc = "Previous search result (centered)" })
 map("x", "p", [["_dP]], { desc = "Paste without yanking" })
 
 -- Toggles
-bmap("n", "<leader>tw", "<cmd>set wrap!<CR>", "Toggle line wrap")
-bmap("n", "<leader>ti", "<cmd>set list!<CR>", "Toggle invisible characters")
-bmap("n", "<leader>tc", function()
+map("n", "<leader>tw", "<cmd>set wrap!<CR>", { desc = "Toggle line wrap" })
+map("n", "<leader>ti", "<cmd>set list!<CR>", { desc = "Toggle invisible characters" })
+map("n", "<leader>tc", function()
   local enabled = vim.wo.number
   vim.wo.number = not enabled
   vim.wo.relativenumber = not enabled
   vim.wo.signcolumn = enabled and "no" or "yes"
   vim.opt_local.list = not enabled
-end, "Toggle copy mode (strip UI)")
+end, { desc = "Toggle copy mode (strip UI)" })
 
 -- Insert mode: terminal-style editing
 map("i", "<C-k>", '<C-o>"_D', { desc = "Delete to end of line" })

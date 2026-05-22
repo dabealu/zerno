@@ -10,6 +10,8 @@ require("which-key").setup({
     { "<leader>b", group = "buffer" },
     { "<leader>t", group = "toggle" },
     { "<leader>c", group = "code" },
+    { "<leader>d", group = "dropbar" },
+    { "<leader>p", group = "project" },
     { "<leader>v", group = "vim" },
     { "<leader>o", group = "opencode" },
   },
