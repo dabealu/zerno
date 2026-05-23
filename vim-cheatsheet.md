@@ -223,6 +223,15 @@
 | `<leader>th` | Toggle search highlight |
 | `<leader>tz` | Toggle zen mode |
 
+### Flash (supercharged navigation)
+
+| Key | Action |
+|-----|--------|
+| `s` | Jump anywhere on screen (type chars, hit label) |
+| `S` | Jump to Treesitter node |
+| `r` (operator mode) | Remote flash (cross-window) |
+| `<c-s>` (cmdline) | Toggle flash in search |
+
 ### OpenCode
 
 | Key | Action |

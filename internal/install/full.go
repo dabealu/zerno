@@ -583,6 +583,7 @@ func fullTasks(cfg *config.Config) []task.Task {
 		hibernation(),
 		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
 		cpuGovernor(),
+		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
 		bluetooth(),
 		docker(),
 		rustToolchain(),
