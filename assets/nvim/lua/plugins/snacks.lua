@@ -56,6 +56,9 @@ require("snacks").setup({
   gitbrowse = {
     enabled = true,
   },
+  zen = {
+    enabled = true,
+  },
 })
 
 local map = vim.keymap.set
@@ -86,7 +89,7 @@ map("n", "<leader>p", function() Snacks.picker.projects() end, { desc = "Open pr
 
 -- LSP pickers (defined here because they use Snacks.picker)
 map("n", "<leader>ls", function() Snacks.picker.lsp_symbols() end, { desc = "Document symbols" })
-map("n", "<leader>lS", function() Snacks.picker.lsp_workspace_symbols() end, { desc = "Workspace symbols" })
+map("n", "<leader>lw", function() Snacks.picker.lsp_workspace_symbols() end, { desc = "Workspace symbols" })
 map("n", "<leader>ld", function() Snacks.picker.diagnostics() end, { desc = "Diagnostics" })
 map("n", "<leader>lt", function()
   vim.ui.input({ prompt = "Set filetype: " }, function(input)

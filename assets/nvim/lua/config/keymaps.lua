@@ -44,13 +44,9 @@ map("x", "p", [["_dP]], { desc = "Paste without yanking" })
 -- Toggles
 map("n", "<leader>tw", "<cmd>set wrap!<CR>", { desc = "Toggle line wrap" })
 map("n", "<leader>ti", "<cmd>set list!<CR>", { desc = "Toggle invisible characters" })
-map("n", "<leader>tc", function()
-  local enabled = vim.wo.number
-  vim.wo.number = not enabled
-  vim.wo.relativenumber = not enabled
-  vim.wo.signcolumn = enabled and "no" or "yes"
-  vim.opt_local.list = not enabled
-end, { desc = "Toggle copy mode (strip UI)" })
+map("n", "<leader>ts", "<cmd>set spell!<CR>", { desc = "Toggle spell check" })
+map("n", "<leader>th", "<cmd>set hlsearch!<CR>", { desc = "Toggle search highlight" })
+map("n", "<leader>tz", function() Snacks.zen() end, { desc = "Toggle zen mode" })
 
 -- Insert mode: terminal-style editing
 map("i", "<C-k>", '<C-o>"_D', { desc = "Delete to end of line" })

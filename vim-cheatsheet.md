@@ -169,14 +169,14 @@
 | `<leader>lt` | Set filetype manually |
 | `[d` / `]d` | Previous / next diagnostic |
 
-### Code (Trouble)
+### Trouble (under LSP group)
 
 | Key | Action |
 |-----|--------|
-| `<leader>cs` | Document symbols outline (sidebar) |
-| `<leader>cl` | LSP references / definitions (sidebar) |
-| `<leader>cx` | Toggle project diagnostics |
-| `<leader>cb` | Toggle buffer diagnostics |
+| `<leader>lS` | Document symbols outline (sidebar) |
+| `<leader>ll` | LSP references / definitions (sidebar) |
+| `<leader>lD` | Toggle project diagnostics |
+| `<leader>lb` | Toggle buffer diagnostics |
 
 ### Picker (Snacks)
 
@@ -193,7 +193,7 @@
 | `<leader>fG` | Git status (changed files) |
 | `<leader>fL` | Git log (commits) |
 | `<leader>ls` | Document symbols (current file) |
-| `<leader>lS` | Workspace symbols (all files) |
+| `<leader>lw` | Workspace symbols (all files) |
 | `<leader>ld` | Diagnostics list |
 | `<leader>p` | Switch project (scans ~/src/) |
 | `<leader>e` | Toggle file explorer |
@@ -212,6 +212,16 @@
 | `<leader>vn` | Notification history |
 | `<leader>vB` | Disable bigfile mode for current buffer |
 | `<leader>v?` | Open vim cheatsheet |
+
+### Toggles
+
+| Key | Action |
+|-----|--------|
+| `<leader>tw` | Toggle line wrap |
+| `<leader>ti` | Toggle invisible characters |
+| `<leader>ts` | Toggle spell check |
+| `<leader>th` | Toggle search highlight |
+| `<leader>tz` | Toggle zen mode |
 
 ### OpenCode
 
@@ -354,7 +364,7 @@ FIND:   /=search  n/N=next/prev  *=search word  <leader>ff=find file
 
 LSP:    gd=definition  gr=references  gi=implementation  K=hover
         <leader>lr=rename  <leader>la=code action  <leader>lf=format
-        <leader>cx=diagnostics  <leader>cs=symbols outline
+        <leader>lD=diagnostics  <leader>lS=symbols outline
         [w/]w=prev/next reference
 
 GIT:    [h/]h=prev/next hunk  <leader>gb=blame  <leader>gp=preview  <leader>gB=browse
@@ -365,6 +375,8 @@ OC:     <C-.>=toggle  <leader>oa=ask  <leader>ok=explain
 
 VIM:    <leader>vm=messages  <leader>vh=health  <leader>vM=Mason  <leader>vB=disable bigfile
 
-CODE:   <leader>cs=symbols  <leader>cl=refs  <leader>cx=diagnostics  <leader>cb=buf diag
+TOGGLE: <leader>tw=wrap  <leader>ti=invis  <leader>ts=spell  <leader>th=hlsearch  <leader>tz=zen
+
+TROUBLE:   <leader>lS=symbols  <leader>ll=refs  <leader>lD=diagnostics  <leader>lb=buf diag
 ```
 

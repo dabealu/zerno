@@ -409,7 +409,7 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git pinta"
+			pkgs := "wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git"
 			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy %s'`, cfg.Username, pkgs)
 			_, err := steps.RunShell(script)
 			return err
@@ -464,18 +464,18 @@ func desktopApps() task.Task {
 	return task.Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar opencode"
+			pkgs := "evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar drawing"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},
 	}
 }
 
-func configureIDE() task.Task {
+func setupDevTools() task.Task {
 	return task.Task{
-		Name: "configure_editor",
+		Name: "setup_dev_tools",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd"
+			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd opencode"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
@@ -574,7 +574,7 @@ func fullTasks(cfg *config.Config) []task.Task {
 		resolved(),
 		netplan(),
 		globalVars(),
-		configureIDE(),
+		setupDevTools(),
 		swayPackages(),
 		task.Info("base desktop installed"),
 		swayConfigs(),
