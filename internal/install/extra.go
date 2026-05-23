@@ -251,9 +251,9 @@ func ensureMultilib() error {
 
 func InstallSteam(vgaType string) error {
 	driverPackages := map[string]string{
-		"intel":  "vulkan-intel",
-		"nvidia": "nvidia-utils",
-		"amd":    "amdvlk",
+		"intel":  "vulkan-intel lib32-vulkan-intel",
+		"nvidia": "nvidia-utils lib32-nvidia-utils",
+		"amd":    "vulkan-radeon lib32-vulkan-radeon",
 	}
 
 	vulkanPackage, ok := driverPackages[vgaType]

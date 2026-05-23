@@ -1,97 +1,65 @@
-# steam
+# Steam
 
-## amdgpu and vulkan
+## Installation
 
-enable multilib in `/etc/pacman.conf`:
-```ini
-[multilib]
-Include = /etc/pacman.d/mirrorlist
-```
-
-install drivers and steam, GPU: `AMD R9 270` - Southern Islands (SI):
-```s
-pacman -S xf86-video-amdgpu mesa lib32-fontconfig lib32-mesa lib32-systemd vulkan-tools steam
-```
-
-add vars to `/etc/environment`
-```ini
-AMD_VULKAN_ICD=RADV
-XDG_RUNTIME_DIR=/run/user/1000
-```
-
-load modules, prioritize amdgpu `/etc/mkinitcpio.conf`:
-```ini
-MODULES=(amdgpu radeon)
-```
-`mkinitcpio -p linux`
-
-check current driver `lspci -k | less`:
-```s
-01:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Curacao PRO [Radeon R7 370 / R9 270/370 OEM]
-        Subsystem: PC Partner Limited / Sapphire Technology Device e271
-        Kernel driver in use: radeon # <<< should be amdgpu instead
-        Kernel modules: radeon, amdgpu
-```
-
-check `vulkaninfo` output, shouldn't produce error below:
-```s
-ERROR at /build/vulkan-tools/src/Vulkan-Tools-1.2.199/vulkaninfo/vulkaninfo.h:248:vkEnumeratePhysicalDevices failed with ERROR_INITIALIZATION_FAILED
-```
-
-check module parameters:
-```s
-sudo dmesg | grep -E '(cik|si)_support'
-[    1.407151] amdgpu 0000:01:00.0: amdgpu: Use radeon.si_support=0 amdgpu.si_support=1 to override.
-```
-
-set module parameters in kernel cmd `/etc/default/grub`:
-```ini
-GRUB_CMDLINE_LINUX_DEFAULT="... radeon.si_support=0 amdgpu.si_support=1"
-```
-`sudo grub-mkconfig -o /boot/grub/grub.cfg` and reboot
-
-possible cmd start parameters:
-```ini
-LD_PRELOAD=/lib64/libSDL2-2.0.so.0 SDL_VIDEODRIVER=wayland DRI_PRIME=1 %command% -vulkan
-LD_PRELOAD=/lib64/libSDL2-2.0.so.0 SDL_VIDEODRIVER=x11 DRI_PRIME=1 %command%
-```
-
-links:
-https://wiki.archlinux.org/title/AMDGPU#Enable_Southern_Islands_(SI)_and_Sea_Islands_(CIK)_support
-https://wiki.archlinux.org/title/steam#Installation
-https://wiki.archlinux.org/title/Vulkan#AMDGPU_-_ERROR_INITIALIZATION_FAILED_after_vulkaninfo
-
-
-## desktop environment
-in case app requires Xorg or works poorly on wayland.
-
-- install xorg, LXDE and copy xinitrc:
 ```sh
-pacman -Sy xorg xorg-xinit lxde
-cp /etc/X11/xinit/xinitrc ~/.xinitrc
+zerno steam <vga>    # or: zerno e <vga>
 ```
-- edit `~/.xinitrc` and at the bottom of the file comment `twm &` and lines below
-- add `exec startlxde`
-- start desktop environment with `startx`
 
-## optimizations
+This enables multilib and installs Steam + the correct Vulkan driver for your GPU (`intel`, `nvidia`, or `amd`).
 
-worth to try gamemod+gamescope together with cachyos kernel.
-this is a minimal effort optimizations bundled in a few easy to use tools.
+If running the command manually, the packages installed are:
 
-both packages available in arch extra repo:
+| GPU | Packages |
+|-----|----------|
+| Intel | `vulkan-intel lib32-vulkan-intel` |
+| AMD | `vulkan-radeon lib32-vulkan-radeon` |
+| NVIDIA | `nvidia-utils lib32-nvidia-utils` |
+
+All modes also install: `ttf-liberation vulkan-icd-loader vulkan-tools lib32-mesa lib32-systemd steam`
+
+> The `lib32-*` Vulkan driver must match your GPU vendor. If pacman prompts for a 32-bit Vulkan driver, do NOT pick `lib32-nvidia-utils` on Intel/AMD.
+
+### System tweaks
+
+Some Proton games need increased `vm.max_map_count`:
 ```sh
-pacman -Sy gamescope gamemode lib32-gamemode
+sudo sysctl -w vm.max_map_count=2147483642
+```
+Make it permanent: `sudo tee /etc/sysctl.d/80-game-compat.conf <<< "vm.max_map_count=2147483642"`
+
+## Proton
+
+Proton (Steam Play) lets you run Windows games on Linux. It's built into Steam.
+
+- Enable in Steam: *Settings → Compatibility → Enable Steam Play*
+- "Proton Experimental" is the default since 2024
+- Check game compatibility at [Protondb](https://www.protondb.com/)
+- To force Proton for a specific game: right-click → *Properties → Compatibility → Force the use of a specific Steam Play compatibility tool*
+
+Proton includes DXVK (DirectX 9/10/11 → Vulkan) and VKD3D-Proton (DirectX 12 → Vulkan), which is why a working Vulkan driver is essential.
+
+## Optimizations
+
+gamemode + gamescope together with a tuned kernel (e.g. CachyOS) provide easy performance gains.
+Both packages available in extra repo:
+```sh
+pacman -S gamescope gamemode lib32-gamemode
 ```
 
-example command for a Steam command line:
+Example Steam launch options:
 ```sh
 gamemoderun gamescope -w 1280 -h 720 -W 1920 -H 1080 -F fsr -- %command%
 ```
-- gamemoderun - sets CPU governor to performance, raises GPU power state, bumps IO/nice priority
-- gamescope - sandboxed compositor that decouples game rendering from your desktop compositor
-- -w 1280 -h 720 - game renders internally at 720p (saves GPU horsepower)
-- -W 1920 -H 1080 - output is scaled up to your 1080p display
-- -F fsr - uses AMD FidelityFX Super Resolution for the upscaling (sharpens 720p → 1080p)
-- -- %command% - the -- separator; everything after is the actual game launch command
+- `gamemoderun` — sets CPU governor to performance, raises GPU power state, bumps IO/nice priority
+- `gamescope` — sandboxed compositor, decouples game rendering from your desktop compositor
+- `-w 1280 -h 720` — game renders internally at 720p (saves GPU)
+- `-W 1920 -H 1080` — output scaled up to your display resolution
+- `-F fsr` — AMD FidelityFX Super Resolution for the upscaling
+- `-- %command%` — separator; everything after is the actual game command
 
+## Links
+
+- https://wiki.archlinux.org/title/Steam
+- https://wiki.archlinux.org/title/Gamescope
+- https://www.protondb.com/
