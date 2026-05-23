@@ -1,150 +1,44 @@
 # Neovim Cheatsheet
 
-## Phase 1
+## Leader Groups (`<space>` then which-key)
 
-### Modes
+| Group | Key | Purpose |
+|-------|-----|---------|
+| Find | `f` | Files, grep, buffers, recent, git, TODOs |
+| LSP | `l` | Rename, code actions, format, diagnostics, symbols, references |
+| Git | `g` | Hunks, blame, diff, browser |
+| Buffer | `b` | Next, prev, delete, list, switch |
+| Toggle | `t` | Wrap, invis, spell, hlsearch, zen |
+| Dropbar | `d` | Breadcrumb navigation |
+| Project | `p` | Switch projects (scans ~/src/) |
+| Vim | `v` | Messages, health, mason, registers, config |
+| OpenCode | `o` | Ask, explain, menu, toggle |
 
-| Key | Action |
-|-----|--------|
-| `i` | Enter insert mode (type text) |
-| `Esc` | Return to normal mode |
-| `v` | Enter visual mode (select text) |
-| `V` | Enter visual line mode (select whole lines) |
-| `i` (on terminal buffer) | Enter terminal mode (interact with OC, terminal) |
-| `<Esc><Esc>` (terminal mode) | Exit terminal mode back to Normal |
-
-### Movement (Normal Mode)
-
-| Key | Action |
-|-----|--------|
-| `h` `j` `k` `l` | Left, down, up, right |
-| `w` | Jump forward one word |
-| `b` | Jump backward one word |
-| `0` | Start of line |
-| `$` | End of line |
-| `gg` | Top of file |
-| `G` | Bottom of file |
-
-### Basic Editing
+## Core Vim
 
 | Key | Action |
 |-----|--------|
-| `dd` | Delete entire line |
-| `u` | Undo |
-| `Ctrl+r` | Redo |
-| `yy` | Copy (yank) entire line |
-| `p` | Paste below cursor |
-| `P` | Paste above cursor |
-| `o` | New line below and enter insert mode |
-| `O` | New line above and enter insert mode |
+| `i` | Insert mode |
+| `Esc` | Normal mode |
+| `v` / `V` / `C-v` | Visual / line / block select |
+| `u` / `C-r` | Undo / redo |
+| `.` | Repeat last change |
+| `dd` / `yy` / `p` / `P` | Delete, yank, paste line |
+| `ciw` / `diw` / `yiw` | Change/delete/yank inner word |
+| `ci"` / `ci(` / `ci{` | Change inside quotes/parens/braces |
+| `>>` / `<<` | Indent / dedent |
+| `J` | Join lines |
+| `=` | Auto-indent (e.g. `=ap`) |
+| `~` | Toggle case |
+| `gcc` / `gc` + motion | Toggle comment |
+| `*` / `#` | Search word forward/backward |
+| `/` / `?` | Search |
+| `n` / `N` | Next/prev search result |
+| `:w` / `:q` / `:wq` / `:q!` | Save / quit |
+| `C-d` / `C-u` | Scroll half page down/up (centered) |
+| `zz` | Center screen |
 
-### Scrolling (replaces trackpad swipe)
-
-| Key | Action |
-|-----|--------|
-| `Ctrl+d` | Scroll half page down (your main "scroll down") |
-| `Ctrl+u` | Scroll half page up (your main "scroll up") |
-| `Ctrl+f` | Full page down (faster scanning) |
-| `Ctrl+b` | Full page up |
-| `{` / `}` | Jump to previous / next empty line (between code blocks) |
-| `zz` | Center current line on screen |
-
-### Files and Navigation
-
-| Key | Action |
-|-----|--------|
-| `:w` | Save |
-| `:q` | Quit |
-| `:wq` | Save and quit |
-| `:q!` | Quit without saving |
-| `<leader>ff` | Find file (fuzzy) |
-| `<leader>e` | Toggle file explorer sidebar |
-| `<leader>fg` | Search text across project |
-| `-` | Open directory browser (Oil) |
-
-### Search
-
-| Key | Action |
-|-----|--------|
-| `/pattern` | Search forward |
-| `?pattern` | Search backward |
-| `n` | Next match |
-| `N` | Previous match |
-| `Esc` | Clear search highlight |
-
----
-
-## Phase 2
-
-### More Movement
-
-| Key | Action |
-|-----|--------|
-| `e` | Jump to end of word |
-| `{` / `}` | Jump by paragraph |
-| `%` | Jump to matching bracket |
-| `Ctrl+d` | Scroll half page down |
-| `Ctrl+u` | Scroll half page up |
-| `H` / `M` / `L` | Move cursor to top/middle/bottom of screen |
-
-### Editing Efficiently
-
-| Key | Action |
-|-----|--------|
-| `ciw` | Change inner word (delete word, enter insert mode) |
-| `ci"` | Change inside quotes |
-| `ci(` | Change inside parentheses |
-| `ci{` | Change inside braces |
-| `diw` | Delete inner word |
-| `di"` | Delete inside quotes |
-| `A` | Append at end of line |
-| `I` | Insert at start of line |
-| `cc` | Change entire line |
-| `C` | Change from cursor to end of line |
-| `D` | Delete from cursor to end of line |
-| `x` | Delete character under cursor |
-| `>>` / `<<` | Indent / dedent line |
-| `gcc` | Toggle comment on current line |
-| `gc` + motion | Toggle comment on block (e.g. `gcj`, `gcap`) |
-
-> `g` is a Vim prefix key — it modifies the next key (e.g. `gc`=comment, `gq`=format, `gf`=open file). Most common `g` binds are listed throughout this cheatsheet.
-
-### Visual Mode
-
-| Key | Action |
-|-----|--------|
-| `v` + movement | Select text |
-| `V` + movement | Select lines |
-| `Ctrl+v` | Block (column) selection |
-| `y` | Yank (copy) selection |
-| `d` | Delete selection |
-| `>` / `<` | Indent / dedent selection |
-| `J` / `K` | Move selected lines down / up (our config) |
-
-### Buffers
-
-| Key | Action |
-|-----|--------|
-| `<leader>fb` | Fuzzy find open buffers |
-| `[b` / `]b` | Previous / next buffer |
-| `<leader>bd` | Close buffer |
-| `:ls` | List all buffers |
-
-### Search and Replace
-
-| Key | Action |
-|-----|--------|
-| `:%s/old/new/g` | Replace all in file |
-| `:%s/old/new/gc` | Replace all with confirmation |
-| `:5,20s/old/new/g` | Replace in lines 5-20 |
-| `*` | Search for word under cursor |
-| `#` | Search backward for word under cursor |
-
----
-
-## Phase 3
-
-### Navigation
+## LSP
 
 | Key | Action |
 |-----|--------|
@@ -154,238 +48,91 @@
 | `gD` | Go to declaration |
 | `gy` | Go to type definition |
 | `K` | Hover documentation |
-| `[w` / `]w` | Previous / next LSP reference highlight |
-| `Ctrl+o` | Jump back (after gd/gr/gi) |
-| `Ctrl+i` | Jump forward |
-
-### Actions
-
-| Key | Action |
-|-----|--------|
-| `<leader>lr` | Rename symbol (across codebase) |
-| `<leader>la` | Code action (quick fixes, refactors) |
-| `<leader>le` | Show error details (float) |
-| `<leader>lf` | Format buffer |
-| `<leader>lt` | Set filetype manually |
+| `C-o` / `C-i` | Jump back / forward |
 | `[d` / `]d` | Previous / next diagnostic |
+| `[w` / `]w` | Previous / next LSP reference highlight |
 
-### Trouble (under LSP group)
-
-| Key | Action |
-|-----|--------|
-| `<leader>lS` | Document symbols outline (sidebar) |
-| `<leader>ll` | LSP references / definitions (sidebar) |
-| `<leader>lD` | Toggle project diagnostics |
-| `<leader>lb` | Toggle buffer diagnostics |
-
-### Picker (Snacks)
-
-| Key | Action |
-|-----|--------|
-| `<leader>ff` | Find files |
-| `<leader>fg` | Grep across project |
-| `<leader>fw` | Grep word under cursor |
-| `<leader>fb` | Find buffer |
-| `<leader>fr` | Recent files |
-| `<leader>f/` | Search in current buffer |
-| `<leader>fh` | Help tags |
-| `<leader>fT` | Find TODOs / FIXMEs / HACKs (trouble) |
-| `<leader>fG` | Git status (changed files) |
-| `<leader>fL` | Git log (commits) |
-| `<leader>ls` | Document symbols (current file) |
-| `<leader>lw` | Workspace symbols (all files) |
-| `<leader>ld` | Diagnostics list |
-| `<leader>p` | Switch project (scans ~/src/) |
-| `<leader>e` | Toggle file explorer |
-
-### Vim Reflection
-
-| Key | Action |
-|-----|--------|
-| `<leader>vm` | Show messages |
-| `<leader>vh` | Health check |
-| `<leader>vM` | Mason LSP manager |
-| `<leader>vs` | Script names |
-| `<leader>vr` | Registers |
-| `<leader>vc` | Command history |
-| `<leader>vv` | Version info |
-| `<leader>vn` | Notification history |
-| `<leader>vB` | Disable bigfile mode for current buffer |
-| `<leader>v?` | Open vim cheatsheet |
-
-### Toggles
-
-| Key | Action |
-|-----|--------|
-| `<leader>tw` | Toggle line wrap |
-| `<leader>ti` | Toggle invisible characters |
-| `<leader>ts` | Toggle spell check |
-| `<leader>th` | Toggle search highlight |
-| `<leader>tz` | Toggle zen mode |
-
-### Flash (supercharged navigation)
+## Flash (supercharged `s`)
 
 | Key | Action |
 |-----|--------|
 | `s` | Jump anywhere on screen (type chars, hit label) |
-| `S` | Jump to Treesitter node |
-| `r` (operator mode) | Remote flash (cross-window) |
-| `<c-s>` (cmdline) | Toggle flash in search |
+| `S` | Jump to treesitter node |
+| `r` (operator mode) | Cross-window jump (remote flash) |
+| `R` (visual/operator) | Treesitter search |
+| `C-s` (cmdline) | Toggle flash on `/` search |
 
-### OpenCode
-
-| Key | Action |
-|-----|--------|
-| `<C-.>` | Toggle opencode terminal |
-| `go` + motion | Use opencode on a text object |
-| `goo` | Use opencode on current line |
-| `<leader>oa` | Ask opencode |
-| `<leader>os` | OpenCode action menu |
-| `<leader>ot` | Toggle opencode terminal |
-| `<leader>ok` | Explain symbol under cursor |
-| `<C-a>` | Increment number |
-| `<C-x>` | Decrement number |
-
-### Git
+## Surround (`nvim-surround`)
 
 | Key | Action |
 |-----|--------|
-| `[h` / `]h` | Previous / next changed hunk |
-| `<leader>gs` | Stage hunk |
-| `<leader>gu` | Undo stage hunk |
-| `<leader>gr` | Reset hunk |
-| `<leader>gp` | Preview hunk (see the diff) |
-| `<leader>gb` | Blame current line |
-| `<leader>gd` | Diff current file |
-| `<leader>gn` / `<leader>gN` | Next / previous hunk (leader version) |
-| `<leader>gB` | Open file/repo in browser (GitHub/GitLab) |
+| `ys{motion}{char}` | Add surround |
+| `ds{char}` | Delete surround |
+| `cs{target}{replacement}` | Change surround |
+| `gs` (visual selection) | Surround selection with char |
 
----
+## Text Objects
 
-## Phase 4
+`d`/`c`/`y`/`v` + `i`(inner)/`a`(around) + object.
 
-### Text Objects (the `i`/`a` system)
-
-`d`/`c`/`y`/`v` + `i`/`a` + object — the most powerful vim concept.
-`i` = inner (content only), `a` = around (content + delimiters).
-
-| Key | Action |
-|-----|--------|
+| Example | Action |
+|---------|--------|
 | `dap` | Delete a paragraph |
 | `yiw` | Yank inner word |
 | `ci'` | Change inside single quotes |
 | `va{` | Visual select around braces |
-| `di[` | Delete inside square brackets |
 | `dat` | Delete around HTML tag |
 
-### Character Jumps
+Treesitter scope (same indentation): `dii`, `dai`, `vii`, `[i` / `]i`.
+
+## Character Jumps
 
 | Key | Action |
 |-----|--------|
-| `f<char>` | Jump forward to character |
-| `F<char>` | Jump backward to character |
-| `t<char>` | Jump forward to before character |
-| `;` | Repeat last f/F/t/T jump |
-| `,` | Repeat last f/F/t/T jump (reverse) |
+| `f{char}` | Jump forward to char |
+| `F{char}` | Jump backward to char |
+| `t{char}` | Jump forward to before char |
+| `;` / `,` | Repeat forward / backward |
 
-### The Power Keys
-
-| Key | Action |
-|-----|--------|
-| `.` | Repeat last change (extremely powerful) |
-| `*` | Search word under cursor |
-| `~` | Toggle case of character |
-| `J` | Join current line with next |
-| `=` | Auto-indent (e.g., `=ap` to indent a paragraph) |
-
-### Macros
+## Macros
 
 | Key | Action |
 |-----|--------|
-| `qa` | Start recording macro into register `a` |
+| `qa` | Record into register `a` |
 | `q` | Stop recording |
-| `@a` | Play macro from register `a` |
-| `@@` | Replay last macro |
-| `10@a` | Play macro 10 times |
+| `@a` | Play register `a` |
+| `@@` | Repeat last macro |
 
-### Scope Text Objects
-
-`d`/`c`/`y`/`v` + `ii`/`ai` — operate on blocks of code at the same indentation level (treesitter-aware).
+## Splits
 
 | Key | Action |
 |-----|--------|
-| `dii` | Delete inner scope (function body without signature/braces) |
-| `dai` | Delete full scope (entire function including signature/braces) |
-| `vii` | Visual select inner scope |
-| `[i` / `]i` | Jump to top / bottom edge of current scope |
+| `C-w v` / `C-w s` | Vertical / horizontal split |
+| `C-h/j/k/l` | Navigate splits |
+| `C-w m` | Maximize / unmaximize |
+| `C-arrows` | Resize splits |
+| `C-w q` | Close split |
 
-Example (cursor inside `main()`):
-```
-func main() {        ← [i (top edge)
-    fmt.Println("a") ← ii (inner scope)
-    fmt.Println("b")
-}                     ← ]i (bottom edge)
-```
-
-### Splits
-
-| Key | Action |
-|-----|--------|
-| `<C-w>v` | Vertical split |
-| `<C-w>s` | Horizontal split |
-| `Ctrl+h/j/k/l` | Navigate between splits (our config) |
-| `<C-w>m` | Maximize/unmaximize current window (tab split) |
-| `<C-w>q` | Close split |
-| `<C-w>=` | Equalize split sizes |
-| `Ctrl+arrows` | Resize splits (our config) |
-
-### Oil.nvim (File Manager)
+## Oil (file manager)
 
 | Key | Action |
 |-----|--------|
 | `-` | Open parent directory |
-| `Enter` | Open file/directory |
-| `-` (inside oil) | Go up one directory |
-| Edit filename | Rename file (then `:w` to apply) |
-| `dd` on a line | Delete file (then `:w` to apply) |
-| `o` + type name | Create file (then `:w` to apply) |
-| `<C-v>` | Open in vertical split |
-| `<C-s>` | Open in horizontal split |
-| `g?` | Show help |
-| `q` | Close oil |
+| `Enter` | Open file / directory |
+| Edit filename + `:w` | Rename |
+| `dd` + `:w` | Delete file |
+| `o` + name + `:w` | Create file |
+| `g?` | Help |
 
----
-
-## Quick Reference Card
+## Quick Reference
 
 ```
-MODES:  i=insert  Esc=normal  v=visual  V=visual-line  :=command
+MODES:    i=insert  Esc=normal  v=visual  V=line  C-v=block
+SAVE/QUIT:  :w  :q  :wq  :q!
+LSP:      gd=def  gr=refs  gi=impl  gy=type  K=hover  [d/]d=diag
+FLASH:    s=jump  S=treesitter  r=remote
+SURROUND: ys=add  ds=delete  cs=change  gs=visual
+MACROS:   qa=record  @a=play
+SPLITS:   C-h/j/k/l
 
-SAVE:   :w     QUIT: :q    BOTH: :wq    FORCE QUIT: :q!
-
-MOVE:   hjkl=arrows  w/b=word  0/$=line  gg/G=file  Ctrl-d/u=page
-
-EDIT:   dd=delete line  yy=copy line  p=paste  u=undo  Ctrl-r=redo
-        ciw=change word  ci"=change in quotes  .=repeat last
-
-FIND:   /=search  n/N=next/prev  *=search word  <leader>ff=find file
-        <leader>fg=grep project  <leader>fb=find buffer
-
-LSP:    gd=definition  gr=references  gi=implementation  K=hover
-        <leader>lr=rename  <leader>la=code action  <leader>lf=format
-        <leader>lD=diagnostics  <leader>lS=symbols outline
-        [w/]w=prev/next reference
-
-GIT:    [h/]h=prev/next hunk  <leader>gb=blame  <leader>gp=preview  <leader>gB=browse
-
-FILES:  <leader>e=explorer  -=oil  <leader>p=projects  <leader>fT=todos
-
-OC:     <C-.>=toggle  <leader>oa=ask  <leader>ok=explain
-
-VIM:    <leader>vm=messages  <leader>vh=health  <leader>vM=Mason  <leader>vB=disable bigfile
-
-TOGGLE: <leader>tw=wrap  <leader>ti=invis  <leader>ts=spell  <leader>th=hlsearch  <leader>tz=zen
-
-TROUBLE:   <leader>lS=symbols  <leader>ll=refs  <leader>lD=diagnostics  <leader>lb=buf diag
-```
-
+OpenCode: C-.=toggle  go=motion  goo=line
