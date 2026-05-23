@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -13,11 +14,11 @@ import (
 )
 
 func Base(cfg *config.Config) {
-	task.RunTaskListWithCleanup(baseTasks(cfg), cfg, cleanupMounts)
-}
-
-func cleanupMounts() {
-	steps.RunCmd("umount", "-R", "/mnt")
+	if err := task.RunTaskList(baseTasks(cfg), cfg); err != nil {
+		// Clean-up mounted block devices
+		steps.RunCmd("umount", "-R", "/mnt")
+		log.Fatalf("base installation failed: %v", err)
+	}
 }
 
 func migrateToChroot() task.Task {

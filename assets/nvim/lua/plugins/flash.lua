@@ -3,8 +3,7 @@ local map = vim.keymap.set
 require("flash").setup({
   modes = {
     char = {
-      enabled = true,
-      jump_labels = true,
+      enabled = false,
     },
   },
 })

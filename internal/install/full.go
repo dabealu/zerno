@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,7 +17,9 @@ import (
 )
 
 func Full(cfg *config.Config) {
-	task.RunTaskList(fullTasks(cfg), cfg)
+	if err := task.RunTaskList(fullTasks(cfg), cfg); err != nil {
+		log.Fatalf("full installation failed: %v", err)
+	}
 }
 
 func network() task.Task {

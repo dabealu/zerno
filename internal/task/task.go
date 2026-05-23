@@ -27,11 +27,6 @@ func printStep(current, total int, name string) {
 	fmt.Printf(green+"▒ %d/%d | %s | %s"+reset+"\n", current, total, time.Now().Format("15:04:05"), name)
 }
 
-func printError(name string, err error) {
-	fmt.Printf(red+"▒ %s: %v"+reset+"\n", name, err)
-	os.Exit(1)
-}
-
 func Command(name, cmdStr string) Task {
 	return Task{
 		Name: name,
@@ -91,22 +86,13 @@ func CopyTemplate(assetPath, destPath string, data any) Task {
 	}
 }
 
-func RunTaskList(tasks []Task, cfg *config.Config) {
-	RunTaskListWithCleanup(tasks, cfg, nil)
-}
-
-func RunTaskListWithCleanup(tasks []Task, cfg *config.Config, cleanup func()) {
+func RunTaskList(tasks []Task, cfg *config.Config) error {
 	total := len(tasks)
 	for i, t := range tasks {
 		printStep(i+1, total, t.Name)
 		if err := t.RunFunc(cfg); err != nil {
-			if cleanup != nil {
-				cleanup()
-			}
-			printError(t.Name, err)
+			return fmt.Errorf("%s: %w", t.Name, err)
 		}
 	}
-	if cleanup != nil {
-		cleanup()
-	}
+	return nil
 }

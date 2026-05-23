@@ -2,6 +2,7 @@ package install
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,7 +16,9 @@ import (
 )
 
 func Qemu(cfg *config.Config) {
-	task.RunTaskList(qemuTasks(cfg), cfg)
+	if err := task.RunTaskList(qemuTasks(cfg), cfg); err != nil {
+		log.Fatalf("qemu installation failed: %v", err)
+	}
 }
 
 func qemuTasks(cfg *config.Config) []task.Task {

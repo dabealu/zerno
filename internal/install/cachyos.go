@@ -1,9 +1,15 @@
 package install
 
-import "zerno/internal/task"
+import (
+	"log"
+
+	"zerno/internal/task"
+)
 
 func Cachyos() {
-	task.RunTaskList(cachyosTasks(), nil)
+	if err := task.RunTaskList(cachyosTasks(), nil); err != nil {
+		log.Fatalf("cachyos installation failed: %v", err)
+	}
 }
 
 func cachyosTasks() []task.Task {
