@@ -373,19 +373,19 @@ func docker() task.Task {
 	}
 }
 
-func rustToolchain() task.Task {
-	return task.Task{
-		Name: "install_rust_toolchain",
-		RunFunc: func(cfg *config.Config) error {
-			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "rustup"); err != nil {
-				return err
-			}
-			script := fmt.Sprintf(`sudo -u %s -- rustup default stable`, cfg.Username)
-			_, err := steps.RunShell(script)
-			return err
-		},
-	}
-}
+// func rustToolchain() task.Task {
+// 	return task.Task{
+// 		Name: "install_rust_toolchain",
+// 		RunFunc: func(cfg *config.Config) error {
+// 			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "rustup"); err != nil {
+// 				return err
+// 			}
+// 			script := fmt.Sprintf(`sudo -u %s -- rustup default stable`, cfg.Username)
+// 			_, err := steps.RunShell(script)
+// 			return err
+// 		},
+// 	}
+// }
 
 func yayAur() task.Task {
 	return task.Task{
@@ -586,7 +586,7 @@ func fullTasks(cfg *config.Config) []task.Task {
 		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
 		bluetooth(),
 		docker(),
-		rustToolchain(),
+		// rustToolchain(),
 		yayAur(),
 		aurPackages(),
 		task.Command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
