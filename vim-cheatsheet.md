@@ -57,7 +57,7 @@
 | Key | Action |
 |-----|--------|
 | `s` | Jump anywhere on screen (type chars, hit label) |
-| `S` | Jump to treesitter node |
+| `S` | Jump + select treesitter node |
 | `r` (operator mode) | Cross-window jump (remote flash) |
 | `R` (visual/operator) | Treesitter search |
 | `C-s` (cmdline) | Toggle flash on `/` search |
@@ -69,7 +69,7 @@
 | `ys{motion}{char}` | Add surround |
 | `ds{char}` | Delete surround |
 | `cs{target}{replacement}` | Change surround |
-| `gs` (visual selection) | Surround selection with char |
+| `S` (visual selection) | Surround selection with char |
 
 ## Text Objects
 
@@ -131,7 +131,7 @@ MODES:    i=insert  Esc=normal  v=visual  V=line  C-v=block
 SAVE/QUIT:  :w  :q  :wq  :q!
 LSP:      gd=def  gr=refs  gi=impl  gy=type  K=hover  [d/]d=diag
 FLASH:    s=jump  S=treesitter  r=remote
-SURROUND: ys=add  ds=delete  cs=change  gs=visual
+SURROUND: ys=add  ds=delete  cs=change  S=visual
 MACROS:   qa=record  @a=play
 SPLITS:   C-h/j/k/l
 
