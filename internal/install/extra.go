@@ -16,13 +16,7 @@ import (
 )
 
 func Qemu(cfg *config.Config) {
-	if err := task.RunTaskList(qemuTasks(cfg), cfg); err != nil {
-		log.Fatalf("qemu installation failed: %v", err)
-	}
-}
-
-func qemuTasks(cfg *config.Config) []task.Task {
-	return []task.Task{
+	if err := task.RunTaskList([]task.Task{
 		task.RequireUser("root"),
 		task.Command("install_qemu_packages", "pacman -Sy --noconfirm qemu-base virt-manager dmidecode"),
 		task.Command("add_user_to_libvirt_group", "usermod -a -G libvirt "+cfg.Username),
@@ -34,6 +28,8 @@ func qemuTasks(cfg *config.Config) []task.Task {
 		task.Command("start_networkd_and_libvirtd_services", "systemctl restart systemd-networkd libvirtd"),
 		task.Command("print_services_status", "systemctl status systemd-networkd libvirtd | grep -E '(.service|Active:)'"),
 		task.Info("done, to open gui run `virt-manager`"),
+	}, cfg); err != nil {
+		log.Fatalf("qemu installation failed: %v", err)
 	}
 }
 

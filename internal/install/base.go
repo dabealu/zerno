@@ -14,7 +14,25 @@ import (
 )
 
 func Base(cfg *config.Config) {
-	if err := task.RunTaskList(baseTasks(cfg), cfg); err != nil {
+	if err := task.RunTaskList([]task.Task{
+		task.RequireUser("root"),
+		requireUEFI(),
+		wifiConnect(),
+		partitions(),
+		filesystems(),
+		kernelCmdline(),
+		task.Command("update_archlinux_keyring", "pacman -Sy --noconfirm archlinux-keyring"),
+		pacstrap(),
+		task.Command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
+		setTimezone(),
+		locales(),
+		hostname(),
+		user(),
+		bootloader(),
+		secureBootSign(),
+		migrateToChroot(),
+		task.Info("reboot and continue installation as root"),
+	}, cfg); err != nil {
 		// Clean-up mounted block devices
 		steps.RunCmd("umount", "-R", "/mnt")
 		log.Fatalf("base installation failed: %v", err)

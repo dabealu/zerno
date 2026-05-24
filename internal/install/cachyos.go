@@ -7,13 +7,7 @@ import (
 )
 
 func Cachyos() {
-	if err := task.RunTaskList(cachyosTasks(), nil); err != nil {
-		log.Fatalf("cachyos installation failed: %v", err)
-	}
-}
-
-func cachyosTasks() []task.Task {
-	return []task.Task{
+	if err := task.RunTaskList([]task.Task{
 		task.Command("download_cachyos_repo", "curl -fSL https://mirror.cachyos.org/cachyos-repo.tar.xz -o /tmp/cachyos-repo.tar.xz"),
 		task.Command("extract_cachyos_repo", "cd /tmp && rm -rf cachyos-repo && tar xf cachyos-repo.tar.xz"),
 		task.Command("run_cachyos_repo_script", "cd /tmp/cachyos-repo && yes | ./cachyos-repo.sh"),
@@ -29,5 +23,7 @@ EOF
 `),
 		task.Command("generate_cachyos_uki", "mkinitcpio -p linux"),
 		task.Info("done! reboot to activate CachyOS kernel"),
+	}, nil); err != nil {
+		log.Fatalf("cachyos installation failed: %v", err)
 	}
 }

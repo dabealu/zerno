@@ -17,7 +17,37 @@ import (
 )
 
 func Full(cfg *config.Config) {
-	if err := task.RunTaskList(fullTasks(cfg), cfg); err != nil {
+	if err := task.RunTaskList([]task.Task{
+		network(),
+		resolved(),
+		netplan(),
+		globalVars(),
+		setupDevTools(),
+		swayPackages(),
+		task.Info("base desktop installed"),
+		swayConfigs(),
+		pipewire(),
+		swap(),
+		hibernation(),
+		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
+		cpuGovernor(),
+		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
+		bluetooth(),
+		docker(),
+		// rustToolchain(),
+		yayAur(),
+		aurPackages(),
+		task.Command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
+		pipewireUser(),
+		bashrc(),
+		desktopApps(),
+		utilsFontsThemes(),
+		installUtils(),
+		aurChrome(),
+		userSrcDir(),
+		migrateUserConfig(),
+		task.Info("installation complete: reboot and run `de`"),
+	}, cfg); err != nil {
 		log.Fatalf("full installation failed: %v", err)
 	}
 }
@@ -571,40 +601,6 @@ func installUtils() task.Task {
 	}
 }
 
-func fullTasks(cfg *config.Config) []task.Task {
-	return []task.Task{
-		network(),
-		resolved(),
-		netplan(),
-		globalVars(),
-		setupDevTools(),
-		swayPackages(),
-		task.Info("base desktop installed"),
-		swayConfigs(),
-		pipewire(),
-		swap(),
-		hibernation(),
-		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
-		cpuGovernor(),
-		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
-		bluetooth(),
-		docker(),
-		// rustToolchain(),
-		yayAur(),
-		aurPackages(),
-		task.Command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
-		pipewireUser(),
-		bashrc(),
-		desktopApps(),
-		utilsFontsThemes(),
-		installUtils(),
-		aurChrome(),
-		userSrcDir(),
-		migrateUserConfig(cfg),
-		task.Info("installation complete: reboot and run `de`"),
-	}
-}
-
 func userSrcDir() task.Task {
 	return task.Task{
 		Name: "create_user_src_dir",
@@ -619,7 +615,7 @@ func userSrcDir() task.Task {
 	}
 }
 
-func migrateUserConfig(cfg *config.Config) task.Task {
+func migrateUserConfig() task.Task {
 	return task.Task{
 		Name: "migrate_user_config",
 		RunFunc: func(cfg *config.Config) error {
