@@ -1,7 +1,8 @@
-package main
+package install
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,10 +13,17 @@ import (
 	"zerno/assets"
 	"zerno/internal/config"
 	"zerno/internal/steps"
+	"zerno/internal/task"
 )
 
-func network() Task {
-	return Task{
+func Full(cfg *config.Config) {
+	if err := task.RunTaskList(fullTasks(cfg), cfg); err != nil {
+		log.Fatalf("full installation failed: %v", err)
+	}
+}
+
+func network() task.Task {
+	return task.Task{
 		Name: "configure_network",
 		RunFunc: func(cfg *config.Config) error {
 			content := fmt.Sprintf(`[Match]
@@ -35,8 +43,8 @@ DHCP=yes
 	}
 }
 
-func resolved() Task {
-	return Task{
+func resolved() task.Task {
+	return task.Task{
 		Name: "configure_systemd_resolved",
 		RunFunc: func(cfg *config.Config) error {
 			if err := steps.LineInFile("/etc/resolv.conf", "nameserver 127.0.0.53"); err != nil {
@@ -57,8 +65,8 @@ func resolved() Task {
 	}
 }
 
-func netplan() Task {
-	return Task{
+func netplan() task.Task {
+	return task.Task{
 		Name: "netplan_configuration",
 		RunFunc: func(cfg *config.Config) error {
 			var assetName, dst string
@@ -70,7 +78,7 @@ func netplan() Task {
 				dst = "/etc/netplan/eth-config.yaml"
 			}
 
-			if err := copyTemplate(assetName, dst, cfg).RunFunc(cfg); err != nil {
+			if err := task.CopyTemplate(assetName, dst, cfg).RunFunc(cfg); err != nil {
 				return err
 			}
 			if err := os.Chmod(dst, 0600); err != nil {
@@ -84,7 +92,6 @@ func netplan() Task {
 				return err
 			}
 
-			// Wait for network (up to ~60s)
 			for i := 0; i < 60; i++ {
 				out, _ := steps.RunCmd("ip", "route", "show", "default")
 				if strings.TrimSpace(out) != "" {
@@ -103,8 +110,8 @@ func netplan() Task {
 	}
 }
 
-func swayPackages() Task {
-	return Task{
+func swayPackages() task.Task {
+	return task.Task{
 		Name: "install_sway_packages",
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := "sway swaybg swaylock swayidle waybar brightnessctl xorg-xwayland bemenu-wayland libnotify dunst wl-clipboard alacritty ghostty"
@@ -114,8 +121,8 @@ func swayPackages() Task {
 	}
 }
 
-func globalVars() Task {
-	return Task{
+func globalVars() task.Task {
+	return task.Task{
 		Name: "add_global_env_variables",
 		RunFunc: func(cfg *config.Config) error {
 			for _, v := range []string{"EDITOR=vim", "LIBSEAT_BACKEND=logind"} {
@@ -128,8 +135,8 @@ func globalVars() Task {
 	}
 }
 
-func swayConfigs() Task {
-	return Task{
+func swayConfigs() task.Task {
+	return task.Task{
 		Name: "create_sway_config_files",
 		RunFunc: func(cfg *config.Config) error {
 			homeDir := fmt.Sprintf("/home/%s", cfg.Username)
@@ -188,8 +195,8 @@ func swayConfigs() Task {
 	}
 }
 
-func pipewire() Task {
-	return Task{
+func pipewire() task.Task {
+	return task.Task{
 		Name: "install_pipewire",
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := "pipewire pipewire-pulse wireplumber gst-plugin-pipewire xdg-desktop-portal-wlr"
@@ -199,8 +206,8 @@ func pipewire() Task {
 	}
 }
 
-func swap() Task {
-	return Task{
+func swap() task.Task {
+	return task.Task{
 		Name: "create_swap_file",
 		RunFunc: func(cfg *config.Config) error {
 			if steps.FileExists("/swapfile") {
@@ -247,8 +254,9 @@ func swap() Task {
 	}
 }
 
-func hibernation() Task {
-	return Task{
+// Requires swap() to have run first — relies on /swapfile existing
+func hibernation() task.Task {
+	return task.Task{
 		Name: "enable_hibernation_and_suspend",
 		RunFunc: func(cfg *config.Config) error {
 			rootUUID, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/")
@@ -293,8 +301,8 @@ func hibernation() Task {
 	}
 }
 
-func cpuGovernor() Task {
-	return Task{
+func cpuGovernor() task.Task {
+	return task.Task{
 		Name: "set_performance_cpu_governor",
 		RunFunc: func(cfg *config.Config) error {
 			if !steps.FileExists("/sys/devices/system/cpu/cpu0/cpufreq") {
@@ -330,8 +338,8 @@ func cpuGovernor() Task {
 	}
 }
 
-func bluetooth() Task {
-	return Task{
+func bluetooth() task.Task {
+	return task.Task{
 		Name: "setup_bluetooth",
 		RunFunc: func(cfg *config.Config) error {
 			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "bluez", "bluez-tools", "bluez-utils", "blueman"); err != nil {
@@ -349,8 +357,8 @@ func bluetooth() Task {
 	}
 }
 
-func docker() Task {
-	return Task{
+func docker() task.Task {
+	return task.Task{
 		Name: "setup_docker",
 		RunFunc: func(cfg *config.Config) error {
 			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "docker"); err != nil {
@@ -368,22 +376,22 @@ func docker() Task {
 	}
 }
 
-func rustToolchain() Task {
-	return Task{
-		Name: "install_rust_toolchain",
-		RunFunc: func(cfg *config.Config) error {
-			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "rustup"); err != nil {
-				return err
-			}
-			script := fmt.Sprintf(`sudo -u %s -- rustup default stable`, cfg.Username)
-			_, err := steps.RunShell(script)
-			return err
-		},
-	}
-}
+// func rustToolchain() task.Task {
+// 	return task.Task{
+// 		Name: "install_rust_toolchain",
+// 		RunFunc: func(cfg *config.Config) error {
+// 			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "rustup"); err != nil {
+// 				return err
+// 			}
+// 			script := fmt.Sprintf(`sudo -u %s -- rustup default stable`, cfg.Username)
+// 			_, err := steps.RunShell(script)
+// 			return err
+// 		},
+// 	}
+// }
 
-func yayAur() Task {
-	return Task{
+func yayAur() task.Task {
+	return task.Task{
 		Name: "install_yay_aur",
 		RunFunc: func(cfg *config.Config) error {
 			homeDir := fmt.Sprintf("/home/%s", cfg.Username)
@@ -400,11 +408,11 @@ func yayAur() Task {
 	}
 }
 
-func aurPackages() Task {
-	return Task{
+func aurPackages() task.Task {
+	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git pinta"
+			pkgs := "wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git"
 			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy %s'`, cfg.Username, pkgs)
 			_, err := steps.RunShell(script)
 			return err
@@ -412,8 +420,8 @@ func aurPackages() Task {
 	}
 }
 
-func aurChrome() Task {
-	return Task{
+func aurChrome() task.Task {
+	return task.Task{
 		Name: "install_aur_chrome",
 		RunFunc: func(cfg *config.Config) error {
 			fmt.Println("installing google-chrome (may take a while)...")
@@ -424,8 +432,8 @@ func aurChrome() Task {
 	}
 }
 
-func pipewireUser() Task {
-	return Task{
+func pipewireUser() task.Task {
+	return task.Task{
 		Name: "start_pipewire",
 		RunFunc: func(cfg *config.Config) error {
 			script := fmt.Sprintf(`systemctl --user -M %s@.host enable pipewire pipewire-pulse && systemctl --user -M %s@.host start pipewire pipewire-pulse`, cfg.Username, cfg.Username)
@@ -435,8 +443,8 @@ func pipewireUser() Task {
 	}
 }
 
-func bashrc() Task {
-	return Task{
+func bashrc() task.Task {
+	return task.Task{
 		Name: "bashrc_and_user_bin_dir",
 		RunFunc: func(cfg *config.Config) error {
 			binDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
@@ -455,22 +463,22 @@ func bashrc() Task {
 	}
 }
 
-func desktopApps() Task {
-	return Task{
+func desktopApps() task.Task {
+	return task.Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar opencode"
+			pkgs := "evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar drawing"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},
 	}
 }
 
-func configureIDE() Task {
-	return Task{
-		Name: "configure_editor",
+func setupDevTools() task.Task {
+	return task.Task{
+		Name: "setup_dev_tools",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd"
+			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd opencode"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
@@ -500,8 +508,8 @@ func configureIDE() Task {
 	}
 }
 
-func utilsFontsThemes() Task {
-	return Task{
+func utilsFontsThemes() task.Task {
+	return task.Task{
 		Name: "install_utilities_fonts_themes",
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils materia-gtk-theme papirus-icon-theme"
@@ -526,8 +534,8 @@ func utilsFontsThemes() Task {
 	}
 }
 
-func installUtils() Task {
-	return Task{
+func installUtils() task.Task {
+	return task.Task{
 		Name: "install_utilities",
 		RunFunc: func(cfg *config.Config) error {
 			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
@@ -551,8 +559,9 @@ func installUtils() Task {
 				dst := filepath.Join(homeBinDir, bin)
 				cmd := exec.Command("go", "build", "-o", dst, srcPath)
 				cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
-				if err := cmd.Run(); err != nil {
-					return err
+				out, err := cmd.CombinedOutput()
+				if err != nil {
+					return fmt.Errorf("compile %s: %w\n%s", bin, err, out)
 				}
 			}
 
@@ -562,27 +571,28 @@ func installUtils() Task {
 	}
 }
 
-func installFullTasksExt(cfg *config.Config) []Task {
-	return []Task{
+func fullTasks(cfg *config.Config) []task.Task {
+	return []task.Task{
 		network(),
 		resolved(),
 		netplan(),
 		globalVars(),
-		configureIDE(),
+		setupDevTools(),
 		swayPackages(),
-		info("base desktop installed"),
+		task.Info("base desktop installed"),
 		swayConfigs(),
 		pipewire(),
 		swap(),
 		hibernation(),
-		copyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
+		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
 		cpuGovernor(),
+		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
 		bluetooth(),
 		docker(),
-		rustToolchain(),
+		// rustToolchain(),
 		yayAur(),
 		aurPackages(),
-		command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
+		task.Command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
 		pipewireUser(),
 		bashrc(),
 		desktopApps(),
@@ -591,12 +601,12 @@ func installFullTasksExt(cfg *config.Config) []Task {
 		aurChrome(),
 		userSrcDir(),
 		migrateUserConfig(cfg),
-		info("installation complete: reboot and run `de`"),
+		task.Info("installation complete: reboot and run `de`"),
 	}
 }
 
-func userSrcDir() Task {
-	return Task{
+func userSrcDir() task.Task {
+	return task.Task{
 		Name: "create_user_src_dir",
 		RunFunc: func(cfg *config.Config) error {
 			srcDir := fmt.Sprintf("/home/%s/src", cfg.Username)
@@ -609,8 +619,8 @@ func userSrcDir() Task {
 	}
 }
 
-func migrateUserConfig(cfg *config.Config) Task {
-	return Task{
+func migrateUserConfig(cfg *config.Config) task.Task {
+	return task.Task{
 		Name: "migrate_user_config",
 		RunFunc: func(cfg *config.Config) error {
 			src := "/root/.zerno/parameters.json"

@@ -1,8 +1,8 @@
 require("trouble").setup({})
 
-local bmap = require("config.utils").map
+local map = vim.keymap.set
 
-bmap("n", "<leader>cx", "<cmd>Trouble diagnostics toggle<CR>", "Diagnostics")
-bmap("n", "<leader>cb", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", "Buffer diagnostics")
-bmap("n", "<leader>cs", "<cmd>Trouble symbols toggle focus=false<CR>", "Document symbols (Trouble)")
-bmap("n", "<leader>cl", "<cmd>Trouble lsp toggle focus=false win.position=right<CR>", "LSP references/defs")
+map("n", "<leader>lD", "<cmd>Trouble diagnostics toggle<CR>", { desc = "Diagnostics (trouble)" })
+map("n", "<leader>lb", "<cmd>Trouble diagnostics toggle filter.buf=0<CR>", { desc = "Buffer diagnostics (trouble)" })
+map("n", "<leader>lS", "<cmd>Trouble symbols toggle focus=false<CR>", { desc = "Document symbols (trouble)" })
+map("n", "<leader>ll", "<cmd>Trouble lsp toggle focus=false win.position=right<CR>", { desc = "LSP references/defs (trouble)" })

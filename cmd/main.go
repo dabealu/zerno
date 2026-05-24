@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"zerno/internal/config"
+	"zerno/internal/install"
 )
 
 var version = "dev"
@@ -22,7 +23,7 @@ var commands = map[string]cmdDef{
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			runTaskList(installBaseTasks(cfg), cfg)
+			install.Base(cfg)
 		},
 	},
 	"install-full": {
@@ -32,10 +33,9 @@ var commands = map[string]cmdDef{
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			runTaskList(installFullTasksExt(cfg), cfg)
+			install.Full(cfg)
 		},
 	},
-
 	"qemu": {
 		run: func() {
 			cfg, err := config.LoadOrPrompt()
@@ -43,29 +43,38 @@ var commands = map[string]cmdDef{
 				fmt.Println(err)
 				os.Exit(1)
 			}
-			runTaskList(qemuTasks(cfg), cfg)
+			install.Qemu(cfg)
 		},
 	},
 	"update-bin": {
 		run: func() {
-			UpdateBin()
+			if err := install.UpdateBin(); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		},
 	},
 	"build-iso": {
 		run: func() {
-			CreateISO()
+			if err := install.CreateISO(); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		},
 	},
 	"boot-dev": {
 		args: 2,
 		run: func() {
-			FormatDevice(os.Args[2], os.Args[3])
+			install.FormatDevice(os.Args[2], os.Args[3])
 		},
 	},
 	"steam": {
 		args: 1,
 		run: func() {
-			InstallSteam(os.Args[2])
+			if err := install.InstallSteam(os.Args[2]); err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
 		},
 	},
 	"version": {
@@ -75,7 +84,7 @@ var commands = map[string]cmdDef{
 	},
 	"repo-pull": {
 		run: func() {
-			if err := RepoPull(); err != nil {
+			if err := install.RepoPull(); err != nil {
 				fmt.Println(err)
 				os.Exit(1)
 			}
@@ -83,7 +92,7 @@ var commands = map[string]cmdDef{
 	},
 	"cachyos": {
 		run: func() {
-			runTaskList(cachyosTasks(), nil)
+			install.Cachyos()
 		},
 	},
 }

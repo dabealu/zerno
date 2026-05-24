@@ -32,6 +32,7 @@ vim.pack.add({
   { src = "https://github.com/rafamadriz/friendly-snippets" },
   { src = "https://github.com/nvim-lua/plenary.nvim" },
   { src = "https://github.com/folke/todo-comments.nvim" },
+  { src = "https://github.com/folke/flash.nvim" },
 })
 
 -- Load plugin configurations
@@ -48,5 +49,6 @@ require("plugins.trouble")
 require("plugins.opencode")
 require("plugins.treesitter")
 require("plugins.todo-comments")
+require("plugins.flash")
 require("plugins.vim")
 require("plugins.ui")

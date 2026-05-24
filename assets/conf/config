@@ -196,16 +196,16 @@ mode "resize" {
         # right will grow the containers width
         # up will shrink the containers height
         # down will grow the containers height
-        $left  resize shrink width  10px
-        $down  resize grow   height 10px
-        $up    resize shrink height 10px
-        $right resize grow   width  10px
+        $left  resize shrink width  15px
+        $down  resize grow   height 15px
+        $up    resize shrink height 15px
+        $right resize grow   width  15px
 
         # Ditto, with arrow keys
-        Left  resize shrink width  10px
-        Down  resize grow   height 10px
-        Up    resize shrink height 10px
-        Right resize grow   width  10px
+        Left  resize shrink width  15px
+        Down  resize grow   height 15px
+        Up    resize shrink height 15px
+        Right resize grow   width  15px
 
         # Return to default mode
         Return mode "default"

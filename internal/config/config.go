@@ -32,6 +32,25 @@ func (c *Config) String() string {
 	return string(data)
 }
 
+func (c *Config) Validate() error {
+	if c.Hostname == "" {
+		return fmt.Errorf("hostname is required")
+	}
+	if c.BlockDevice == "" {
+		return fmt.Errorf("block device is required")
+	}
+	if c.Username == "" {
+		return fmt.Errorf("username is required")
+	}
+	if c.PartNum <= 0 {
+		return fmt.Errorf("invalid partition number: %d", c.PartNum)
+	}
+	if c.NetDev == "" {
+		return fmt.Errorf("network device is required")
+	}
+	return nil
+}
+
 func getConfigDir() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -67,6 +86,9 @@ func Load() (*Config, error) {
 	if err := json.Unmarshal(data, &cfg); err != nil {
 		return nil, fmt.Errorf("parse config: %w", err)
 	}
+	if err := cfg.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid config: %w", err)
+	}
 	return &cfg, nil
 }
 
@@ -75,22 +97,51 @@ func Prompt() (*Config, error) {
 
 	fmt.Println("enter parameters:")
 
-	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
-		return nil, fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
-	}
-
-	devices, err := listBlockDevices()
-	if err != nil {
+	if err := checkUEFI(); err != nil {
 		return nil, err
 	}
+	if err := selectBlockDevice(cfg); err != nil {
+		return nil, err
+	}
+	promptBasicInfo(cfg)
+	if err := selectNetworkDevice(cfg); err != nil {
+		return nil, err
+	}
+	promptWiFi(cfg)
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
+	fmt.Printf("\nparameters:\n%s\n", cfg)
+
+	if !confirm("proceed with the installation?") {
+		os.Exit(0)
+	}
+
+	return cfg, nil
+}
+
+func checkUEFI() error {
+	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
+		return fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
+	}
+	return nil
+}
+
+func selectBlockDevice(cfg *Config) error {
+	devices, err := listBlockDevices()
+	if err != nil {
+		return err
+	}
 	if len(devices) == 0 {
-		return nil, fmt.Errorf("no block devices found")
+		return fmt.Errorf("no block devices found")
 	}
 
 	fmt.Println()
 	lsblk, err := exec.Command("lsblk", "-o", "NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT").Output()
 	if err != nil {
-		return nil, fmt.Errorf("failed to list block devices: %w", err)
+		return fmt.Errorf("failed to list block devices: %w", err)
 	}
 	fmt.Print(string(lsblk))
 	fmt.Println()
@@ -107,13 +158,29 @@ func Prompt() (*Config, error) {
 		cfg.PartNumPrefix = ""
 	}
 	cfg.PartNum = 2
+	return nil
+}
 
+func promptBasicInfo(cfg *Config) {
 	prompt("timezone", &cfg.Timezone, "Asia/Singapore")
 	prompt("hostname", &cfg.Hostname, "dhost")
 	prompt("username", &cfg.Username, "user")
+	cfg.UserID = "1000"
+	cfg.UserGID = "1000"
+}
 
+func selectNetworkDevice(cfg *Config) error {
 	cfg.NetDevISO = promptNetDevice()
+	if cfg.NetDevISO == "" {
+		return fmt.Errorf("no network interface found")
+	}
 
+	cfg.NetDev = getNetDevName(cfg.NetDevISO)
+	fmt.Printf("%s will be named %s after archiso\n", cfg.NetDevISO, cfg.NetDev)
+	return nil
+}
+
+func promptWiFi(cfg *Config) {
 	defaultWiFi := strings.HasPrefix(cfg.NetDevISO, "wlan") || strings.HasPrefix(cfg.NetDevISO, "wlp")
 	cfg.WiFiEnabled = defaultWiFi
 
@@ -128,20 +195,6 @@ func Prompt() (*Config, error) {
 		prompt("wifi ssid", &cfg.WiFiSSID, "")
 		prompt("wifi password", &cfg.WiFiPassword, "")
 	}
-
-	cfg.NetDev = getNetDevName(cfg.NetDevISO)
-	fmt.Printf("%s will be named %s after archiso\n", cfg.NetDevISO, cfg.NetDev)
-
-	cfg.UserID = "1000"
-	cfg.UserGID = "1000"
-
-	fmt.Printf("\nparameters:\n%s\n", cfg)
-
-	if !confirm("proceed with the installation?") {
-		os.Exit(0)
-	}
-
-	return cfg, nil
 }
 
 func LoadOrPrompt() (*Config, error) {

@@ -1,7 +1,8 @@
-package main
+package install
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -11,21 +12,28 @@ import (
 	"zerno/internal/config"
 	"zerno/internal/paths"
 	"zerno/internal/steps"
+	"zerno/internal/task"
 )
 
-func qemuTasks(cfg *config.Config) []Task {
-	return []Task{
-		requireUser("root"),
-		command("install_qemu_packages", "pacman -Sy --noconfirm qemu-base virt-manager dmidecode"),
-		command("add_user_to_libvirt_group", "usermod -a -G libvirt "+cfg.Username),
-		copyFile("qemu/qemu0.netdev", "/etc/systemd/network/qemu0.netdev"),
-		copyFile("qemu/qemu0.network", "/etc/systemd/network/qemu0.network"),
-		copyTemplate("qemu/uplink.network", fmt.Sprintf("/etc/systemd/network/qemu0-%s-uplink.network", cfg.NetDev), cfg),
-		copyFile("qemu/bridge.conf", "/etc/qemu/bridge.conf"),
-		command("enable_libvirtd_service", "systemctl enable libvirtd"),
-		command("start_networkd_and_libvirtd_services", "systemctl restart systemd-networkd libvirtd"),
-		command("print_services_status", "systemctl status systemd-networkd libvirtd | grep -E '(.service|Active:)'"),
-		info("done, to open gui run `virt-manager`"),
+func Qemu(cfg *config.Config) {
+	if err := task.RunTaskList(qemuTasks(cfg), cfg); err != nil {
+		log.Fatalf("qemu installation failed: %v", err)
+	}
+}
+
+func qemuTasks(cfg *config.Config) []task.Task {
+	return []task.Task{
+		task.RequireUser("root"),
+		task.Command("install_qemu_packages", "pacman -Sy --noconfirm qemu-base virt-manager dmidecode"),
+		task.Command("add_user_to_libvirt_group", "usermod -a -G libvirt "+cfg.Username),
+		task.CopyFile("qemu/qemu0.netdev", "/etc/systemd/network/qemu0.netdev"),
+		task.CopyFile("qemu/qemu0.network", "/etc/systemd/network/qemu0.network"),
+		task.CopyTemplate("qemu/uplink.network", fmt.Sprintf("/etc/systemd/network/qemu0-%s-uplink.network", cfg.NetDev), cfg),
+		task.CopyFile("qemu/bridge.conf", "/etc/qemu/bridge.conf"),
+		task.Command("enable_libvirtd_service", "systemctl enable libvirtd"),
+		task.Command("start_networkd_and_libvirtd_services", "systemctl restart systemd-networkd libvirtd"),
+		task.Command("print_services_status", "systemctl status systemd-networkd libvirtd | grep -E '(.service|Active:)'"),
+		task.Info("done, to open gui run `virt-manager`"),
 	}
 }
 
@@ -75,15 +83,6 @@ func RepoPull() error {
 		fmt.Println("cloned to:", homeSrcDir)
 	}
 	return nil
-}
-
-func repoPull() Task {
-	return Task{
-		Name: "repo_pull",
-		RunFunc: func(cfg *config.Config) error {
-			return RepoPull()
-		},
-	}
 }
 
 func CreateISO() error {
@@ -221,8 +220,6 @@ func FormatDevice(devPath, isoPath string) error {
 	return nil
 }
 
-// ensureMultilib removes any existing [multilib] sections (commented or not) and
-// appends a clean one at end; pacman uses last definition so this is idempotent.
 func ensureMultilib() error {
 	content, err := steps.ReadFile("/etc/pacman.conf")
 	if err != nil {
@@ -257,14 +254,14 @@ func ensureMultilib() error {
 
 func InstallSteam(vgaType string) error {
 	driverPackages := map[string]string{
-		"intel":  "vulkan-intel",
-		"nvidia": "nvidia-utils",
-		"amd":    "amdvlk",
+		"intel":  "vulkan-intel lib32-vulkan-intel",
+		"nvidia": "nvidia-utils lib32-nvidia-utils",
+		"amd":    "vulkan-radeon lib32-vulkan-radeon",
 	}
 
 	vulkanPackage, ok := driverPackages[vgaType]
 	if !ok {
-		return fmt.Errorf("unknown vga type: %s", vgaType)
+		return fmt.Errorf("unknown vga type: %q, supported values: intel, nvidia, amd", vgaType)
 	}
 
 	if err := ensureMultilib(); err != nil {

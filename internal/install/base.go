@@ -1,7 +1,8 @@
-package main
+package install
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
@@ -9,10 +10,19 @@ import (
 	"zerno/internal/config"
 	"zerno/internal/paths"
 	"zerno/internal/steps"
+	"zerno/internal/task"
 )
 
-func migrateToChroot() Task {
-	return Task{
+func Base(cfg *config.Config) {
+	if err := task.RunTaskList(baseTasks(cfg), cfg); err != nil {
+		// Clean-up mounted block devices
+		steps.RunCmd("umount", "-R", "/mnt")
+		log.Fatalf("base installation failed: %v", err)
+	}
+}
+
+func migrateToChroot() task.Task {
+	return task.Task{
 		Name: "migrate_to_chroot",
 		RunFunc: func(cfg *config.Config) error {
 			confSrc := paths.ConfDir(false)
@@ -44,8 +54,8 @@ func migrateToChroot() Task {
 	}
 }
 
-func wifiConnect() Task {
-	return Task{
+func wifiConnect() task.Task {
+	return task.Task{
 		Name: "wifi_connect",
 		RunFunc: func(cfg *config.Config) error {
 			if !cfg.WiFiEnabled {
@@ -81,8 +91,8 @@ func wifiConnect() Task {
 	}
 }
 
-func partitions() Task {
-	return Task{
+func partitions() task.Task {
+	return task.Task{
 		Name: "create_partitions",
 		RunFunc: func(cfg *config.Config) error {
 			dev := fmt.Sprintf("/dev/%s", cfg.BlockDevice)
@@ -103,8 +113,8 @@ func partitions() Task {
 	}
 }
 
-func filesystems() Task {
-	return Task{
+func filesystems() task.Task {
+	return task.Task{
 		Name: "create_filesystems",
 		RunFunc: func(cfg *config.Config) error {
 			dev := fmt.Sprintf("/dev/%s%s", cfg.BlockDevice, cfg.PartNumPrefix)
@@ -133,8 +143,8 @@ func filesystems() Task {
 	}
 }
 
-func pacstrap() Task {
-	return Task{
+func pacstrap() task.Task {
+	return task.Task{
 		Name: "pacstrap_packages",
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := "linux linux-firmware base base-devel efibootmgr dosfstools sbctl systemd-ukify systemd-resolvconf wpa_supplicant netplan dbus-python python-rich openssh dnsutils curl git unzip neovim sudo man man-pages tmux sysstat bash-completion go lsof strace tree-sitter-cli"
@@ -144,8 +154,8 @@ func pacstrap() Task {
 	}
 }
 
-func setTimezone() Task {
-	return Task{
+func setTimezone() task.Task {
+	return task.Task{
 		Name: "set_timezone",
 		RunFunc: func(cfg *config.Config) error {
 			script := fmt.Sprintf(`
@@ -157,8 +167,8 @@ func setTimezone() Task {
 	}
 }
 
-func locales() Task {
-	return Task{
+func locales() task.Task {
+	return task.Task{
 		Name: "configure_locales",
 		RunFunc: func(cfg *config.Config) error {
 			if err := steps.ReplaceLine("/mnt/etc/locale.gen", `#.*ru_RU.UTF-8`, `ru_RU.UTF-8`); err != nil {
@@ -170,28 +180,28 @@ func locales() Task {
 			if _, err := steps.RunShell("arch-chroot /mnt locale-gen"); err != nil {
 				return err
 			}
-			if err := copyFile("base/locale.conf", "/mnt/etc/locale.conf").RunFunc(cfg); err != nil {
+			if err := task.CopyFile("base/locale.conf", "/mnt/etc/locale.conf").RunFunc(cfg); err != nil {
 				return err
 			}
-			return copyFile("base/vconsole.conf", "/mnt/etc/vconsole.conf").RunFunc(cfg)
+			return task.CopyFile("base/vconsole.conf", "/mnt/etc/vconsole.conf").RunFunc(cfg)
 		},
 	}
 }
 
-func hostname() Task {
-	return Task{
+func hostname() task.Task {
+	return task.Task{
 		Name: "set_hostname",
 		RunFunc: func(cfg *config.Config) error {
 			if err := steps.WriteFile("/mnt/etc/hostname", cfg.Hostname); err != nil {
 				return err
 			}
-			return copyTemplate("base/hosts.tpl", "/mnt/etc/hosts", cfg).RunFunc(cfg)
+			return task.CopyTemplate("base/hosts.tpl", "/mnt/etc/hosts", cfg).RunFunc(cfg)
 		},
 	}
 }
 
-func user() Task {
-	return Task{
+func user() task.Task {
+	return task.Task{
 		Name: "create_user",
 		RunFunc: func(cfg *config.Config) error {
 			script := fmt.Sprintf(`
@@ -219,8 +229,8 @@ func user() Task {
 	}
 }
 
-func requireUEFI() Task {
-	return Task{
+func requireUEFI() task.Task {
+	return task.Task{
 		Name: "require_uefi",
 		RunFunc: func(cfg *config.Config) error {
 			if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
@@ -231,8 +241,8 @@ func requireUEFI() Task {
 	}
 }
 
-func kernelCmdline() Task {
-	return Task{
+func kernelCmdline() task.Task {
+	return task.Task{
 		Name: "create_kernel_cmdline",
 		RunFunc: func(cfg *config.Config) error {
 			dev := fmt.Sprintf("/dev/%s%s", cfg.BlockDevice, cfg.PartNumPrefix)
@@ -249,30 +259,26 @@ func kernelCmdline() Task {
 	}
 }
 
-func bootloader() Task {
-	return Task{
+func bootloader() task.Task {
+	return task.Task{
 		Name: "install_systemd_boot",
 		RunFunc: func(cfg *config.Config) error {
-			// 1. Install systemd-boot to ESP
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "bootctl",
 				"--esp-path=/efi", "install"); err != nil {
 				return err
 			}
 
-			// 2. loader.conf — auto-detect UKIs
 			loaderConf := "timeout 3\nconsole-mode keep\ndefault arch-linux*\n"
 			if err := steps.WriteFile("/mnt/efi/loader/loader.conf", loaderConf); err != nil {
 				return err
 			}
 
-			// 3. mkinitcpio HOOKS — systemd-based UKI (from mkinitcpio v40 template)
 			hooks := "HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)"
 			if err := steps.ReplaceLine("/mnt/etc/mkinitcpio.conf",
 				`^HOOKS=.*`, hooks); err != nil {
 				return err
 			}
 
-			// 4. Preset — single UKI. Fallback created on first kernel upgrade.
 			preset := `# /etc/mkinitcpio.d/linux.preset
 PRESETS=('default')
 ALL_kver="/boot/vmlinuz-linux"
@@ -285,7 +291,6 @@ default_uki="/efi/EFI/Linux/arch-linux.efi"
 				return err
 			}
 
-			// 5. Pacman hook: preserve old UKI before kernel upgrade
 			hookContent := `[Trigger]
 Type = File
 Operation = Install
@@ -305,12 +310,10 @@ Exec = /bin/sh -c 'if [ -f /efi/EFI/Linux/arch-linux.efi ]; then cp /efi/EFI/Lin
 				return err
 			}
 
-			// 6. Ensure UKI output directory exists
 			if err := os.MkdirAll("/mnt/efi/EFI/Linux", 0755); err != nil {
 				return err
 			}
 
-			// 7. Generate initial UKI
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "mkinitcpio", "-p", "linux"); err != nil {
 				return err
 			}
@@ -320,24 +323,20 @@ Exec = /bin/sh -c 'if [ -f /efi/EFI/Linux/arch-linux.efi ]; then cp /efi/EFI/Lin
 	}
 }
 
-func secureBootSign() Task {
-	return Task{
+func secureBootSign() task.Task {
+	return task.Task{
 		Name: "sign_secure_boot",
 		RunFunc: func(cfg *config.Config) error {
-			// Create Secure Boot keys
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "create-keys"); err != nil {
 				return err
 			}
-			// Sign systemd-boot
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s",
 				"/efi/EFI/systemd/systemd-bootx64.efi"); err != nil {
 				return err
 			}
-			// Ensure UKI output directory exists
 			if err := os.MkdirAll("/mnt/efi/EFI/Linux", 0755); err != nil {
 				return err
 			}
-			// Sign UKI
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s",
 				"/efi/EFI/Linux/arch-linux.efi"); err != nil {
 				return err
@@ -348,17 +347,17 @@ func secureBootSign() Task {
 	}
 }
 
-func installBaseTasks(cfg *config.Config) []Task {
-	return []Task{
-		requireUser("root"),
+func baseTasks(cfg *config.Config) []task.Task {
+	return []task.Task{
+		task.RequireUser("root"),
 		requireUEFI(),
 		wifiConnect(),
 		partitions(),
 		filesystems(),
 		kernelCmdline(),
-		command("update_archlinux_keyring", "pacman -Sy --noconfirm archlinux-keyring"),
+		task.Command("update_archlinux_keyring", "pacman -Sy --noconfirm archlinux-keyring"),
 		pacstrap(),
-		command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
+		task.Command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
 		setTimezone(),
 		locales(),
 		hostname(),
@@ -366,6 +365,6 @@ func installBaseTasks(cfg *config.Config) []Task {
 		bootloader(),
 		secureBootSign(),
 		migrateToChroot(),
-		info("reboot and continue installation as root"),
+		task.Info("reboot and continue installation as root"),
 	}
 }
