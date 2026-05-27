@@ -17,6 +17,7 @@
         "cpu",
         "memory",
         "disk",
+        "network",
         "battery",
         "clock",
         "sway/language",
@@ -60,7 +61,7 @@
         }
     },
     "cpu": {
-        "format": "<span font-size='16pt' rise='-2000'></span> {usage}%",
+        "format": "<span font-size='16pt' rise='-2000'>󰘷</span> {usage}%",
         "tooltip": true,
         "states": {
             "critical": 95
@@ -74,7 +75,7 @@
     },
     "disk": {
         "interval": 30,
-        "format": "<span font-size='16pt' rise='-2000'></span> {percentage_used}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {percentage_used}%",
         "path": "/",
         "states": {
             "warning": 85,
@@ -87,26 +88,31 @@
             "warning": 20,
             "critical": 10
         },
-        "format": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
+        "format": "<span font-size='16pt' rise='-2000'>{icon}</span> {capacity}%",
         "format-charging": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
-        "format-plugged": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
+        "format-plugged": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
         "format-alt": "bat: {time}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
-        "format-icons": ["", "", "", "", ""]
+        "format-icons": ["󰁺", "󰁽", "󰂀", "󰂂"]
     },
     "network": {
-        // "interface": "wlp2*", // (Optional) To force the use of this interface
-        "format-wifi": "{essid} {ipaddr} {signalStrength}%",
-        "format-ethernet": "{ifname} {ipaddr}",
-        "format-linked": "{ifname} no IP",
-        "format-disconnected": "{ifname} disconnected",
-        "format-alt": "{ifname} {ipaddr}"
+        "interval": 5,
+        "format": "<span font-size='16pt' rise='-2000'>{icon}</span>",
+        "format-alt": "↓{bandwidthDownBytes} ↑{bandwidthUpBytes}",
+        "format-disconnected": "<span font-size='16pt' rise='-2000'>✗</span>",
+        "format-icons": {
+            "ethernet": "",
+            "wifi": "󰤨"
+        },
+        "tooltip-format": "{ifname}: {ipaddr}",
+        "tooltip-format-wifi": "{ifname} ({essid}, {signalStrength}%): {ipaddr}",
+        "tooltip-format-ethernet": "{ifname}: {ipaddr}"
     },
     "pulseaudio": {
         "scroll-step": 1, // %, can be a float
-        "format": "<span font-size='16pt' rise='-2000'></span> {volume}% <span font-size='16pt' rise='-2000'></span> {format_source}",
-        "format-bluetooth": "<span font-size='16pt' rise='-2000'></span> {volume}% <span font-size='16pt' rise='-2000'></span> {format_source}",
+        "format": "<span font-size='16pt' rise='-2000'>󰕾</span> {volume}% <span font-size='16pt' rise='-2000'>󰍬</span> {format_source}",
+        "format-bluetooth": "<span font-size='16pt' rise='-2000'>󰕾</span> {volume}% <span font-size='16pt' rise='-2000'>󰍬</span> {format_source}",
         "format-bluetooth-muted": "<span font-size='16pt' rise='-2000'></span> {format_source}",
         "format-muted": "<span font-size='16pt' rise='-2000'></span> {format_source}",
         "format-source": "{volume}%",
