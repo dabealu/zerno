@@ -6,7 +6,7 @@
 font pango:JetBrainsMono Nerd Font Mono 12
 
 # Set thin border for all windows
-default_border normal 2
+default_border normal 1
 # gaps inner 1
 # gaps outer 1
 
@@ -77,6 +77,8 @@ input type:keyboard {
     # Toggle keyboard layout
     xkb_layout  us,ru
     xkb_options grp:alt_shift_toggle
+    repeat_delay 250
+    repeat_rate 30
 }
 
 # Drag floating windows by holding down $mod and left mouse button.
