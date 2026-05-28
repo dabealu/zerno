@@ -37,7 +37,7 @@ nvim/
     trouble.lua             ← diagnostic/symbol tree viewer
     opencode.lua            ← AI assistant in embedded terminal
     ui.lua                  ← which-key, colorscheme
-    auto_layout.lua         ← automatic keyboard layout switching via swaymsg
+    auto-layout.lua         ← automatic keyboard layout switching via swaymsg
     treesitter.lua          ← treesitter parser config and highlights
     todo-comments.lua       ← highlight TODO/FIXME/HACK comments
     vim.lua                 ← vim reflection commands (health, mason, etc.)

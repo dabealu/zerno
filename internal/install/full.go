@@ -258,7 +258,7 @@ func swap() task.Task {
 						if err != nil {
 							return fmt.Errorf("failed to parse memory size: %w", err)
 						}
-						memSizeKB = parsed + 1048576
+						memSizeKB = parsed
 					}
 					break
 				}
@@ -508,7 +508,7 @@ func setupDevTools() task.Task {
 	return task.Task{
 		Name: "setup_dev_tools",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd opencode"
+			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd tree-sitter-cli opencode"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
@@ -542,7 +542,7 @@ func utilsFontsThemes() task.Task {
 	return task.Task{
 		Name: "install_utilities_fonts_themes",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils materia-gtk-theme papirus-icon-theme"
+			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils man man-pages bash-completion materia-gtk-theme papirus-icon-theme"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
