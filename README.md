@@ -19,11 +19,9 @@ Options:
 
 ### Manual wifi configuration
 ```bash
-ip link set wlan0 up
-wpa_passphrase "SSID" "password" | wpa_supplicant -B -i wlan0 -c /dev/stdin
-dhcpcd
+iwctl station wlan0 connect "SSID"
 ```
-`wavemon` can help to scan wifi networks
+`iwctl station wlan0 get-networks` scans for available networks
 
 ### Running on VM
 - select `QXL` video device in QEMU, run sway via `WLR_NO_HARDWARE_CURSORS=1 sway`
@@ -106,6 +104,7 @@ Then enable Secure Boot in your UEFI firmware settings.
 
 ### TODO
 - encrypted volume
-- intel integrated graphics
-cat /etc/modprobe.d/i915.conf
-options i915 enable_psr=0 enable_guc=0 enable_fbc=0
+- intel integrated graphics: `/etc/modprobe.d/i915.conf`
+  ```
+  options i915 enable_psr=0 enable_guc=0 enable_fbc=0
+  ```
