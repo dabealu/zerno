@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func FileExists(path string) bool {
@@ -52,7 +53,7 @@ func ReadFile(path string) (string, error) {
 }
 
 func RunCmd(name string, args ...string) (string, error) {
-	log.Printf("cmd: %s %v", name, args)
+	log.Printf("cmd: %s %s", name, strings.Join(args, " "))
 	cmd := exec.Command(name, args...)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -128,4 +129,16 @@ func AskConfirmation(msg string) bool {
 			fmt.Printf("unknown input '%s', please enter y or n\n", input)
 		}
 	}
+}
+
+func WaitForDefaultRoute(timeout int) error {
+	log.Printf("waiting for default route to come up...")
+	for i := 0; i < timeout; i++ {
+		time.Sleep(1 * time.Second)
+		out, _ := RunCmd("ip", "route", "show", "default")
+		if strings.TrimSpace(out) != "" {
+			return nil
+		}
+	}
+	return fmt.Errorf("timeout: no default route after %d seconds", timeout)
 }

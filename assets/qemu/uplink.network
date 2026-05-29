@@ -1,4 +1,4 @@
 [Match]
-Name={{.NetDev}}
+{{if .WiFiEnabled}}Type=wlan{{else}}Name={{.NetDev}}{{end}}
 [Network]
 Bridge=br0

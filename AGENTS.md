@@ -158,6 +158,46 @@ When `cachyos` command runs, it:
 - Works with Secure Boot both ON (if keys enrolled) and OFF (signatures ignored)
 - To enable Secure Boot: `sbctl enroll-keys -m` + flip switch in UEFI
 
+## Network Architecture
+
+### Stack
+
+```
+iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
+```
+
+- **iwd** — lightweight WiFi daemon, replaces `wpa_supplicant`. Manages WiFi profiles in `/var/lib/iwd/`. Interface naming: keeps kernel name (`wlan0`) via its built-in `80-iwd.link` — no renaming race.
+- **systemd-networkd** — handles IP configuration (DHCP) for all interfaces. WiFi matched by `Type=wlan` (agnostic to interface name), ethernet matched by `Name=enp*` (predictable naming).
+- **systemd-resolved** — DNS resolution with systemd-resolved configs.
+
+### Phase 1 (ArchISO)
+
+- Uses `iwctl` directly — ArchISO ships iwd pre-installed and running (no separate service management needed).
+- `wifiConnect()` in `base.go`: `iwctl --passphrase '<password>' station <dev> connect '<ssid>'`
+
+### Phase 2 (installed system)
+
+- `network()` in `full.go` writes a `.network` file:
+  - **WiFi**: `10-wlan.network` with `[Match] Type=wlan`, `DHCP=yes`, `IgnoreCarrierLoss=3s`.
+  - **Ethernet**: `0-{NetDev}-dhcp.network` with `[Match] Name={cfg.NetDev}` (predictable name).
+- `wifi()` in `full.go` writes `/var/lib/iwd/{SSID}.psk` (profile), `/etc/iwd/main.conf` (daemon config), enables `iwd.service`.
+- `iwd` profiles use `Passphrase=` in `[Security]` section. SSID is used as filename with spaces replaced by `_`.
+
+### QEMU bridge
+
+- The `qemu0-uplink.network` template uses `[Match] Type=wlan` for WiFi interfaces, `[Match] Name={NetDev}` for ethernet.
+- The bridge interface (`qemu0`) gets a static IP + DHCPServer for VMs.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `internal/install/base.go` | Phase 1 `wifiConnect()` + `pacstrap()` |
+| `internal/install/full.go` | Phase 2 `network()` + `wifi()` |
+| `internal/install/extra.go` | QEMU uplink |
+| `assets/files/iwd-main.conf` | iwd daemon config (`EnableNetworkConfiguration=false`, `NameResolvingService=systemd`) |
+| `assets/qemu/uplink.network` | QEMU bridge uplink template |
+
 ## Design Decisions
 
 - **No external dependencies** - use stdlib where possible

@@ -29,6 +29,29 @@ require("snacks").setup({
           },
         },
       },
+      git_status = {
+        win = {
+          list = {
+            wo = {
+              wrap = true,
+              linebreak = true,
+            },
+          },
+        },
+        layout = {
+          layout = {
+            box = "horizontal",
+            {
+              box = "vertical",
+              border = "rounded",
+              title = "{title} {live} {flags}",
+              { win = "input", height = 1, border = "bottom" },
+              { win = "list", border = "none" },
+            },
+            { win = "preview", title = "{preview}", border = "rounded", width = 0.7 },
+          },
+        },
+      },
     },
   },
   explorer = {

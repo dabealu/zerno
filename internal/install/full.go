@@ -1,6 +1,7 @@
 package install
 
 import (
+	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
@@ -8,7 +9,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	"zerno/assets"
 	"zerno/internal/config"
@@ -20,7 +20,7 @@ func Full(cfg *config.Config) {
 	if err := task.RunTaskList([]task.Task{
 		network(),
 		resolved(),
-		netplan(),
+		wifi(),
 		globalVars(),
 		setupDevTools(),
 		swayPackages(),
@@ -56,13 +56,27 @@ func network() task.Task {
 	return task.Task{
 		Name: "configure_network",
 		RunFunc: func(cfg *config.Config) error {
-			content := fmt.Sprintf(`[Match]
+			if cfg.WiFiEnabled {
+				content := `[Match]
+Type=wlan
+
+[Network]
+DHCP=yes
+IgnoreCarrierLoss=3s
+`
+				if err := steps.WriteFile("/etc/systemd/network/10-wlan.network", content); err != nil {
+					return err
+				}
+			} else {
+				content := fmt.Sprintf(`[Match]
 Name=%s
+
 [Network]
 DHCP=yes
 `, cfg.NetDev)
-			if err := steps.WriteFile(fmt.Sprintf("/etc/systemd/network/0-%s-dhcp.network", cfg.NetDev), content); err != nil {
-				return err
+				if err := steps.WriteFile("/etc/systemd/network/0-eth-dhcp.network", content); err != nil {
+					return err
+				}
 			}
 			if _, err := steps.RunCmd("systemctl", "enable", "systemd-networkd"); err != nil {
 				return err
@@ -95,47 +109,51 @@ func resolved() task.Task {
 	}
 }
 
-func netplan() task.Task {
+func SSIDFilename(ssid string) string {
+	for _, r := range ssid {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
+			r == ' ' || r == '_' || r == '-' {
+			continue
+		}
+		return "=" + hex.EncodeToString([]byte(ssid))
+	}
+	return ssid
+}
+
+func wifi() task.Task {
 	return task.Task{
-		Name: "netplan_configuration",
+		Name: "configure_iwd_wifi",
 		RunFunc: func(cfg *config.Config) error {
-			var assetName, dst string
-			if cfg.WiFiEnabled {
-				assetName = "files/netplan-wifi-config.yaml"
-				dst = "/etc/netplan/wifi-config.yaml"
-			} else {
-				assetName = "files/netplan-eth-config.yaml"
-				dst = "/etc/netplan/eth-config.yaml"
+			if !cfg.WiFiEnabled {
+				return nil
 			}
 
-			if err := task.CopyTemplate(assetName, dst, cfg).RunFunc(cfg); err != nil {
-				return err
-			}
-			if err := os.Chmod(dst, 0600); err != nil {
-				return err
-			}
+			profilePath := fmt.Sprintf("/var/lib/iwd/%s.psk", SSIDFilename(cfg.WiFiSSID))
+			profileContent := fmt.Sprintf(`[Security]
+Passphrase=%s
 
-			if _, err := steps.RunShell("netplan apply"); err != nil {
+[Settings]
+AutoConnect=true
+`, cfg.WiFiPassword)
+			if err := os.MkdirAll("/var/lib/iwd", 0755); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell("systemctl enable netplan-configure"); err != nil {
+			if err := steps.WriteFile(profilePath, profileContent); err != nil {
 				return err
 			}
 
-			for i := 0; i < 60; i++ {
-				out, _ := steps.RunCmd("ip", "route", "show", "default")
-				if strings.TrimSpace(out) != "" {
-					break
-				}
-				time.Sleep(1 * time.Second)
+			if err := assets.Restore("files/iwd-main.conf", "/etc/iwd/main.conf"); err != nil {
+				return err
 			}
 
-			out, err := steps.RunCmd("netplan", "get", "all")
-			if err != nil {
-				return fmt.Errorf("netplan apply verification failed: %w", err)
+			if _, err := steps.RunCmd("systemctl", "enable", "iwd"); err != nil {
+				return err
 			}
-			fmt.Println(out)
-			return nil
+			if _, err := steps.RunCmd("systemctl", "restart", "iwd"); err != nil {
+				return err
+			}
+
+			return steps.WaitForDefaultRoute(20)
 		},
 	}
 }
@@ -497,7 +515,7 @@ func desktopApps() task.Task {
 	return task.Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "evince libreoffice telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar drawing"
+			pkgs := "evince telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar drawing"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},
