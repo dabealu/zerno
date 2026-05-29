@@ -22,7 +22,7 @@ func Qemu(cfg *config.Config) {
 		task.Command("add_user_to_libvirt_group", "usermod -a -G libvirt "+cfg.Username),
 		task.CopyFile("qemu/qemu0.netdev", "/etc/systemd/network/qemu0.netdev"),
 		task.CopyFile("qemu/qemu0.network", "/etc/systemd/network/qemu0.network"),
-		task.CopyTemplate("qemu/uplink.network", fmt.Sprintf("/etc/systemd/network/qemu0-%s-uplink.network", cfg.NetDev), cfg),
+		task.CopyTemplate("qemu/uplink.network", "/etc/systemd/network/qemu0-uplink.network", cfg),
 		task.CopyFile("qemu/bridge.conf", "/etc/qemu/bridge.conf"),
 		task.Command("enable_libvirtd_service", "systemctl enable libvirtd"),
 		task.Command("start_networkd_and_libvirtd_services", "systemctl restart systemd-networkd libvirtd"),

@@ -1,9 +1,0 @@
-network:
-  version: 2
-  renderer: networkd
-  wifis:
-    {{.NetDev}}:
-      dhcp4: true
-      access-points:
-        "{{.WiFiSSID}}":
-          password: "{{.WiFiPassword}}"

@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"strings"
-	"time"
 
 	"zerno/internal/config"
 	"zerno/internal/paths"
@@ -88,23 +87,13 @@ func wifiConnect() task.Task {
 				return nil
 			}
 
-			script := fmt.Sprintf(`
-				ip link set %s up && \
-				wpa_supplicant -B -i %s -c <(wpa_passphrase '%s' '%s') && \
-				dhcpcd`,
-				cfg.NetDevISO, cfg.NetDevISO, cfg.WiFiSSID, cfg.WiFiPassword)
+			script := fmt.Sprintf(`iwctl --passphrase '%s' station %s connect '%s'`,
+				cfg.WiFiPassword, cfg.NetDevISO, cfg.WiFiSSID)
 			if _, err := steps.RunShell(script); err != nil {
 				return err
 			}
 
-			for i := 0; i < 10; i++ {
-				time.Sleep(1 * time.Second)
-				out, _ := steps.RunCmd("ip", "route", "show", "default")
-				if strings.TrimSpace(out) != "" {
-					return nil
-				}
-			}
-			return fmt.Errorf("failed to connect to WiFi, timeout reached")
+			return steps.WaitForDefaultRoute(20)
 		},
 	}
 }
@@ -165,7 +154,7 @@ func pacstrap() task.Task {
 	return task.Task{
 		Name: "pacstrap_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "linux linux-firmware base base-devel efibootmgr sbctl systemd-ukify systemd-resolvconf wpa_supplicant netplan dbus-python python-rich openssh dnsutils curl git unzip neovim sudo tmux sysstat go lsof strace"
+			pkgs := "linux linux-firmware base base-devel efibootmgr sbctl systemd-ukify systemd-resolvconf iwd impala python openssh dnsutils curl git unzip neovim sudo tmux sysstat go lsof strace"
 			_, err := steps.RunShell("pacstrap /mnt " + pkgs)
 			return err
 		},
