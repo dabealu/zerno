@@ -515,7 +515,7 @@ func desktopApps() task.Task {
 	return task.Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "evince telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar drawing"
+			pkgs := "evince telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},

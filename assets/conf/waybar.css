@@ -19,7 +19,7 @@ window#waybar.hidden {
 }
 
 #workspaces button {
-    padding: 0 10px;
+    padding: 0 0px;
     background-color: transparent;
     color: #ffffff;
 }
@@ -41,6 +41,17 @@ window#waybar.hidden {
 
 #mode {
     background-color: #c25c02;
+}
+
+tooltip {
+  background: #202020;
+  border: 1px solid #404040;
+}
+
+#mpris {
+    padding: 0 8px;
+    margin: 0 1px;
+    color: #808080;
 }
 
 #clock,

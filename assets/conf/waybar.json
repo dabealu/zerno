@@ -1,5 +1,5 @@
 {
-    "spacing": 0, // Size of gaps in between of the different modules
+    "spacing": 4, // Size of gaps in between of the different modules
 
     "layer": "bottom", // Waybar at top layer
     "position": "top", // Waybar position (top|bottom|left|right)
@@ -13,6 +13,7 @@
     ],
     // "modules-center": ["sway/window"],
     "modules-right": [
+        "mpris",
         "pulseaudio",
         "cpu",
         "memory",
@@ -35,9 +36,9 @@
     },
     "clock": {
         "interval": 1,
-        "format": "{:%b %d.%m.%Y %H:%M:%S}",
+        "format": "{:%H:%M:%S}",
         "tooltip-format": "<tt><small>{calendar}</small></tt>",
-        "format-alt": "{:%b %d.%m.%Y %H:%M}",
+        "format-alt": "{:%b %d.%m.%Y %a %H:%M:%S}",
         "calendar": {
             "mode": "year",
             "mode-mon-col": 3,
@@ -94,7 +95,7 @@
         "format-alt": "bat: {time}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
-        "format-icons": ["󰁺", "󰁽", "󰂀", "󰂂"]
+        "format-icons": ["󰁻", "󰁽", "󰁿", "󰂁", "󰁹"]
     },
     "network": {
         "interval": 5,
@@ -103,11 +104,26 @@
         "format-disconnected": "<span font-size='16pt' rise='-2000'>✗</span>",
         "format-icons": {
             "ethernet": "",
-            "wifi": "󰤨"
+            "wifi": ["󰤯", "󰤟", "󰤢", "󰤥", "󰤨"]
         },
         "tooltip-format": "{ifname}: {ipaddr}",
         "tooltip-format-wifi": "{ifname} ({essid}, {signalStrength}%): {ipaddr}",
         "tooltip-format-ethernet": "{ifname}: {ipaddr}"
+    },
+    "mpris": {
+        "format": "{status_icon} {title}",
+        "format-paused": "{status_icon} {title}",
+        "format-stopped": "",
+        "status-icons": {
+            "playing": "",
+            "paused": "",
+            "stopped": "⏹"
+        },
+        "title-len": 60,
+        "ellipsis": "…",
+        "tooltip-format": "{status_icon} {dynamic} [{player}]",
+        "dynamic-order": ["title", "artist", "album"],
+        "dynamic-separator": ", "
     },
     "pulseaudio": {
         "scroll-step": 1, // %, can be a float
