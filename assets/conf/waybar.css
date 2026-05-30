@@ -88,11 +88,6 @@ tooltip {
     padding-right: 0;
 }
 
-#battery.charging, #battery.plugged {
-    color: #ffffff;
-    background-color: #092715;
-}
-
 @keyframes blink {
     to {
         background-color: #ffffff;
@@ -113,6 +108,7 @@ tooltip {
     animation-direction: alternate;
 }
 
+#battery.warning,
 #disk.warning {
     background-color: #c25c02;
 }
