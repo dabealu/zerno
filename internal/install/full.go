@@ -43,7 +43,6 @@ func Full(cfg *config.Config) {
 		desktopApps(),
 		utilsFontsThemes(),
 		installUtils(),
-		aurChrome(),
 		userSrcDir(),
 		migrateUserConfig(),
 		task.Info("installation complete: reboot and run `de`"),
@@ -460,20 +459,8 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "wdisplays libinput-gestures"
+			pkgs := "wdisplays libinput-gestures google-chrome"
 			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy %s'`, cfg.Username, pkgs)
-			_, err := steps.RunShell(script)
-			return err
-		},
-	}
-}
-
-func aurChrome() task.Task {
-	return task.Task{
-		Name: "install_aur_chrome",
-		RunFunc: func(cfg *config.Config) error {
-			fmt.Println("installing google-chrome (may take a while)...")
-			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy google-chrome'`, cfg.Username)
 			_, err := steps.RunShell(script)
 			return err
 		},
