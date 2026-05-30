@@ -246,9 +246,10 @@ bindsym --to-code {
     $mod+d exec bemenu-run -b -p '▪' --fn 'JetBrainsMono Nerd Font Mono 12' --tb '$urgent' --tf '$white' --hb '$urgent' --hf '$white'
 }
 
-# Set GTK theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts
+# Set GTK theme and icon theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts
 exec_always {
-    gsettings set org.gnome.desktop.interface gtk-theme 'Adwaita-dark'
+    gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark'
+    gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 }
 

@@ -43,7 +43,6 @@ func Full(cfg *config.Config) {
 		desktopApps(),
 		utilsFontsThemes(),
 		installUtils(),
-		aurChrome(),
 		userSrcDir(),
 		migrateUserConfig(),
 		task.Info("installation complete: reboot and run `de`"),
@@ -460,20 +459,8 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "wdisplays libinput-gestures adwaita-qt5-git adwaita-qt6-git"
+			pkgs := "wdisplays libinput-gestures google-chrome"
 			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy %s'`, cfg.Username, pkgs)
-			_, err := steps.RunShell(script)
-			return err
-		},
-	}
-}
-
-func aurChrome() task.Task {
-	return task.Task{
-		Name: "install_aur_chrome",
-		RunFunc: func(cfg *config.Config) error {
-			fmt.Println("installing google-chrome (may take a while)...")
-			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy google-chrome'`, cfg.Username)
 			_, err := steps.RunShell(script)
 			return err
 		},
@@ -560,23 +547,27 @@ func utilsFontsThemes() task.Task {
 	return task.Task{
 		Name: "install_utilities_fonts_themes",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "grim slurp ddcutil lxappearance gnome-themes-extra syslinux lshw pciutils usbutils man man-pages bash-completion materia-gtk-theme papirus-icon-theme"
+			pkgs := "grim slurp ddcutil nwg-look syslinux lshw pciutils usbutils man man-pages bash-completion materia-gtk-theme papirus-icon-theme"
 			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
 				return err
 			}
 
 			homeDir := fmt.Sprintf("/home/%s", cfg.Username)
-			gtkDir := filepath.Join(homeDir, ".config", "gtk-3.0")
-			if err := os.MkdirAll(gtkDir, 0755); err != nil {
+
+			gtk3Dir := filepath.Join(homeDir, ".config", "gtk-3.0")
+			if err := os.MkdirAll(gtk3Dir, 0755); err != nil {
+				return err
+			}
+			if err := assets.Restore("files/gtk-3.0-settings.ini", filepath.Join(gtk3Dir, "settings.ini")); err != nil {
 				return err
 			}
 
-			dst := filepath.Join(gtkDir, "settings.ini")
-			if err := assets.Restore("files/gtk-3.0-settings.ini", dst); err != nil {
+			gtk2rc := filepath.Join(homeDir, ".gtkrc-2.0")
+			if err := assets.Restore("files/gtk-2.0-gtkrc", gtk2rc); err != nil {
 				return err
 			}
 
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, gtkDir))
+			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s %s", cfg.UserID, cfg.UserGID, gtk3Dir, gtk2rc))
 			return err
 		},
 	}
