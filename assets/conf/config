@@ -249,7 +249,7 @@ bindsym --to-code {
 # Set GTK theme and icon theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts
 exec_always {
     gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark'
-    gsettings set org.gnome.desktop.interface icon-theme 'Papirus'
+    gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
     gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 }
 
