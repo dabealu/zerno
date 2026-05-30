@@ -220,6 +220,7 @@ bindsym --to-code {
     XF86AudioPause exec playerctl pause
     XF86AudioNext exec playerctl next
     XF86AudioPrev exec playerctl previous
+    $mod+g exec playerctl play-pause
 
     # Switch workspaces via arrow keys or h,l
     $mod+Control+Left workspace prev
