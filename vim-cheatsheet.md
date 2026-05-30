@@ -14,6 +14,84 @@
 | Vim | `v` | Messages, health, mason, registers, config |
 | OpenCode | `o` | Ask, explain, menu, toggle |
 
+## Motions
+
+| Key | Action |
+|-----|--------|
+| `w` / `W` | Next word / WORD |
+| `b` / `B` | Back word / WORD |
+| `e` / `E` | End of word / WORD |
+| `ge` / `gE` | End of previous word / WORD |
+| `0` / `$` | Start / end of line |
+| `^` / `g_` | First / last non-whitespace |
+| `gg` / `G` | Start / end of file |
+| `{line}G` | Go to line number |
+| `H` / `M` / `L` | Top / middle / bottom of screen |
+| `{` / `}` | Previous / next paragraph |
+| `(` / `)` | Previous / next sentence |
+| `%` | Matching bracket/quote |
+| `gf` / `gF` | Go to file / go to file + line |
+| `C-o` / `C-i` | Jump back / forward in history |
+| `'`{mark} / `` ` ``{mark} | Jump to mark (line / line+column) |
+| `''` / ``` `` ``` | Jump back to previous position |
+
+> **word** = letters, digits, underscores. **WORD** = any non-whitespace characters (e.g. `foo.bar()` is 1 WORD but 3 words).
+
+### Character Jumps
+
+| Key | Action |
+|-----|--------|
+| `f{char}` | Jump forward **to** char |
+| `F{char}` | Jump backward **to** char |
+| `t{char}` | Jump forward **before** char |
+| `T{char}` | Jump backward **before** char |
+| `;` / `,` | Repeat forward / backward |
+
+### Screen Scrolling
+
+| Key | Action |
+|-----|--------|
+| `C-f` / `C-b` | Page down / page up |
+| `C-d` / `C-u` | Scroll half page down / up |
+| `C-e` / `C-y` | Scroll line down / up (cursor stays) |
+| `zz` / `zt` / `zb` | Cursor to middle / top / bottom of screen |
+
+## Operators
+
+Combine with motions or text objects: `{operator}{count}{motion}`.
+
+| Key | Action |
+|-----|--------|
+| `d` | Delete |
+| `c` | Change (delete + insert mode) |
+| `y` | Yank (copy) |
+| `>` / `<` | Indent right / left (e.g. `>G`, or `>>` / `<<` for current line) |
+| `=` | Auto-indent |
+| `~` | Toggle case (also `g~`) |
+| `gu` / `gU` | Lowercase / uppercase |
+| `!` | Filter through external command |
+| `gq` | Format / hard-wrap |
+
+Examples: `d2w` (delete 2 words), `ci(` (change inside parens), `yap` (yank a paragraph), `>G` (indent to end of file).
+
+## Text Objects
+
+`{operator}` + `i`(inner) / `a`(around) + `{object}`.
+
+| Object | Targets |
+|--------|---------|
+| `w` / `W` | Word / WORD |
+| `p` | Paragraph |
+| `s` | Sentence |
+| `t` | HTML/XML tag |
+| `"` `'` `` ` `` | Quoted strings |
+| `(` `)` `b` | Parens / block |
+| `{` `}` `B` | Braces / Block |
+| `[` `]` | Brackets |
+| `<` | Angle brackets |
+
+Treesitter scope (same indentation): `ii`, `ai`, `[i`, `]i`.
+
 ## Core Vim
 
 | Key | Action |
@@ -26,17 +104,17 @@
 | `dd` / `yy` / `p` / `P` | Delete, yank, paste line |
 | `ciw` / `diw` / `yiw` | Change/delete/yank inner word |
 | `ci"` / `ci(` / `ci{` | Change inside quotes/parens/braces |
-| `>>` / `<<` | Indent / dedent |
 | `J` | Join lines |
+| `>>` / `<<` | Indent / dedent |
 | `=` | Auto-indent (e.g. `=ap`) |
 | `~` | Toggle case |
 | `gcc` / `gc` + motion | Toggle comment |
 | `*` / `#` | Search word forward/backward |
 | `/` / `?` | Search |
 | `n` / `N` | Next/prev search result |
-| `:w` / `:q` / `:wq` / `:q!` | Save / quit |
-| `C-d` / `C-u` | Scroll half page down/up (centered) |
+| `C-d` / `C-u` | Scroll half page down / up |
 | `zz` | Center screen |
+| `:w` / `:q` / `:wq` / `:q!` | Save / quit |
 
 ## LSP
 
