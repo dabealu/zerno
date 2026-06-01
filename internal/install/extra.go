@@ -176,17 +176,16 @@ func FormatDevice(devPath, isoPath string) error {
 
 	fmt.Println("creating partitions")
 	parted := fmt.Sprintf("parted -s %s", devPath)
-	if _, err := steps.RunShell(fmt.Sprintf("%s mklabel gpt", parted)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("%s mkpart Arch_ISO fat32 1MiB 1024MiB", parted)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("mkfs.fat -F 32 %s1", devPath)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("fatlabel %s1 %s", devPath, isoLabel)); err != nil {
-		return err
+
+	for _, script := range []string{
+		fmt.Sprintf("%s mklabel gpt", parted),
+		fmt.Sprintf("%s mkpart Arch_ISO fat32 1MiB 1024MiB", parted),
+		fmt.Sprintf("mkfs.fat -F 32 %s1", devPath),
+		fmt.Sprintf("fatlabel %s1 %s", devPath, isoLabel),
+	} {
+		if _, err := steps.RunShell(script); err != nil {
+			return err
+		}
 	}
 
 	fmt.Printf("copying iso to %s1\n", devPath)
@@ -194,27 +193,19 @@ func FormatDevice(devPath, isoPath string) error {
 	if err := os.MkdirAll(mntDir, 0755); err != nil {
 		return err
 	}
-	if _, err := steps.RunShell(fmt.Sprintf("mount %s1 %s", devPath, mntDir)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("bsdtar -x -f %s -C %s", isoPath, mntDir)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("umount %s", mntDir)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("syslinux --directory syslinux --install %s1", devPath)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/gptmbr.bin of=%s", devPath)); err != nil {
-		return err
-	}
 
-	if _, err := steps.RunShell(fmt.Sprintf("%s mkpart FlashDrive ext4 1024MiB 100%%", parted)); err != nil {
-		return err
-	}
-	if _, err := steps.RunShell(fmt.Sprintf("mkfs.ext4 %s2", devPath)); err != nil {
-		return err
+	for _, script := range []string{
+		fmt.Sprintf("mount %s1 %s", devPath, mntDir),
+		fmt.Sprintf("bsdtar -x -f %s -C %s", isoPath, mntDir),
+		fmt.Sprintf("umount %s", mntDir),
+		fmt.Sprintf("syslinux --directory syslinux --install %s1", devPath),
+		fmt.Sprintf("dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/gptmbr.bin of=%s", devPath),
+		fmt.Sprintf("%s mkpart FlashDrive ext4 1024MiB 100%%", parted),
+		fmt.Sprintf("mkfs.ext4 %s2", devPath),
+	} {
+		if _, err := steps.RunShell(script); err != nil {
+			return err
+		}
 	}
 
 	os.RemoveAll(mntDir)

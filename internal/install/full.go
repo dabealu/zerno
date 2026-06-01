@@ -411,7 +411,12 @@ func bluetooth() task.Task {
 	return task.Task{
 		Name: "setup_bluetooth",
 		RunFunc: func(cfg *config.Config) error {
-			if err := steps.PacmanPackages([]string{"bluez", "bluez-tools", "bluez-utils", "blueman"}); err != nil {
+			if err := steps.PacmanPackages([]string{
+				"bluez",
+				"bluez-tools",
+				"bluez-utils",
+				"blueman",
+			}); err != nil {
 				return err
 			}
 			if err := steps.ReplaceLine("/etc/bluetooth/main.conf", `#.*AutoEnable.*`, `AutoEnable = true`); err != nil {
