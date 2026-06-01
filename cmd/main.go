@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"zerno/internal/config"
@@ -65,7 +66,9 @@ var commands = map[string]cmdDef{
 	"boot-dev": {
 		args: 2,
 		run: func() {
-			install.FormatDevice(os.Args[2], os.Args[3])
+			if err := install.FormatDevice(os.Args[2], os.Args[3]); err != nil {
+				log.Fatal(err)
+			}
 		},
 	},
 	"steam": {
@@ -132,14 +135,14 @@ func main() {
 
 func printHelp() {
 	fmt.Println(`available commands:
-  b, install-base       (Phase 1) base system installation (chroot stage)
-  i, install-full       (Phase 2) desktop/full installation (after reboot, re-run to sync)
+  b, install-base       base system installation (chroot stage)
+  i, install-full       desktop/full installation (after reboot, re-run to sync)
   q, qemu               install and configure qemu/kvm
-  c, cachyos            (sudo) enable CachyOS repos and kernel
+  c, cachyos            enable CachyOS repos and kernel
   u, update-bin         compile new bin from local repo
   m, build-iso          create iso with zerno bin included
   f, boot-dev <dev> <iso>  format device creating storage and boot partitions
-  e, steam <vga>        (sudo) install steam, vga: intel, nvidia, amd
+  e, steam <vga>        install steam, vga: intel, nvidia, amd
   v, version            print version and exit
   r, repo-pull          clone or update repo in ~/src/zerno`)
 }

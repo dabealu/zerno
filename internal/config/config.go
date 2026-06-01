@@ -18,8 +18,8 @@ type Config struct {
 	Timezone      string
 	Hostname      string
 	Username      string
-	UserID        string
-	UserGID       string
+	UserID        int
+	UserGID       int
 	NetDev        string
 	NetDevISO     string
 	WiFiEnabled   bool
@@ -165,8 +165,8 @@ func promptBasicInfo(cfg *Config) {
 	prompt("timezone", &cfg.Timezone, "Asia/Singapore")
 	prompt("hostname", &cfg.Hostname, "dhost")
 	prompt("username", &cfg.Username, "user")
-	cfg.UserID = "1000"
-	cfg.UserGID = "1000"
+	cfg.UserID = 1000
+	cfg.UserGID = 1000
 }
 
 func selectNetworkDevice(cfg *Config) error {

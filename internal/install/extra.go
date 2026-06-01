@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"zerno/internal/config"
 	"zerno/internal/paths"
@@ -18,7 +19,7 @@ import (
 func Qemu(cfg *config.Config) {
 	if err := task.RunTaskList([]task.Task{
 		task.RequireUser("root"),
-		task.Command("install_qemu_packages", "pacman -Sy --noconfirm qemu-base virt-manager dmidecode"),
+		task.Pacman("install_qemu_packages", []string{"qemu-base", "virt-manager", "dmidecode"}),
 		task.Command("add_user_to_libvirt_group", "usermod -a -G libvirt "+cfg.Username),
 		task.CopyFile("qemu/qemu0.netdev", "/etc/systemd/network/qemu0.netdev"),
 		task.CopyFile("qemu/qemu0.network", "/etc/systemd/network/qemu0.network"),
@@ -34,23 +35,26 @@ func Qemu(cfg *config.Config) {
 }
 
 func UpdateBin() error {
-	repoDir := paths.RepoDir(false)
+	if os.Getuid() != 0 {
+		return fmt.Errorf("update-bin requires root privileges")
+	}
 
-	cmd := exec.Command("bash", "-ec", fmt.Sprintf(`
-		VERSION=$(date +%%d%%m%%Y-%%H%%M%%S) && \
+	repoDir := paths.RepoDir(false)
+	version := time.Now().Format("02012006-150405")
+	script := fmt.Sprintf(`
 		cd %s && \
 		go fmt ./... && \
-		go build -ldflags "-X main.version=$VERSION" -o %s/zerno ./cmd && \
-		echo "Built version: $VERSION"`, repoDir, repoDir))
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
+		go build -ldflags "-X main.version=%s" -o %s/zerno ./cmd`,
+		repoDir, version, repoDir)
+
+	if _, err := steps.RunShell(script); err != nil {
 		return err
 	}
 
+	fmt.Println("built version:", version)
 	binSrc := filepath.Join(repoDir, "zerno")
 	binDest := "/usr/local/bin/zerno"
-	if _, err := steps.RunShell(fmt.Sprintf("sudo cp -f %s %s", binSrc, binDest)); err != nil {
+	if err := steps.CopyRecursive(binSrc, binDest); err != nil {
 		return err
 	}
 	fmt.Println("done. bin path:", binDest)
@@ -83,9 +87,7 @@ func RepoPull() error {
 
 func CreateISO() error {
 	if os.Geteuid() != 0 {
-		fmt.Println("error: build-iso requires root privileges")
-		fmt.Println("run: sudo ./zerno build-iso")
-		os.Exit(1)
+		return fmt.Errorf("root privileges required")
 	}
 
 	relengDir := "/usr/share/archiso/configs/releng"
@@ -100,13 +102,13 @@ func CreateISO() error {
 		return err
 	}
 
-	if _, err := steps.RunShell(fmt.Sprintf("sudo rm -rf %s", archisoDir)); err != nil {
+	if err := os.RemoveAll(archisoDir); err != nil {
 		return err
 	}
 	if err := os.MkdirAll(archisoDir, 0755); err != nil {
 		return err
 	}
-	if _, err := steps.RunShell(fmt.Sprintf("cp -r %s %s", relengDir, archisoDir)); err != nil {
+	if err := steps.CopyRecursive(relengDir, relengCopyDir); err != nil {
 		return err
 	}
 
@@ -121,26 +123,26 @@ func CreateISO() error {
 	}
 
 	fmt.Println("building iso, it may take a while...")
-	script := fmt.Sprintf("cd %s && sudo mkarchiso -v -w . -o %s %s", archisoDir, isoBuildsDir, relengCopyDir)
+	script := fmt.Sprintf("cd %s && mkarchiso -v -w . -o %s %s", archisoDir, isoBuildsDir, relengCopyDir)
 	fmt.Println("running:", script)
 	if _, err := steps.RunShell(script); err != nil {
 		return err
 	}
 
-	userID := "1000"
-	userGID := "1000"
+	uid := 1000
+	gid := 1000
 	if cfg, err := config.Load(); err == nil {
-		if cfg.UserID != "" {
-			userID = cfg.UserID
+		if cfg.UserID != 0 {
+			uid = cfg.UserID
 		}
-		if cfg.UserGID != "" {
-			userGID = cfg.UserGID
+		if cfg.UserGID != 0 {
+			gid = cfg.UserGID
 		}
 	}
-	if _, err := steps.RunShell(fmt.Sprintf("sudo chown -R %s:%s %s", userID, userGID, isoBuildsDir)); err != nil {
+	if err := steps.ChownRecursive(isoBuildsDir, uid, gid); err != nil {
 		return err
 	}
-	if _, err := steps.RunShell(fmt.Sprintf("sudo rm -rf %s", archisoDir)); err != nil {
+	if err := os.RemoveAll(archisoDir); err != nil {
 		return err
 	}
 
@@ -152,7 +154,11 @@ func CreateISO() error {
 	return nil
 }
 
+// TODO: organize as a task list
 func FormatDevice(devPath, isoPath string) error {
+	if os.Getuid() != 0 {
+		return fmt.Errorf("boot-dev requires root privileges")
+	}
 	isoName := filepath.Base(isoPath)
 	re := regexp.MustCompile(`archlinux-(\d+\.\d+\.\d+)-x86_64\.iso`)
 	matches := re.FindStringSubmatch(isoName)
@@ -169,17 +175,17 @@ func FormatDevice(devPath, isoPath string) error {
 	steps.AskConfirmation(fmt.Sprintf("warning: this will wipe data from %s, continue?", devPath))
 
 	fmt.Println("creating partitions")
-	parted := fmt.Sprintf("sudo parted -s %s", devPath)
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("%s mklabel gpt", parted)); err != nil {
+	parted := fmt.Sprintf("parted -s %s", devPath)
+	if _, err := steps.RunShell(fmt.Sprintf("%s mklabel gpt", parted)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("%s mkpart Arch_ISO fat32 1MiB 1024MiB", parted)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("%s mkpart Arch_ISO fat32 1MiB 1024MiB", parted)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo mkfs.fat -F 32 %s1", devPath)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("mkfs.fat -F 32 %s1", devPath)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo fatlabel %s1 %s", devPath, isoLabel)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("fatlabel %s1 %s", devPath, isoLabel)); err != nil {
 		return err
 	}
 
@@ -188,26 +194,26 @@ func FormatDevice(devPath, isoPath string) error {
 	if err := os.MkdirAll(mntDir, 0755); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo mount %s1 %s", devPath, mntDir)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("mount %s1 %s", devPath, mntDir)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo bsdtar -x -f %s -C %s", isoPath, mntDir)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("bsdtar -x -f %s -C %s", isoPath, mntDir)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo umount %s", mntDir)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("umount %s", mntDir)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo syslinux --directory syslinux --install %s1", devPath)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("syslinux --directory syslinux --install %s1", devPath)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/gptmbr.bin of=%s", devPath)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/gptmbr.bin of=%s", devPath)); err != nil {
 		return err
 	}
 
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("%s mkpart FlashDrive ext4 1024MiB 100%%", parted)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("%s mkpart FlashDrive ext4 1024MiB 100%%", parted)); err != nil {
 		return err
 	}
-	if _, err := steps.RunCmd("bash", "-c", fmt.Sprintf("sudo mkfs.ext4 %s2", devPath)); err != nil {
+	if _, err := steps.RunShell(fmt.Sprintf("mkfs.ext4 %s2", devPath)); err != nil {
 		return err
 	}
 
@@ -248,7 +254,11 @@ func ensureMultilib() error {
 	return steps.WriteFile("/etc/pacman.conf", strings.Join(newLines, "\n"))
 }
 
+// TODO: organize as a task list
 func InstallSteam(vgaType string) error {
+	if os.Getuid() != 0 {
+		return fmt.Errorf("steam requires root privileges")
+	}
 	driverPackages := map[string]string{
 		"intel":  "vulkan-intel lib32-vulkan-intel",
 		"nvidia": "nvidia-utils lib32-nvidia-utils",
@@ -264,7 +274,14 @@ func InstallSteam(vgaType string) error {
 		return err
 	}
 
-	pkgs := fmt.Sprintf(`%s ttf-liberation vulkan-icd-loader vulkan-tools lib32-mesa lib32-systemd steam`, vulkanPackage)
-	_, err := steps.RunCmd("bash", "-c", "pacman -Sy --noconfirm "+pkgs)
-	return err
+	pkgs := []string{
+		"ttf-liberation",
+		"vulkan-icd-loader",
+		"vulkan-tools",
+		"lib32-mesa",
+		"lib32-systemd",
+		"steam",
+		vulkanPackage,
+	}
+	return steps.PacmanPackages(pkgs)
 }

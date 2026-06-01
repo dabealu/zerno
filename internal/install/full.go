@@ -161,9 +161,22 @@ func swayPackages() task.Task {
 	return task.Task{
 		Name: "install_sway_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "sway swaybg swaylock swayidle waybar brightnessctl xorg-xwayland bemenu-wayland libnotify dunst wl-clipboard alacritty ghostty"
-			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
-			return err
+			pkgs := []string{
+				"sway",
+				"swaybg",
+				"swaylock",
+				"swayidle",
+				"waybar",
+				"brightnessctl",
+				"xorg-xwayland",
+				"bemenu-wayland",
+				"libnotify",
+				"dunst",
+				"wl-clipboard",
+				"alacritty",
+				"ghostty",
+			}
+			return steps.PacmanPackages(pkgs)
 		},
 	}
 }
@@ -228,7 +241,7 @@ func swayConfigs() task.Task {
 				return err
 			}
 
-			if _, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, homeDir)); err != nil {
+			if err := steps.ChownRecursive(homeDir, cfg.UserID, cfg.UserGID); err != nil {
 				return err
 			}
 			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/waybar.sh"), 0755); err != nil {
@@ -250,9 +263,14 @@ func pipewire() task.Task {
 	return task.Task{
 		Name: "install_pipewire",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "pipewire pipewire-pulse wireplumber gst-plugin-pipewire xdg-desktop-portal-wlr"
-			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
-			return err
+			pkgs := []string{
+				"pipewire",
+				"pipewire-pulse",
+				"wireplumber",
+				"gst-plugin-pipewire",
+				"xdg-desktop-portal-wlr",
+			}
+			return steps.PacmanPackages(pkgs)
 		},
 	}
 }
@@ -361,7 +379,7 @@ func cpuGovernor() task.Task {
 				return nil
 			}
 
-			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "cpupower"); err != nil {
+			if err := steps.PacmanPackages([]string{"cpupower"}); err != nil {
 				return err
 			}
 			if !steps.FileExists("/etc/default/cpupower") {
@@ -393,7 +411,7 @@ func bluetooth() task.Task {
 	return task.Task{
 		Name: "setup_bluetooth",
 		RunFunc: func(cfg *config.Config) error {
-			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "bluez", "bluez-tools", "bluez-utils", "blueman"); err != nil {
+			if err := steps.PacmanPackages([]string{"bluez", "bluez-tools", "bluez-utils", "blueman"}); err != nil {
 				return err
 			}
 			if err := steps.ReplaceLine("/etc/bluetooth/main.conf", `#.*AutoEnable.*`, `AutoEnable = true`); err != nil {
@@ -412,7 +430,7 @@ func docker() task.Task {
 	return task.Task{
 		Name: "setup_docker",
 		RunFunc: func(cfg *config.Config) error {
-			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "docker"); err != nil {
+			if err := steps.PacmanPackages([]string{"docker"}); err != nil {
 				return err
 			}
 			if _, err := steps.RunShell(fmt.Sprintf("usermod -aG docker %s", cfg.Username)); err != nil {
@@ -496,8 +514,10 @@ func bashrc() task.Task {
 				return err
 			}
 
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s %s", cfg.UserID, cfg.UserGID, binDir, bashrcPath))
-			return err
+			if err := steps.ChownRecursive(binDir, cfg.UserID, cfg.UserGID); err != nil {
+				return err
+			}
+			return steps.ChownRecursive(bashrcPath, cfg.UserID, cfg.UserGID)
 		},
 	}
 }
@@ -506,9 +526,17 @@ func desktopApps() task.Task {
 	return task.Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "evince telegram-desktop ristretto transmission-gtk vlc audacious pavucontrol thunar"
-			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
-			return err
+			pkgs := []string{
+				"evince",
+				"telegram-desktop",
+				"ristretto",
+				"transmission-gtk",
+				"vlc",
+				"audacious",
+				"pavucontrol",
+				"thunar",
+			}
+			return steps.PacmanPackages(pkgs)
 		},
 	}
 }
@@ -517,8 +545,20 @@ func setupDevTools() task.Task {
 	return task.Task{
 		Name: "setup_dev_tools",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "ripgrep fd fzf nodejs npm simdjson python-pip python-pynvim ttf-jetbrains-mono-nerd tree-sitter-cli opencode"
-			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
+			pkgs := []string{
+				"ripgrep",
+				"fd",
+				"fzf",
+				"nodejs",
+				"npm",
+				"simdjson",
+				"python-pip",
+				"python-pynvim",
+				"ttf-jetbrains-mono-nerd",
+				"tree-sitter-cli",
+				"opencode",
+			}
+			if err := steps.PacmanPackages(pkgs); err != nil {
 				return err
 			}
 
@@ -527,7 +567,7 @@ func setupDevTools() task.Task {
 			}
 
 			nvimDst := fmt.Sprintf("/home/%s/.config/nvim", cfg.Username)
-			if _, err := steps.RunShell("rm -rf " + nvimDst); err != nil {
+			if err := os.RemoveAll(nvimDst); err != nil {
 				return err
 			}
 			if err := os.MkdirAll(nvimDst, 0755); err != nil {
@@ -541,8 +581,7 @@ func setupDevTools() task.Task {
 				return err
 			}
 
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, nvimDst))
-			return err
+			return steps.ChownRecursive(nvimDst, cfg.UserID, cfg.UserGID)
 		},
 	}
 }
@@ -551,8 +590,22 @@ func utilsFontsThemes() task.Task {
 	return task.Task{
 		Name: "install_utilities_fonts_themes",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "grim slurp ddcutil nwg-look syslinux lshw pciutils usbutils man man-pages bash-completion materia-gtk-theme papirus-icon-theme"
-			if _, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs); err != nil {
+			pkgs := []string{
+				"grim",
+				"slurp",
+				"ddcutil",
+				"nwg-look",
+				"syslinux",
+				"lshw",
+				"pciutils",
+				"usbutils",
+				"man",
+				"man-pages",
+				"bash-completion",
+				"materia-gtk-theme",
+				"papirus-icon-theme",
+			}
+			if err := steps.PacmanPackages(pkgs); err != nil {
 				return err
 			}
 
@@ -571,8 +624,10 @@ func utilsFontsThemes() task.Task {
 				return err
 			}
 
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s %s", cfg.UserID, cfg.UserGID, gtk3Dir, gtk2rc))
-			return err
+			if err := steps.ChownRecursive(gtk3Dir, cfg.UserID, cfg.UserGID); err != nil {
+				return err
+			}
+			return steps.ChownRecursive(gtk2rc, cfg.UserID, cfg.UserGID)
 		},
 	}
 }
@@ -608,8 +663,7 @@ func installUtils() task.Task {
 				}
 			}
 
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, homeBinDir))
-			return err
+			return steps.ChownRecursive(homeBinDir, cfg.UserID, cfg.UserGID)
 		},
 	}
 }
@@ -622,8 +676,7 @@ func userSrcDir() task.Task {
 			if err := os.MkdirAll(srcDir, 0755); err != nil {
 				return err
 			}
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, srcDir))
-			return err
+			return steps.ChownRecursive(srcDir, cfg.UserID, cfg.UserGID)
 		},
 	}
 }
@@ -642,8 +695,7 @@ func migrateUserConfig() task.Task {
 			if err := steps.CopyFile(src, dst); err != nil {
 				return err
 			}
-			_, err := steps.RunShell(fmt.Sprintf("chown -R %s:%s %s", cfg.UserID, cfg.UserGID, dstDir))
-			return err
+			return steps.ChownRecursive(dstDir, cfg.UserID, cfg.UserGID)
 		},
 	}
 }

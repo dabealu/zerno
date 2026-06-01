@@ -3,7 +3,6 @@ package paths
 import (
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"testing"
 )
@@ -91,17 +90,6 @@ func TestHostBinPath(t *testing.T) {
 	}
 	if !filepath.IsAbs(path) {
 		t.Errorf("HostBinPath() = %q, want absolute path", path)
-	}
-}
-
-func TestCurrentUser(t *testing.T) {
-	user := CurrentUser()
-	if user == "" {
-		t.Error("CurrentUser() should not return empty string")
-	}
-	matched, _ := regexp.MatchString(`^[a-zA-Z0-9_]+$`, user)
-	if !matched {
-		t.Errorf("CurrentUser() = %q, want valid username format", user)
 	}
 }
 

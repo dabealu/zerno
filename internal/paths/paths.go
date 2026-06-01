@@ -32,13 +32,6 @@ func HostBinPath() string {
 	return exe
 }
 
-func CurrentUser() string {
-	if sudUser := os.Getenv("SUDO_USER"); sudUser != "" {
-		return sudUser
-	}
-	return os.Getenv("USER")
-}
-
 func baseDir(chroot bool) string {
 	if chroot {
 		return "/mnt/root"

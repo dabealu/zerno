@@ -1,13 +1,17 @@
 package steps
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -38,6 +42,73 @@ func CopyFile(from, to string) error {
 	return os.WriteFile(to, data, 0644)
 }
 
+// CopyRecursive recursively copies a file or directory tree from src to dst.
+// Regular files are copied with their source permissions. Symlinks are followed.
+func CopyRecursive(src, dst string) error {
+	log.Printf("copy %s -> %s", src, dst)
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relPath, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		destPath := filepath.Join(dst, relPath)
+		info, err := d.Info()
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return os.MkdirAll(destPath, info.Mode())
+		}
+		if err := os.MkdirAll(filepath.Dir(destPath), 0755); err != nil {
+			return err
+		}
+		srcFile, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		dstFile, err := os.OpenFile(destPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		if err != nil {
+			srcFile.Close()
+			return err
+		}
+		_, err = io.Copy(dstFile, srcFile)
+		srcFile.Close()
+		dstFile.Close()
+		return err
+	})
+}
+
+// ChownRecursive recursively changes the owner and group of path and all its contents.
+func ChownRecursive(path string, uid, gid int) error {
+	log.Printf("chown -R %d:%d %s", uid, gid, path)
+	return filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		return os.Chown(p, uid, gid)
+	})
+}
+
+// Move moves src to dst, handling cross-device moves.
+// First tries os.Rename (fast atomic move within the same filesystem).
+// If that fails with a cross-device error (EXDEV), falls back to
+// CopyRecursive + RemoveAll, which works across filesystem boundaries.
+func Move(src, dst string) error {
+	log.Printf("move %s -> %s", src, dst)
+	if err := os.Rename(src, dst); err == nil {
+		return nil
+	} else if !errors.Is(err, syscall.EXDEV) {
+		return err
+	}
+	if err := CopyRecursive(src, dst); err != nil {
+		return err
+	}
+	return os.RemoveAll(src)
+}
+
 func CreateDir(path string) error {
 	return os.MkdirAll(path, 0755)
 }
@@ -64,12 +135,17 @@ func RunCmd(name string, args ...string) (string, error) {
 
 func RunShell(script string) (string, error) {
 	log.Printf("shell: %s", script)
-	cmd := exec.Command("bash", "-c", script)
+	cmd := exec.Command("bash", "-o", "pipefail", "-ec", script)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(out), fmt.Errorf("%s: %w", string(out), err)
 	}
 	return string(out), nil
+}
+
+func PacmanPackages(pkgs []string) error {
+	_, err := RunShell("pacman -Sy --noconfirm " + strings.Join(pkgs, " "))
+	return err
 }
 
 func LineInFile(path, line string) error {
