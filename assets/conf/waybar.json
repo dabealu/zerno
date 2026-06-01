@@ -119,7 +119,7 @@
             "paused": "",
             "stopped": "⏹"
         },
-        "title-len": 45,
+        "title-len": 40,
         "ellipsis": "…",
         "tooltip-format": "{status_icon} {dynamic} [{player}]",
         "dynamic-order": ["title", "artist", "album"],

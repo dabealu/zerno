@@ -54,7 +54,12 @@ func UpdateBin() error {
 	fmt.Println("built version:", version)
 	binSrc := filepath.Join(repoDir, "zerno")
 	binDest := "/usr/local/bin/zerno"
-	if err := steps.CopyRecursive(binSrc, binDest); err != nil {
+	tmpDest := binDest + ".new"
+	if err := steps.CopyRecursive(binSrc, tmpDest); err != nil {
+		return err
+	}
+	if err := os.Rename(tmpDest, binDest); err != nil {
+		os.Remove(tmpDest)
 		return err
 	}
 	fmt.Println("done. bin path:", binDest)
@@ -149,7 +154,7 @@ func CreateISO() error {
 	out, _ := steps.RunCmd("lsblk")
 	fmt.Println(out)
 	fmt.Println("done, to create installation media run:")
-	fmt.Printf("sudo cp %s/archlinux-YYYY.MM.DD-x86_64.iso /dev/sdX\n", isoBuildsDir)
+	fmt.Printf("sudo cp %s/archlinux-%s-x86_64.iso /dev/sdX\n", isoBuildsDir, time.Now().Format("2006.01.02"))
 
 	return nil
 }
