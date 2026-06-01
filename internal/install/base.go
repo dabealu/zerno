@@ -154,7 +154,7 @@ func pacstrap() task.Task {
 	return task.Task{
 		Name: "pacstrap_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "linux linux-firmware base base-devel efibootmgr sbctl systemd-ukify systemd-resolvconf iwd impala python openssh dnsutils curl git unzip neovim sudo tmux sysstat go lsof strace"
+			pkgs := "linux linux-firmware base base-devel efibootmgr sbctl systemd-ukify systemd-resolvconf iwd impala python openssh dnsutils curl git unzip neovim sudo tmux sysstat go lsof strace man-db man-pages"
 			_, err := steps.RunShell("pacstrap /mnt " + pkgs)
 			return err
 		},

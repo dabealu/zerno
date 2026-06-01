@@ -244,6 +244,8 @@ bindsym --to-code {
 
     # Start menu
     $mod+d exec bemenu-run -b -p '▪' --fn 'JetBrainsMono Nerd Font Mono 12' --tb '$urgent' --tf '$white' --hb '$urgent' --hf '$white'
+    # Favourite apps launcher
+    $mod+Shift+d exec ~/.config/sway/fav-apps.sh
 }
 
 # Set GTK theme and icon theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts

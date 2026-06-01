@@ -198,6 +198,7 @@ func swayConfigs() task.Task {
 				"conf/dunstrc":                swayDir + "/dunstrc",
 				"conf/libinput-gestures.conf": swayDir + "/libinput-gestures.conf",
 				"conf/power-menu.sh":          swayDir + "/power-menu.sh",
+				"conf/fav-apps.sh":            swayDir + "/fav-apps.sh",
 				"conf/waybar.css":             swayDir + "/waybar.css",
 				"conf/waybar.json":            swayDir + "/waybar.json",
 				"conf/waybar.sh":              swayDir + "/waybar.sh",
@@ -234,6 +235,9 @@ func swayConfigs() task.Task {
 				return err
 			}
 			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/power-menu.sh"), 0755); err != nil {
+				return err
+			}
+			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/fav-apps.sh"), 0755); err != nil {
 				return err
 			}
 
@@ -502,7 +506,7 @@ func desktopApps() task.Task {
 	return task.Task{
 		Name: "install_desktop_apps",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "evince telegram-desktop ristretto transmission-gtk vlc pavucontrol thunar"
+			pkgs := "evince telegram-desktop ristretto transmission-gtk vlc audacious pavucontrol thunar"
 			_, err := steps.RunShell("pacman -Sy --noconfirm " + pkgs)
 			return err
 		},

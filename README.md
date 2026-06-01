@@ -108,3 +108,12 @@ Then enable Secure Boot in your UEFI firmware settings.
   ```
   options i915 enable_psr=0 enable_guc=0 enable_fbc=0
   ```
+- consider replacing some apps with TUIs:
+  - transmission -> aria2
+  - thunar       -> yazi
+  - ristretto    -> chafa/uberzug++
+  - pavucontrol  -> wiremix/pulsemixer
+  - evince       -> AUR tdf-git/fancy-cat/just use browser?
+  - vlc          -> try for fun: mpv --vo=kitty --hwdec=auto video.mp4
+  - audacious    -> create tui wrapper around mpv?
+
