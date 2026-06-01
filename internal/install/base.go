@@ -20,7 +20,7 @@ func Base(cfg *config.Config) {
 		partitions(),
 		filesystems(),
 		kernelCmdline(),
-		task.Command("update_archlinux_keyring", "pacman -Sy --noconfirm archlinux-keyring"),
+		task.Pacman("update_archlinux_keyring", []string{"archlinux-keyring"}),
 		pacstrap(),
 		task.Command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
 		setTimezone(),
@@ -51,13 +51,13 @@ func migrateToChroot() task.Task {
 			if err := os.MkdirAll("/mnt/usr/local/bin", 0755); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell(fmt.Sprintf("mv %s %s", binSrc, binDst)); err != nil {
+			if err := steps.Move(binSrc, binDst); err != nil {
 				return err
 			}
 
 			if !steps.FileExists(confDst) {
 				fmt.Printf("moving config %s -> %s\n", confSrc, confDst)
-				if _, err := steps.RunShell(fmt.Sprintf("mv %s %s", confSrc, confDst)); err != nil {
+				if err := steps.Move(confSrc, confDst); err != nil {
 					return err
 				}
 			}
@@ -136,7 +136,7 @@ func filesystems() task.Task {
 			if _, err := steps.RunCmd("mount", rootPart, "/mnt"); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell("mkdir -p /mnt/efi"); err != nil {
+			if err := os.MkdirAll("/mnt/efi", 0755); err != nil {
 				return err
 			}
 			if _, err := steps.RunCmd("mount", dev+"1", "/mnt/efi"); err != nil {
@@ -154,8 +154,34 @@ func pacstrap() task.Task {
 	return task.Task{
 		Name: "pacstrap_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "linux linux-firmware base base-devel efibootmgr sbctl systemd-ukify systemd-resolvconf iwd impala python openssh dnsutils curl git unzip neovim sudo tmux sysstat go lsof strace man-db man-pages"
-			_, err := steps.RunShell("pacstrap /mnt " + pkgs)
+			pkgs := []string{
+				"linux",
+				"linux-firmware",
+				"base",
+				"base-devel",
+				"efibootmgr",
+				"sbctl",
+				"systemd-ukify",
+				"systemd-resolvconf",
+				"iwd",
+				"impala",
+				"python",
+				"openssh",
+				"dnsutils",
+				"curl",
+				"git",
+				"unzip",
+				"neovim",
+				"sudo",
+				"tmux",
+				"sysstat",
+				"go",
+				"lsof",
+				"strace",
+				"man-db",
+				"man-pages",
+			}
+			_, err := steps.RunShell("pacstrap /mnt " + strings.Join(pkgs, " "))
 			return err
 		},
 	}
@@ -212,8 +238,8 @@ func user() task.Task {
 		Name: "create_user",
 		RunFunc: func(cfg *config.Config) error {
 			script := fmt.Sprintf(`
-				arch-chroot /mnt groupadd -g %s %s && \
-				arch-chroot /mnt useradd -m -u %s -g %s %s && \
+				arch-chroot /mnt groupadd -g %d %s && \
+				arch-chroot /mnt useradd -m -u %d -g %d %s && \
 				arch-chroot /mnt usermod -aG wheel,audio,video,storage %s`,
 				cfg.UserGID, cfg.Username, cfg.UserID, cfg.UserGID, cfg.Username, cfg.Username)
 			if _, err := steps.RunShell(script); err != nil {
@@ -351,27 +377,5 @@ func secureBootSign() task.Task {
 
 			return nil
 		},
-	}
-}
-
-func baseTasks(cfg *config.Config) []task.Task {
-	return []task.Task{
-		task.RequireUser("root"),
-		requireUEFI(),
-		wifiConnect(),
-		partitions(),
-		filesystems(),
-		kernelCmdline(),
-		task.Command("update_archlinux_keyring", "pacman -Sy --noconfirm archlinux-keyring"),
-		pacstrap(),
-		task.Command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
-		setTimezone(),
-		locales(),
-		hostname(),
-		user(),
-		bootloader(),
-		secureBootSign(),
-		migrateToChroot(),
-		task.Info("reboot and continue installation as root"),
 	}
 }

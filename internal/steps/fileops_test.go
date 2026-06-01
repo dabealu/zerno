@@ -7,6 +7,151 @@ import (
 	"testing"
 )
 
+func TestCopyRecursive_SingleFile(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "file.txt")
+	dst := filepath.Join(t.TempDir(), "copy.txt")
+	content := "hello"
+
+	if err := os.WriteFile(src, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := CopyRecursive(src, dst); err != nil {
+		t.Fatalf("CopyRecursive() error = %v", err)
+	}
+
+	got, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != content {
+		t.Errorf("content = %q, want %q", string(got), content)
+	}
+}
+
+func TestCopyRecursive_SingleFilePermissions(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "script.sh")
+	dst := filepath.Join(t.TempDir(), "script.sh")
+
+	if err := os.WriteFile(src, []byte("#!/bin/sh"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := CopyRecursive(src, dst); err != nil {
+		t.Fatalf("CopyRecursive() error = %v", err)
+	}
+
+	info, err := os.Stat(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0755 {
+		t.Errorf("permissions = %v, want 0755", info.Mode().Perm())
+	}
+}
+
+func TestCopyRecursive_SingleDir(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "mydir")
+	dst := filepath.Join(t.TempDir(), "copydir")
+
+	// Create source directory with files and subdirs
+	os.MkdirAll(filepath.Join(src, "sub"), 0755)
+	os.WriteFile(filepath.Join(src, "a.txt"), []byte("a"), 0644)
+	os.WriteFile(filepath.Join(src, "sub", "b.txt"), []byte("b"), 0644)
+
+	if err := CopyRecursive(src, dst); err != nil {
+		t.Fatalf("CopyRecursive() error = %v", err)
+	}
+
+	// Verify structure
+	tests := []struct {
+		path    string
+		isDir   bool
+		content string
+	}{
+		{path: dst, isDir: true},
+		{path: filepath.Join(dst, "a.txt"), content: "a"},
+		{path: filepath.Join(dst, "sub"), isDir: true},
+		{path: filepath.Join(dst, "sub", "b.txt"), content: "b"},
+	}
+	for _, tc := range tests {
+		info, err := os.Stat(tc.path)
+		if err != nil {
+			t.Errorf("stat %s: %v", tc.path, err)
+			continue
+		}
+		if tc.isDir && !info.IsDir() {
+			t.Errorf("%s: expected directory", tc.path)
+		}
+		if tc.content != "" {
+			data, _ := os.ReadFile(tc.path)
+			if string(data) != tc.content {
+				t.Errorf("%s: content = %q, want %q", tc.path, string(data), tc.content)
+			}
+		}
+	}
+}
+
+func TestCopyRecursive_EmptyDir(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "empty")
+	dst := filepath.Join(t.TempDir(), "copy")
+
+	if err := os.MkdirAll(src, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyRecursive(src, dst); err != nil {
+		t.Fatalf("CopyRecursive() error = %v", err)
+	}
+	info, err := os.Stat(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !info.IsDir() {
+		t.Error("expected directory")
+	}
+}
+
+func TestCopyRecursive_MissingSrc(t *testing.T) {
+	err := CopyRecursive("/nonexistent/path", "/tmp/dest")
+	if err == nil {
+		t.Fatal("expected error for missing source")
+	}
+}
+
+func TestCopyRecursive_CreatesParentDirs(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "file.txt")
+	dst := filepath.Join(t.TempDir(), "a", "b", "file.txt")
+
+	if err := os.WriteFile(src, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyRecursive(src, dst); err != nil {
+		t.Fatalf("CopyRecursive() error = %v", err)
+	}
+	if _, err := os.Stat(dst); os.IsNotExist(err) {
+		t.Error("CopyRecursive() did not create parent directories")
+	}
+}
+
+func TestCopyRecursive_DirPermissions(t *testing.T) {
+	src := filepath.Join(t.TempDir(), "restricted")
+	dst := filepath.Join(t.TempDir(), "copy")
+
+	if err := os.MkdirAll(src, 0700); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyRecursive(src, dst); err != nil {
+		t.Fatalf("CopyRecursive() error = %v", err)
+	}
+	info, err := os.Stat(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0700 {
+		t.Errorf("permissions = %v, want 0700", info.Mode().Perm())
+	}
+}
+
 func TestFileExists(t *testing.T) {
 	tmpfile := filepath.Join(t.TempDir(), "test.txt")
 	_, err := os.Create(tmpfile)

@@ -8,7 +8,6 @@ import (
 
 	"zerno/assets"
 	"zerno/internal/config"
-	"zerno/internal/paths"
 	"zerno/internal/steps"
 )
 
@@ -37,6 +36,15 @@ func Command(name, cmdStr string) Task {
 	}
 }
 
+func Pacman(name string, pkgs []string) Task {
+	return Task{
+		Name: name,
+		RunFunc: func(cfg *config.Config) error {
+			return steps.PacmanPackages(pkgs)
+		},
+	}
+}
+
 func Info(msg string) Task {
 	return Task{
 		Name: "info",
@@ -54,16 +62,24 @@ func RequireUser(user string) Task {
 			fmt.Println("required user:", user)
 			if user == "root" {
 				if os.Getuid() != 0 {
-					return fmt.Errorf("required user: root, current user: %s", paths.CurrentUser())
+					return fmt.Errorf("required user: root, current user: %s", currentUser())
 				}
 				return nil
 			}
-			if paths.CurrentUser() != user {
-				return fmt.Errorf("required user: %s, current user: %s", user, paths.CurrentUser())
+			current := currentUser()
+			if current != user {
+				return fmt.Errorf("required user: %s, current user: %s", user, current)
 			}
 			return nil
 		},
 	}
+}
+
+func currentUser() string {
+	if sudoUser := os.Getenv("SUDO_USER"); sudoUser != "" {
+		return sudoUser
+	}
+	return os.Getenv("USER")
 }
 
 func CopyFile(assetPath, destPath string) Task {
