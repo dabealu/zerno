@@ -51,7 +51,7 @@ input type:touchpad {
 
 input type:keyboard {
     xkb_layout   us,ru
-    xkb_options  grp:alt_shift_toggle
+    xkb_options  grp:alt_shift_toggle,caps:none
     repeat_delay 250
     repeat_rate  25
 }
@@ -81,7 +81,7 @@ bindsym --to-code {
     $mod+$up     focus up
     $mod+$right  focus right
     # Cycle focus
-    $mod+tab    focus right
+    $mod+tab     focus right
 
     # Move the focused window with the same, but add Shift
     $mod+Shift+Left   move left
@@ -144,6 +144,10 @@ bindsym --to-code {
     $mod+minus scratchpad show
 }
 
+# Focus previous window - use bindcode because caps:none kills the keysym
+# Counterpart to $mod+tab
+bindcode $mod+66 focus left
+
 mode "resize" {
     bindsym --to-code {
         # With arrows
@@ -192,43 +196,45 @@ bindsym --to-code --release {
     # Screenshot selected and save as file
     $mod+Shift+Print exec "slurp | grim -g - $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
     # Same with calc key
-    XF86Calculator exec "grim $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
-    Shift+XF86Calculator exec "slurp | grim -g - - | wl-copy"
+    XF86Calculator            exec "grim $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
+    Shift+XF86Calculator      exec "slurp | grim -g - - | wl-copy"
     $mod+Shift+XF86Calculator exec "slurp | grim -g - $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
 }
 
 bindsym --to-code {
     # Pulse Audio controls (get sink list to chose appropriate: pactl list sinks)
-    $mod+Control+plus exec pactl set-sink-volume @DEFAULT_SINK@ +5%
-    $mod+Control+minus exec pactl set-sink-volume @DEFAULT_SINK@ -5%
-    $mod+Control+0 exec pactl set-sink-mute @DEFAULT_SINK@ toggle
+    $mod+Control+plus   exec pactl set-sink-volume @DEFAULT_SINK@ +5%
+    $mod+Control+minus  exec pactl set-sink-volume @DEFAULT_SINK@ -5%
+    $mod+Control+0      exec pactl set-sink-mute @DEFAULT_SINK@ toggle
 
     # screen brightness controls (internal display)
-    XF86MonBrightnessUp exec brightnessctl set +10%
-    XF86MonBrightnessDown exec brightnessctl set 10%-
+    XF86MonBrightnessUp     exec brightnessctl set +10%
+    XF86MonBrightnessDown   exec brightnessctl set 10%-
     $mod+Shift+bracketright exec brightnessctl set +10%
-    $mod+Shift+bracketleft exec brightnessctl set 10%-
+    $mod+Shift+bracketleft  exec brightnessctl set 10%-
 
     # brightness control for external display (via DDC/CI)
-    $mod+Control+bracketright exec brightness-control increase
-    $mod+Control+bracketleft exec brightness-control decrease
+    $mod+Control+bracketright       exec brightness-control increase
+    $mod+Control+bracketleft        exec brightness-control decrease
     $mod+Shift+Control+bracketright exec brightness-control max
-    $mod+Shift+Control+bracketleft exec brightness-control min
+    $mod+Shift+Control+bracketleft  exec brightness-control min
 
     # Media player controls
-    XF86AudioPlay exec playerctl play
-    XF86AudioPause exec playerctl pause
-    XF86AudioNext exec playerctl next
-    XF86AudioPrev exec playerctl previous
-    $mod+g exec playerctl play-pause
+    XF86AudioPlay   exec playerctl play
+    XF86AudioPause  exec playerctl pause
+    XF86AudioNext   exec playerctl next
+    XF86AudioPrev   exec playerctl previous
+    $mod+g          exec playerctl play-pause
 
     # Switch workspaces via arrow keys or h,l
-    $mod+Control+Left workspace prev
-    $mod+Control+Right workspace next
-    $mod+Control+$left workspace prev
+    $mod+Control+Left   workspace prev
+    $mod+Control+Right  workspace next
+    $mod+Control+$left  workspace prev
     $mod+Control+$right workspace next
-    # Cycle through workspaces using ~ key
-    $mod+grave workspace next
+
+    # Cycle through workspaces using `/~ keys
+    $mod+grave       workspace next
+    $mod+Shift+grave workspace prev
 
     # Mouse right clock on title - kill window
     button3 kill
