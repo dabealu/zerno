@@ -554,6 +554,7 @@ func setupDevTools() task.Task {
 				"ripgrep",
 				"fd",
 				"fzf",
+				"jq",
 				"nodejs",
 				"npm",
 				"simdjson",
@@ -642,12 +643,11 @@ func installUtils() task.Task {
 		Name: "install_utilities",
 		RunFunc: func(cfg *config.Config) error {
 			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
-			utils := map[string]string{
+
+			for src, bin := range map[string]string{
 				"utilsfs/brightness_control.embed": "brightness-control",
 				"utilsfs/translate.embed":          "translate",
-			}
-
-			for src, bin := range utils {
+			} {
 				tmpDir, err := os.MkdirTemp("", "zerno-")
 				if err != nil {
 					return err
@@ -665,6 +665,20 @@ func installUtils() task.Task {
 				out, err := cmd.CombinedOutput()
 				if err != nil {
 					return fmt.Errorf("compile %s: %w\n%s", bin, err, out)
+				}
+			}
+
+			for _, src := range []string{
+				"files/display-disable-laptop.sh",
+				"files/display-enable-laptop.sh",
+				"files/display-poweroff-external.sh",
+			} {
+				dst := filepath.Join(homeBinDir, filepath.Base(src))
+				if err := assets.Restore(src, dst); err != nil {
+					return err
+				}
+				if err := os.Chmod(dst, 0755); err != nil {
+					return err
 				}
 			}
 

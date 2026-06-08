@@ -1,6 +1,5 @@
 #!/bin/bash -e
 
-# load module
 if ! lsmod | grep -q i2c_dev; then
   echo "loading module"
   sudo modprobe i2c-dev

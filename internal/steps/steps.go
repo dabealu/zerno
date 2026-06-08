@@ -216,7 +216,7 @@ func AskConfirmation(msg string) bool {
 
 func WaitForDefaultRoute(timeout int) error {
 	log.Printf("waiting for default route to come up...")
-	for i := 0; i < timeout; i++ {
+	for range timeout {
 		time.Sleep(1 * time.Second)
 		out, _ := RunCmd("ip", "route", "show", "default")
 		if strings.TrimSpace(out) != "" {
