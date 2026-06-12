@@ -102,7 +102,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
       vim.keymap.set("n", keys, func, { buffer = event.buf, desc = desc })
     end
 
-    -- Navigation (no leader, high frequency)
+    -- Navigation (no leader, high frequency), mirrors keys in gr*
     map("gd", vim.lsp.buf.definition, "Go to definition")
     map("gD", vim.lsp.buf.declaration, "Go to declaration")
     map("K", vim.lsp.buf.hover, "Hover documentation")

@@ -40,11 +40,14 @@ map("n", "N", "Nzzzv", { desc = "Previous search result (centered)" })
 
 -- Built-in LSP defaults, remapped only to provide concise which-key labels
 map({ "n", "x" }, "gra", vim.lsp.buf.code_action, { desc = "Code action" })
+map("n", "grd", vim.lsp.buf.definition, { desc = "Go to definition" })
+map("n", "grl", vim.lsp.buf.declaration, { desc = "Go to declaration" })
 map("n", "gri", vim.lsp.buf.implementation, { desc = "Go to implementation" })
 map("n", "grn", vim.lsp.buf.rename, { desc = "Rename symbol" })
 map("n", "grr", vim.lsp.buf.references, { desc = "Go to references" })
 map("n", "grt", vim.lsp.buf.type_definition, { desc = "Go to type definition" })
 map("n", "grx", vim.lsp.codelens.run, { desc = "Run code lens" })
+map("n", "grk", vim.lsp.buf.hover, { desc = "Hover documentation" })
 
 -- Better paste in visual mode (don't yank replaced text)
 map("x", "p", [["_dP]], { desc = "Paste without yanking" })
