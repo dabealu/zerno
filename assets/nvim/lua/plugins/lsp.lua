@@ -1,28 +1,19 @@
 -- Go templates: register as gotmpl filetype (gopls already handles this filetype)
 vim.filetype.add({ extension = { gotmpl = "gotmpl" } })
 
--- Mason: auto-install LSP servers
-require("mason").setup()
-require("mason-lspconfig").setup({
-  automatic_installation = true,
-  automatic_enable = true,
-})
-
 -- blink.cmp: autocompletion
 require("blink.cmp").setup({
-  keymap = {
-    preset = "default",
-    ["<Tab>"] = { "accept", "fallback" },
-    ["<CR>"] = { "accept", "fallback" },
-    ["<Esc>"] = { "cancel", "fallback" },
-    ["<C-e>"] = { "fallback" },
-  },
+  keymap = { preset = "super-tab" },
   appearance = {
     nerd_font_variant = "mono",
   },
   completion = {
-    documentation = { auto_show = true },
+    documentation = {
+      auto_show = true,
+      auto_show_delay_ms = 300,
+    },
     accept = { auto_brackets = { enabled = true } },
+    ghost_text = { enabled = true },
   },
   snippets = {
     preset = "default",
@@ -30,6 +21,7 @@ require("blink.cmp").setup({
   sources = {
     default = { "lsp", "snippets", "path", "buffer" },
   },
+  signature = { enabled = true },
 })
 
 -- LSP server configurations (native vim.lsp.config API, Neovim 0.12+)
@@ -48,12 +40,18 @@ vim.lsp.config("gopls", {
 vim.lsp.config("lua_ls", {
   settings = {
     Lua = {
+      runtime = {
+        version = "LuaJIT",
+      },
       diagnostics = {
         globals = { "vim", "Snacks" },
       },
       workspace = {
         library = vim.api.nvim_get_runtime_file("", true),
         checkThirdParty = false,
+      },
+      telemetry = {
+        enable = false,
       },
     },
   },
@@ -79,6 +77,23 @@ vim.lsp.config("pyright", {})
 vim.lsp.config("taplo", {})
 vim.lsp.config("marksman", {})
 
+-- Mason: auto-install and auto-enable LSP servers
+require("mason").setup()
+require("mason-lspconfig").setup({
+  ensure_installed = {
+    "gopls",
+    "lua_ls",
+    "yamlls",
+    "bashls",
+    "jsonls",
+    "terraformls",
+    "pyright",
+    "taplo",
+    "marksman",
+  },
+  automatic_enable = true,
+})
+
 -- LSP keymaps (set when an LSP client attaches to a buffer)
 vim.api.nvim_create_autocmd("LspAttach", {
   group = vim.api.nvim_create_augroup("lsp-keymaps", { clear = true }),
@@ -89,10 +104,7 @@ vim.api.nvim_create_autocmd("LspAttach", {
 
     -- Navigation (no leader, high frequency)
     map("gd", vim.lsp.buf.definition, "Go to definition")
-    vim.keymap.set("n", "gr", vim.lsp.buf.references, { buffer = event.buf, desc = "Go to references", nowait = true })
-    map("gi", vim.lsp.buf.implementation, "Go to implementation")
     map("gD", vim.lsp.buf.declaration, "Go to declaration")
-    map("gy", vim.lsp.buf.type_definition, "Go to type definition")
     map("K", vim.lsp.buf.hover, "Hover documentation")
 
     -- LSP actions (leader group)

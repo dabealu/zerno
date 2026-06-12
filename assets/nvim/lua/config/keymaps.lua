@@ -38,6 +38,14 @@ map("n", "<C-u>", "<C-u>zz", { desc = "Scroll up (centered)" })
 map("n", "n", "nzzzv", { desc = "Next search result (centered)" })
 map("n", "N", "Nzzzv", { desc = "Previous search result (centered)" })
 
+-- Built-in LSP defaults, remapped only to provide concise which-key labels
+map({ "n", "x" }, "gra", vim.lsp.buf.code_action, { desc = "Code action" })
+map("n", "gri", vim.lsp.buf.implementation, { desc = "Go to implementation" })
+map("n", "grn", vim.lsp.buf.rename, { desc = "Rename symbol" })
+map("n", "grr", vim.lsp.buf.references, { desc = "Go to references" })
+map("n", "grt", vim.lsp.buf.type_definition, { desc = "Go to type definition" })
+map("n", "grx", vim.lsp.codelens.run, { desc = "Run code lens" })
+
 -- Better paste in visual mode (don't yank replaced text)
 map("x", "p", [["_dP]], { desc = "Paste without yanking" })
 
@@ -58,19 +66,19 @@ map("i", "<M-b>", "<C-o>b", { desc = "Jump word backward (iTerm2)" })
 map("i", "<M-f>", "<C-o>w", { desc = "Jump word forward (iTerm2)" })
 
 -- Diagnostic navigation
-map("n", "]d", vim.diagnostic.goto_next, { desc = "Next diagnostic" })
-map("n", "[d", vim.diagnostic.goto_prev, { desc = "Previous diagnostic" })
+map("n", "]d", function() vim.diagnostic.jump({ count = 1, float = true }) end, { desc = "Next diagnostic" })
+map("n", "[d", function() vim.diagnostic.jump({ count = -1, float = true }) end, { desc = "Previous diagnostic" })
 
 -- Oil.nvim: open parent directory
 map("n", "-", "<cmd>Oil<CR>", { desc = "Open parent directory (Oil)" })
 
 -- Maximize/unmaximize current window via tab split
 map("n", "<C-w>m", function()
-  if vim.g.maximized then
+  if vim.t.maximized then
+    vim.t.maximized = nil
     vim.cmd("tabclose")
-    vim.g.maximized = nil
   else
-    vim.g.maximized = true
     vim.cmd("tab split")
+    vim.t.maximized = true
   end
 end, { desc = "Toggle maximize window" })

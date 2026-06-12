@@ -23,14 +23,14 @@ autocmd("BufWritePre", {
       for _, res in pairs(result or {}) do
         for _, action in pairs(res.result or {}) do
           if action.edit then
-            vim.lsp.util.apply_workspace_edit(action.edit, "utf-8")
+            vim.lsp.util.apply_workspace_edit(action.edit, position_encoding)
           elseif action.command then
             vim.lsp.buf.execute_command(action.command)
           end
         end
       end
     end
-    vim.lsp.buf.format({ async = false })
+    vim.lsp.buf.format({ bufnr = 0, async = false, timeout_ms = 3000 })
   end,
 })
 

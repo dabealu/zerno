@@ -43,12 +43,12 @@ require("snacks").setup({
             box = "horizontal",
             {
               box = "vertical",
-              border = "rounded",
+              border = "single",
               title = "{title} {live} {flags}",
               { win = "input", height = 1, border = "bottom" },
               { win = "list", border = "none" },
             },
-            { win = "preview", title = "{preview}", border = "rounded", width = 0.7 },
+            { win = "preview", title = "{preview}", border = "single", width = 0.7 },
           },
         },
       },
@@ -60,6 +60,9 @@ require("snacks").setup({
   notifier = {
     enabled = true,
     timeout = 10000,
+  },
+  input = {
+    enabled = true,
   },
   indent = {
     enabled = true,
@@ -119,4 +122,3 @@ map("n", "<leader>lt", function()
     if input and input ~= "" then vim.bo.filetype = input end
   end)
 end, { desc = "Set filetype" })
-

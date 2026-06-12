@@ -24,7 +24,6 @@ nvim/
     options.lua             ← editor settings (numbers, whitespace, clipboard, etc.)
     keymaps.lua             ← all keybindings (non-plugin)
     autocmds.lua            ← auto-commands (format on save, session, etc.)
-    utils.lua               ← bilingual keymap helper (English + Russian)
   lua/plugins/
     snacks.lua              ← fuzzy finder, file explorer, project switcher
     lsp.lua                 ← LSP setup, Mason, autocompletion
@@ -35,7 +34,6 @@ nvim/
     dropbar.lua             ← breadcrumb navigation bar
     lualine.lua             ← statusline (branch, diagnostics, LSP, mode)
     trouble.lua             ← diagnostic/symbol tree viewer
-    opencode.lua            ← AI assistant in embedded terminal
     ui.lua                  ← which-key, colorscheme
     auto-layout.lua         ← automatic keyboard layout switching via swaymsg
     treesitter.lua          ← treesitter parser config and highlights
@@ -46,7 +44,7 @@ nvim/
 ### Plugin Manager: vim.pack (native)
 
 This config uses Neovim 0.12's built-in `vim.pack` module — no external plugin manager.
-Plugins are declared in `init.lua` with `vim.pack.add()`. Lockfile (`nvim-pack-lock.json`) pins exact versions.
+Plugins are declared in `init.lua` with `vim.pack.add()`. A local lockfile (`nvim-pack-lock.json`) is generated on first run/update.
 
 Update plugins: `:lua vim.pack.update()`
 
@@ -68,7 +66,6 @@ Update plugins: `:lua vim.pack.update()`
 | [nvim-web-devicons](https://github.com/nvim-tree/nvim-web-devicons) | Filetype icons | Icons for file explorers, pickers, which-key |
 | [lualine.nvim](https://github.com/nvim-lualine/lualine.nvim) | Statusline | Lightweight, themed statusline with mode/branch/etc |
 | [trouble.nvim](https://github.com/folke/trouble.nvim) | Diagnostic viewer | Tree-structured diagnostics, symbols, references |
-| [opencode.nvim](https://github.com/nickjvandyke/opencode.nvim) | AI assistant | In-terminal OpenCode with LSP context, ask/select/operator |
 | [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | Colorscheme | Dark theme with pastel colors, inspired by the kanagawa wave |
 | [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) | Treesitter | Enhanced syntax highlighting and text objects |
 | [friendly-snippets](https://github.com/rafamadriz/friendly-snippets) | Snippets | Collection of pre-made code snippets for LSP |
@@ -85,6 +82,9 @@ Update plugins: `:lua vim.pack.update()`
 | yaml-language-server | YAML |
 | json-language-server | JSON |
 | lua-language-server | Lua |
+| pyright | Python |
+| taplo | TOML |
+| marksman | Markdown |
 
 ## Keybindings
 
@@ -102,10 +102,10 @@ See [vim-cheatsheet.md](vim-cheatsheet.md) for the full keybinding reference.
 | `-` | Open directory browser (oil.nvim) |
 | `<Space>p` | Switch project (scans ~/src/) |
 | `gd` | Go to definition |
-| `gr` | Find references |
-| `gi` | Find implementations |
+| `grr` | Find references |
+| `gri` | Find implementations |
 | `K` | Hover documentation |
-| `<Space>lr` | Rename symbol |
+| `<Space>ln` / `grn` | Rename symbol |
 | `<Space>la` | Code action |
 
 ## Plugin Administration
@@ -123,7 +123,7 @@ from disk, it prompts to install.
 |------|------|
 | Plugin declarations | `~/.config/nvim/init.lua` |
 | Plugin files on disk | `~/.local/share/nvim/site/pack/core/opt/<plugin-name>/` |
-| Lockfile (pinned commits) | `~/.config/nvim/nvim-pack-lock.json` |
+| Local lockfile (generated on install/update) | `~/.config/nvim/nvim-pack-lock.json` |
 | Mason LSP servers | `~/.local/share/nvim/mason/` |
 
 ### Update all plugins
@@ -133,7 +133,7 @@ Inside nvim:
 :lua vim.pack.update()
 ```
 This fetches new commits, shows a changelog.
-Lockfile is automatically updated with new commit hashes.
+The local lockfile is automatically updated with new commit hashes.
 
 ### Update a single plugin
 
@@ -302,7 +302,7 @@ Defaults:
 
 Config:
 - `<leader>fb` opens a fuzzy-searchable list of all buffers (your "tab switcher")
-- `[b` / `]b` cycles through buffers (like Ctrl+Tab in VSCode)
+- `<leader>bp` / `<leader>bn` cycles through buffers (like Ctrl+Tab in VSCode)
 - `<leader>bd` closes the current buffer
 
 #### Window = a visible area showing a buffer
@@ -331,7 +331,7 @@ It's a separate workspace layout — a collection of windows.
 
 #### Switch to another open file
 - `<leader>fb` — fuzzy search open buffers
-- `[b` / `]b` — cycle through buffers in order
+- `<leader>bp` / `<leader>bn` — cycle through buffers in order
 
 #### See two files side by side
 - Open first file, then `<C-w>v` to split, then `<leader>ff` to open second file

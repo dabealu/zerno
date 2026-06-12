@@ -12,7 +12,6 @@
 | Dropbar | `d` | Breadcrumb navigation |
 | Project | `p` | Switch projects (scans ~/src/) |
 | Vim | `v` | Messages, health, mason, registers, config |
-| OpenCode | `o` | Ask, explain, menu, toggle |
 
 ## Motions
 
@@ -121,10 +120,12 @@ Treesitter scope (same indentation): `ii`, `ai`, `[i`, `]i`.
 | Key | Action |
 |-----|--------|
 | `gd` | Go to definition |
-| `gr` | Go to references |
-| `gi` | Go to implementation |
+| `grr` | Go to references |
+| `gri` | Go to implementation |
 | `gD` | Go to declaration |
-| `gy` | Go to type definition |
+| `grt` | Go to type definition |
+| `grn` | Rename symbol |
+| `gra` | Code action |
 | `K` | Hover documentation |
 | `C-o` / `C-i` | Jump back / forward |
 | `[d` / `]d` | Previous / next diagnostic |
@@ -207,10 +208,9 @@ Treesitter scope (same indentation): `dii`, `dai`, `vii`, `[i` / `]i`.
 ```
 MODES:    i=insert  Esc=normal  v=visual  V=line  C-v=block
 SAVE/QUIT:  :w  :q  :wq  :q!
-LSP:      gd=def  gr=refs  gi=impl  gy=type  K=hover  [d/]d=diag
+LSP:      gd=def  grr=refs  gri=impl  grt=type  K=hover  [d/]d=diag
 FLASH:    s=jump  S=treesitter  r=remote
 SURROUND: ys=add  ds=delete  cs=change  S=visual
 MACROS:   qa=record  @a=play
 SPLITS:   C-h/j/k/l
-
-OpenCode: C-.=toggle  go=motion  goo=line
+```

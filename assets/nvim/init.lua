@@ -27,7 +27,6 @@ vim.pack.add({
   { src = "https://github.com/rebelot/kanagawa.nvim" },
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
   { src = "https://github.com/folke/trouble.nvim" },
-  { src = "https://github.com/nickjvandyke/opencode.nvim" }, -- last tested: v0.8.2
   { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
   { src = "https://github.com/rafamadriz/friendly-snippets" },
   { src = "https://github.com/nvim-lua/plenary.nvim" },
@@ -46,7 +45,6 @@ require("plugins.scrollbar")
 require("plugins.dropbar")
 require("plugins.lualine")
 require("plugins.trouble")
-require("plugins.opencode")
 require("plugins.treesitter")
 require("plugins.todo-comments")
 require("plugins.flash")

@@ -27,8 +27,14 @@ opt.termguicolors = true
 opt.scrolloff = 8
 opt.sidescrolloff = 8
 opt.wrap = true
+opt.linebreak = true
+opt.breakindent = true
 opt.showmode = false
 opt.colorcolumn = "100"
+
+-- Floating window border: "single", "rounded", "solid", "none".
+-- Plugins/colorschemes may still override their own window borders.
+opt.winborder = "single"
 
 -- Terminal title (shows in iTerm2/Alacritty tab header)
 opt.title = true
@@ -48,6 +54,12 @@ opt.clipboard = "unnamedplus"
 -- Persistent undo (survives closing and reopening files)
 opt.undofile = true
 
+-- Prompt to save/discard/cancel instead of failing destructive actions
+opt.confirm = true
+
+-- Project sessions: keep real editing state, skip terminal/blank plugin buffers
+opt.sessionoptions = { "buffers", "curdir", "folds", "help", "tabpages", "winsize", "winpos" }
+
 -- Mouse support (allows clicking to position cursor if mouse reporting is enabled in terminal)
 opt.mouse = "a"
 
@@ -65,3 +77,19 @@ vim.g.have_nerd_font = true
 
 -- Disable unused providers
 vim.g.loaded_perl_provider = 0
+
+-- Diagnostics display
+vim.diagnostic.config({
+  severity_sort = true,
+  signs = true,
+  underline = true,
+  virtual_text = {
+    source = "if_many",
+    spacing = 2,
+  },
+  virtual_lines = false,
+  float = {
+    source = true,
+    border = "single",
+  },
+})

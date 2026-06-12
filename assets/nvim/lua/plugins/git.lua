@@ -6,8 +6,8 @@ require("gitsigns").setup({
     end
 
     -- Hunk navigation
-    map("]h", gs.next_hunk, "Next git hunk")
-    map("[h", gs.prev_hunk, "Previous git hunk")
+    map("]h", function() gs.nav_hunk("next") end, "Next git hunk")
+    map("[h", function() gs.nav_hunk("prev") end, "Previous git hunk")
 
     -- Hunk actions (leader group, discoverable via which-key)
     vim.keymap.set("n", "<leader>gs", gs.stage_hunk, { buffer = bufnr, desc = "Stage hunk" })
@@ -17,7 +17,7 @@ require("gitsigns").setup({
     vim.keymap.set("n", "<leader>gb", gs.blame_line, { buffer = bufnr, desc = "Blame line" })
     vim.keymap.set("n", "<leader>gd", gs.diffthis, { buffer = bufnr, desc = "Diff this file" })
     -- Hunk navigation also in leader group (for discoverability)
-    vim.keymap.set("n", "<leader>gn", gs.next_hunk, { buffer = bufnr, desc = "Next hunk" })
-    vim.keymap.set("n", "<leader>gN", gs.prev_hunk, { buffer = bufnr, desc = "Previous hunk" })
+    vim.keymap.set("n", "<leader>gn", function() gs.nav_hunk("next") end, { buffer = bufnr, desc = "Next hunk" })
+    vim.keymap.set("n", "<leader>gN", function() gs.nav_hunk("prev") end, { buffer = bufnr, desc = "Previous hunk" })
   end,
 })

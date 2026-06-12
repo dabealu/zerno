@@ -12,9 +12,7 @@ require("which-key").setup({
     { "<leader>d", group = "dropbar" },
     { "<leader>p", group = "project" },
     { "<leader>v", group = "vim" },
-    { "<leader>o", group = "opencode" },
   },
 })
 
 vim.cmd.colorscheme("kanagawa-wave")
-

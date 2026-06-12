@@ -1,7 +1,8 @@
 -- Auto-switch keyboard layout: English in Normal/Cmdline, Russian in Insert.
 -- The Sway config sets xkb_layout us,ru with grp:alt_shift_toggle, so index 0 = US, index 1 = RU.
--- On InsertLeave/CmdlineLeave: save current layout, switch to US (0).
+-- On InsertLeave: save current layout, switch to US (0).
 -- On InsertEnter: restore the saved layout.
+-- Command-line mode always uses US but must not overwrite the saved insert layout.
 local function get_layout()
   local result = vim.fn.system({ "swaymsg", "-t", "get_inputs" })
   local ok, inputs = pcall(vim.json.decode, result)
@@ -25,12 +26,21 @@ end
 
 local group = vim.api.nvim_create_augroup("keyboard-auto-layout", { clear = true })
 
-vim.api.nvim_create_autocmd({ "InsertLeave", "CmdlineLeave" }, {
+vim.api.nvim_create_autocmd("InsertLeave", {
   group = group,
   callback = function()
     local current = get_layout()
     vim.g.saved_layout = current
     if current ~= "0" then
+      set_layout("0")
+    end
+  end,
+})
+
+vim.api.nvim_create_autocmd({ "CmdlineEnter", "CmdlineLeave" }, {
+  group = group,
+  callback = function()
+    if get_layout() ~= "0" then
       set_layout("0")
     end
   end,
