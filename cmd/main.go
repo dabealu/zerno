@@ -11,93 +11,31 @@ import (
 
 var version = "dev"
 
-type cmdDef struct {
-	args int
-	run  func()
+func requireArgCount(n int) {
+	if len(os.Args) < n {
+		printHelp()
+		os.Exit(1)
+	}
 }
 
-var commands = map[string]cmdDef{
-	"install-base": {
-		run: func() {
-			cfg, err := config.LoadOrPrompt()
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			install.Base(cfg)
-		},
-	},
-	"install-full": {
-		run: func() {
-			cfg, err := config.LoadOrPrompt()
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			install.Full(cfg)
-		},
-	},
-	"qemu": {
-		run: func() {
-			cfg, err := config.LoadOrPrompt()
-			if err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-			install.Qemu(cfg)
-		},
-	},
-	"update-bin": {
-		run: func() {
-			if err := install.UpdateBin(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		},
-	},
-	"build-iso": {
-		run: func() {
-			if err := install.CreateISO(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		},
-	},
-	"boot-dev": {
-		args: 2,
-		run: func() {
-			if err := install.FormatDevice(os.Args[2], os.Args[3]); err != nil {
-				log.Fatal(err)
-			}
-		},
-	},
-	"steam": {
-		args: 1,
-		run: func() {
-			if err := install.InstallSteam(os.Args[2]); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		},
-	},
-	"version": {
-		run: func() {
-			fmt.Println(version)
-		},
-	},
-	"repo-pull": {
-		run: func() {
-			if err := install.RepoPull(); err != nil {
-				fmt.Println(err)
-				os.Exit(1)
-			}
-		},
-	},
-	"cachyos": {
-		run: func() {
-			install.Cachyos()
-		},
-	},
+func fatalOnErr(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func printHelp() {
+	fmt.Println(`available commands:
+  b, install-base          base system installation (chroot)
+  i, install-full          full installation and sync configs
+  q, qemu                  install and configure qemu/kvm
+  c, cachyos               enable CachyOS repos and kernel
+  u, update-bin            compile new bin from the local repo
+  m, build-iso             create iso with zerno bin included
+  f, boot-dev <dev> <iso>  format device with storage + boot partitions
+  e, steam <vga>           install steam, vga: intel, nvidia, amd
+  v, version               print version and exit
+  r, repo-pull             clone or update repo in ~/src/zerno`)
 }
 
 func main() {
@@ -106,43 +44,48 @@ func main() {
 		return
 	}
 
-	action := os.Args[1]
-	aliases := map[string]string{
-		"b": "install-base",
-		"i": "install-full",
-		"q": "qemu",
-		"u": "update-bin",
-		"m": "build-iso",
-		"f": "boot-dev",
-		"e": "steam",
-		"v": "version",
-		"r": "repo-pull",
-		"c": "cachyos",
-	}
-	if alias, ok := aliases[action]; ok {
-		action = alias
-	}
+	switch os.Args[1] {
+	case "b", "install-base":
+		cfg, err := config.LoadOrPrompt()
+		fatalOnErr(err)
+		install.Base(cfg)
 
-	cmd, ok := commands[action]
-	args := os.Args[2:]
-	if !ok || len(args) < cmd.args {
+	case "i", "install-full":
+		cfg, err := config.LoadOrPrompt()
+		fatalOnErr(err)
+		install.Full(cfg)
+
+	case "q", "qemu":
+		cfg, err := config.LoadOrPrompt()
+		fatalOnErr(err)
+		install.Qemu(cfg)
+
+	case "u", "update-bin":
+		fatalOnErr(install.UpdateBin())
+
+	case "m", "build-iso":
+		fatalOnErr(install.CreateISO())
+
+	case "f", "boot-dev":
+		requireArgCount(4)
+		fatalOnErr(install.FormatDevice(os.Args[2], os.Args[3]))
+
+	case "e", "steam":
+		requireArgCount(3)
+		fatalOnErr(install.InstallSteam(os.Args[2]))
+
+	case "v", "version":
+		fmt.Println(version)
+
+	case "r", "repo-pull":
+		fatalOnErr(install.RepoPull())
+
+	case "c", "cachyos":
+		install.Cachyos()
+
+	default:
+		log.Println("unknown command...")
 		printHelp()
 		os.Exit(1)
 	}
-
-	cmd.run()
-}
-
-func printHelp() {
-	fmt.Println(`available commands:
-  b, install-base       base system installation (chroot stage)
-  i, install-full       desktop/full installation (after reboot, re-run to sync)
-  q, qemu               install and configure qemu/kvm
-  c, cachyos            enable CachyOS repos and kernel
-  u, update-bin         compile new bin from local repo
-  m, build-iso          create iso with zerno bin included
-  f, boot-dev <dev> <iso>  format device creating storage and boot partitions
-  e, steam <vga>        install steam, vga: intel, nvidia, amd
-  v, version            print version and exit
-  r, repo-pull          clone or update repo in ~/src/zerno`)
 }
