@@ -63,9 +63,7 @@ run `swaymsg -t get_outputs` to get list of outputs and `man sway-output` for mo
 use `wdisplays` for GUI configuration.
 
 ### Appearance
-use `lxappearance` to set GTK theme and appearance settings.
-lxappearance stores config in `~/.gtkrc-2.0`.
-more themes: https://wiki.archlinux.org/title/GTK#Themes
+use `nwg-look` to set GTK themes and appearance.
 
 ### Connecting android devices via USB
 based on: https://wiki.archlinux.org/title/Media_Transfer_Protocol
