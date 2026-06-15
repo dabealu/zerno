@@ -12,7 +12,9 @@ pavucontrol    -  audio mixer\n\
 blueman        -  bluetooth\n\
 impala         -  wifi\n\
 virt-manager   -  vms\n\
-steam          -  games" | bemenu -b -l 13 -p '★' --fn 'JetBrainsMono Nerd Font Mono 12' --tb '#c25c02' --tf '#ffffff' --hb '#c25c02' --hf '#ffffff')
+steam          -  games\n\
+nwg-look       -  ui appearance\n\
+wdisplays      -  display config" | bemenu -b -l 15 -p '★' --fn 'JetBrainsMono Nerd Font Mono 12' --tb '#c25c02' --tf '#ffffff' --hb '#c25c02' --hf '#ffffff')
 case "$choice" in
     chrome*)       exec google-chrome-stable ;;
     thunar*)       exec thunar ;;
@@ -27,4 +29,6 @@ case "$choice" in
     impala*)       exec alacritty --config-file ~/.config/sway/alacritty.toml -e impala ;;
     virt-manager*) exec virt-manager ;;
     steam*)        exec steam ;;
+    nwg-look*)     exec nwg-look ;;
+    wdisplays*)    exec wdisplays ;;
 esac
