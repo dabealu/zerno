@@ -18,7 +18,7 @@ wdisplays      -  display config" | bemenu -b -l 15 -p '★' --fn 'JetBrainsMono
 case "$choice" in
     chrome*)       exec google-chrome-stable ;;
     thunar*)       exec thunar ;;
-    telegram*)     exec telegram-desktop ;;
+    telegram*)     exec Telegram ;;
     evince*)       exec evince ;;
     ristretto*)    exec ristretto ;;
     transmission*) exec transmission-gtk ;;
