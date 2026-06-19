@@ -35,6 +35,7 @@ func Full(cfg *config.Config) {
 		bluetooth(),
 		docker(),
 		// rustToolchain(),
+		userSrcDir(),
 		yayAur(),
 		aurPackages(),
 		task.Command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
@@ -43,7 +44,6 @@ func Full(cfg *config.Config) {
 		desktopApps(),
 		utilsFontsThemes(),
 		installUtils(),
-		userSrcDir(),
 		migrateUserConfig(),
 		task.Info("installation complete: reboot and run `de`"),
 	}, cfg); err != nil {
@@ -244,16 +244,15 @@ func swayConfigs() task.Task {
 			if err := steps.ChownRecursive(homeDir, cfg.UserID, cfg.UserGID); err != nil {
 				return err
 			}
-			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/waybar.sh"), 0755); err != nil {
-				return err
+			for _, f := range []string{
+				".config/sway/waybar.sh",
+				".config/sway/power-menu.sh",
+				".config/sway/fav-apps.sh",
+			} {
+				if err := os.Chmod(filepath.Join(homeDir, f), 0755); err != nil {
+					return err
+				}
 			}
-			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/power-menu.sh"), 0755); err != nil {
-				return err
-			}
-			if err := os.Chmod(filepath.Join(homeDir, ".config/sway/fav-apps.sh"), 0755); err != nil {
-				return err
-			}
-
 			return nil
 		},
 	}
@@ -323,7 +322,7 @@ func swap() task.Task {
 	}
 }
 
-// Requires swap() to have run first — relies on /swapfile existing
+// Requires swap() to have run first - relies on /swapfile existing
 func hibernation() task.Task {
 	return task.Task{
 		Name: "enable_hibernation_and_suspend",
@@ -468,16 +467,24 @@ func yayAur() task.Task {
 	return task.Task{
 		Name: "install_yay_aur",
 		RunFunc: func(cfg *config.Config) error {
-			homeDir := fmt.Sprintf("/home/%s", cfg.Username)
-			yayDir := filepath.Join(homeDir, "src/yay-git")
+			yayDir := fmt.Sprintf("/home/%s/src/yay", cfg.Username)
 			if steps.FileExists(filepath.Join(yayDir, "PKGBUILD")) {
 				fmt.Println("yay already cloned, skipping")
 				return nil
 			}
 
-			script := fmt.Sprintf(`sudo -u %s -- bash -c 'mkdir -p ~/src && cd ~/src && git clone https://aur.archlinux.org/yay-git.git && cd yay-git && makepkg --noconfirm -si'`, cfg.Username)
-			_, err := steps.RunShell(script)
-			return err
+			if _, err := steps.RunCmd("git", "clone", "https://aur.archlinux.org/yay-git.git", yayDir); err != nil {
+				return err
+			}
+			if err := steps.ChownRecursive(yayDir, cfg.UserID, cfg.UserGID); err != nil {
+				return err
+			}
+
+			script := fmt.Sprintf("cd %s && sudo -u %s makepkg --noconfirm -si", yayDir, cfg.Username)
+			if _, err := steps.RunShell(script); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 }
@@ -486,9 +493,14 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := "wdisplays libinput-gestures google-chrome"
-			script := fmt.Sprintf(`sudo -u %s -- bash -c 'yes | yay --noconfirm -Sy %s'`, cfg.Username, pkgs)
-			_, err := steps.RunShell(script)
+			pkgs := strings.Join([]string{
+				"wdisplays",
+				"libinput-gestures",
+				"google-chrome",
+			}, " ")
+			_, err := steps.RunShell(
+				fmt.Sprintf("sudo -u %s yay --noconfirm -Sy %s", cfg.Username, pkgs),
+			)
 			return err
 		},
 	}
@@ -498,8 +510,17 @@ func pipewireUser() task.Task {
 	return task.Task{
 		Name: "start_pipewire",
 		RunFunc: func(cfg *config.Config) error {
-			script := fmt.Sprintf(`systemctl --user -M %s@.host enable pipewire pipewire-pulse && systemctl --user -M %s@.host start pipewire pipewire-pulse`, cfg.Username, cfg.Username)
-			_, err := steps.RunShell(script)
+			userHost := cfg.Username + "@.host"
+
+			if _, err := steps.RunCmd(
+				"systemctl", "--user", "-M", userHost, "enable", "pipewire", "pipewire-pulse",
+			); err != nil {
+				return err
+			}
+
+			_, err := steps.RunCmd(
+				"systemctl", "--user", "-M", userHost, "start", "pipewire", "pipewire-pulse",
+			)
 			return err
 		},
 	}
