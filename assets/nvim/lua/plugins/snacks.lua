@@ -1,7 +1,37 @@
 require("snacks").setup({
   picker = {
     enabled = true,
-    layout = { fullscreen = true },
+    layout = {
+      fullscreen = true,
+      layout = {
+        box = "vertical",
+        {
+          box = "vertical",
+          border = "single",
+          title = "{title} {live} {flags}",
+          { win = "input", height = 1,     border = "bottom" },
+          { win = "list",  border = "none" },
+        },
+        { win = "preview", title = "{preview}", border = "single", height = 0.6 },
+      },
+    },
+    win = {
+      list = {
+        wo = {
+          wrap = true,
+          linebreak = true,
+          breakindent = true,
+        },
+      },
+      preview = {
+        wo = {
+          wrap = true,
+          linebreak = true,
+          breakindent = true,
+          showbreak = "",
+        },
+      },
+    },
     sources = {
       files = { hidden = true },
       grep = { hidden = true },
@@ -26,29 +56,6 @@ require("snacks").setup({
             "Trait",
             "Variable",
             "Constant",
-          },
-        },
-      },
-      git_status = {
-        win = {
-          list = {
-            wo = {
-              wrap = true,
-              linebreak = true,
-            },
-          },
-        },
-        layout = {
-          layout = {
-            box = "horizontal",
-            {
-              box = "vertical",
-              border = "single",
-              title = "{title} {live} {flags}",
-              { win = "input", height = 1, border = "bottom" },
-              { win = "list", border = "none" },
-            },
-            { win = "preview", title = "{preview}", border = "single", width = 0.7 },
           },
         },
       },
