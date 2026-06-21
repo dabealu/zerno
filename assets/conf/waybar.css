@@ -88,24 +88,12 @@ tooltip {
     padding-right: 0;
 }
 
-@keyframes blink {
-    to {
-        background-color: #ffffff;
-        color: #000000;
-    }
-}
-
 #battery.critical:not(.charging),
 #cpu.critical,
 #memory.critical,
 #disk.critical {
     background-color: #900200;
     color: #ffffff;
-    animation-name: blink;
-    animation-duration: 0.5s;
-    animation-timing-function: linear;
-    animation-iteration-count: infinite;
-    animation-direction: alternate;
 }
 
 #battery.warning,

@@ -40,18 +40,13 @@ func UpdateBin() error {
 	}
 
 	repoDir := paths.RepoDir(false)
-	version := time.Now().Format("02012006-150405")
-	script := fmt.Sprintf(`
-		cd %s && \
-		go fmt ./... && \
-		go build -ldflags "-X main.version=%s" -o %s/zerno ./cmd`,
-		repoDir, version, repoDir)
 
-	if _, err := steps.RunShell(script); err != nil {
+	cmd := exec.Command("./build.sh", "all")
+	cmd.Dir = paths.RepoDir(false)
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 
-	fmt.Println("built version:", version)
 	binSrc := filepath.Join(repoDir, "zerno")
 	binDest := "/usr/local/bin/zerno"
 	tmpDest := binDest + ".new"
@@ -62,28 +57,30 @@ func UpdateBin() error {
 		os.Remove(tmpDest)
 		return err
 	}
-	fmt.Println("done. bin path:", binDest)
+
+	fmt.Println("done, bin path:", binDest)
 	return nil
 }
 
-func RepoPull() error {
+func RepoPull(cfg *config.Config) error {
 	homeSrcDir := paths.RepoSrcDir()
 
 	if _, err := os.Stat(homeSrcDir); err == nil {
 		cmd := exec.Command("git", "pull")
 		cmd.Dir = homeSrcDir
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
 		if err := cmd.Run(); err != nil {
 			return fmt.Errorf("pulling: %w", err)
 		}
 		fmt.Println("updated:", homeSrcDir)
 	} else {
-		cmd := exec.Command("bash", "-ec", fmt.Sprintf(`mkdir -p %s && git clone %s %s`, filepath.Dir(homeSrcDir), paths.RepoURL, homeSrcDir))
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
+		if err := os.MkdirAll(filepath.Dir(homeSrcDir), 0755); err != nil {
+			return err
+		}
+		if _, err := steps.RunCmd("git", "clone", paths.RepoURL, homeSrcDir); err != nil {
 			return fmt.Errorf("cloning: %w", err)
+		}
+		if err := steps.ChownRecursive(homeSrcDir, cfg.UserID, cfg.UserGID); err != nil {
+			return err
 		}
 		fmt.Println("cloned to:", homeSrcDir)
 	}
@@ -129,7 +126,6 @@ func CreateISO() error {
 
 	fmt.Println("building iso, it may take a while...")
 	script := fmt.Sprintf("cd %s && mkarchiso -v -w . -o %s %s", archisoDir, isoBuildsDir, relengCopyDir)
-	fmt.Println("running:", script)
 	if _, err := steps.RunShell(script); err != nil {
 		return err
 	}

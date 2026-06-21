@@ -78,7 +78,9 @@ func main() {
 		fmt.Println(version)
 
 	case "r", "repo-pull":
-		fatalOnErr(install.RepoPull())
+		cfg, err := config.LoadOrPrompt()
+		fatalOnErr(err)
+		fatalOnErr(install.RepoPull(cfg))
 
 	case "c", "cachyos":
 		install.Cachyos()
