@@ -36,10 +36,10 @@ func baseDir(chroot bool) string {
 	if chroot {
 		return "/mnt/root"
 	}
-	return homeDir()
+	return HomeDir()
 }
 
-func homeDir() string {
+func HomeDir() string {
 	if sudUser := os.Getenv("SUDO_USER"); sudUser != "" {
 		if usr, err := user.Lookup(sudUser); err == nil {
 			return usr.HomeDir

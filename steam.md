@@ -58,6 +58,30 @@ gamemoderun gamescope -w 1280 -h 720 -W 1920 -H 1080 -F fsr -- %command%
 - `-F fsr` — AMD FidelityFX Super Resolution for the upscaling
 - `-- %command%` — separator; everything after is the actual game command
 
+### TTY gaming (no DE / parallel Sway)
+
+Gamescope can run directly from a TTY without any desktop compositor:
+
+```sh
+# Switch to a free TTY (Ctrl+Alt+F3), login, run:
+gamescope --backend drm -f -- steam -gamepadui
+```
+
+This bypasses Sway/DE entirely for minimal latency. You can also run Sway on
+TTY1 and Gamescope on TTY3 — switch between them with Ctrl+Alt+F1/F3.
+
+For other TTYs to work, enable getty on them first:
+
+```sh
+sudo systemctl enable getty@tty{2..6}.service
+```
+
+Switch between TTYs with `Ctrl+Alt+F<N>` or programmatically with:
+
+```sh
+sudo chvt 3   # same as Ctrl+Alt+F3
+```
+
 ## Links
 
 - https://wiki.archlinux.org/title/Steam

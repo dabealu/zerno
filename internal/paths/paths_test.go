@@ -8,7 +8,7 @@ import (
 )
 
 func TestRepoDir(t *testing.T) {
-	home := homeDir()
+	home := HomeDir()
 
 	tests := []struct {
 		name     string
@@ -30,7 +30,7 @@ func TestRepoDir(t *testing.T) {
 }
 
 func TestSrcDir(t *testing.T) {
-	home := homeDir()
+	home := HomeDir()
 
 	tests := []struct {
 		name     string
@@ -52,7 +52,7 @@ func TestSrcDir(t *testing.T) {
 }
 
 func TestConfDir(t *testing.T) {
-	home := homeDir()
+	home := HomeDir()
 
 	tests := []struct {
 		name     string
@@ -74,7 +74,7 @@ func TestConfDir(t *testing.T) {
 }
 
 func TestHomeDir(t *testing.T) {
-	home := homeDir()
+	home := HomeDir()
 	if home == "" {
 		t.Error("homeDir() should not Return empty string")
 	}
