@@ -12,29 +12,37 @@ blink_interval = 500
 shape = "Beam"
 blinking = "On"
 
+[colors.primary]
+background = '#161616'
+foreground = '#d1d5da'
+
 [colors.normal]
-black = "0x29414f"
-blue = "0x6699cc"
-cyan = "0x5fb3b3"
-green = "0x99c794"
-magenta = "0xc594c5"
-red = "0xec5f67"
-white = "0x65737e"
-yellow = "0xfac863"
+black   = '#586069'
+red     = '#ea4a5a'
+green   = '#34d058'
+yellow  = '#ffea7f'
+blue    = '#2188ff'
+magenta = '#b392f0'
+cyan    = '#39c5cf'
+white   = '#d1d5da'
 
 [colors.bright]
-black = "0x405860"
-blue = "0x6699cc"
-cyan = "0x5fb3b3"
-green = "0x99c794"
-magenta = "0xc594c5"
-red = "0xec5f67"
-white = "0xadb5c0"
-yellow = "0xfac863"
+black   = '#959da5'
+red     = '#f97583'
+green   = '#85e89d'
+yellow  = '#ffea7f'
+blue    = '#79b8ff'
+magenta = '#b392f0'
+cyan    = '#56d4dd'
+white   = '#fafbfc'
 
-[colors.primary]
-background = "0x090909"
-foreground = "0xdddddd"
+[[colors.indexed_colors]]
+index = 16
+color = '#d18616'
+
+[[colors.indexed_colors]]
+index = 17
+color = '#f97583'
 
 [colors.cursor]
 cursor = "#00FF00"

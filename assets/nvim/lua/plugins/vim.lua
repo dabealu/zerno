@@ -5,11 +5,11 @@ map("n", "<leader>vm", "<cmd>messages<CR>", { desc = "Show messages" })
 map("n", "<leader>vh", "<cmd>checkhealth<CR>", { desc = "Health check" })
 map("n", "<leader>vM", "<cmd>Mason<CR>", { desc = "Mason LSP manager" })
 map("n", "<leader>vs", "<cmd>scriptnames<CR>", { desc = "Script names" })
-map("n", "<leader>vr", "<cmd>registers<CR>", { desc = "Registers" })
-map("n", "<leader>vc", "<cmd>history<CR>", { desc = "Command history" })
+map("n", "<leader>vr", function() Snacks.picker.registers() end, { desc = "Registers" })
+map("n", "<leader>vc", function() Snacks.picker.command_history() end, { desc = "Command history" })
 map("n", "<leader>vv", "<cmd>version<CR>", { desc = "Version info" })
 
-map("n", "<leader>vn", function() Snacks.notifier.show_history() end, { desc = "Notification history" })
+map("n", "<leader>vn", function() Snacks.picker.notifications() end, { desc = "Notification history" })
 
 -- Disable bigfile mode for current buffer
 map("n", "<leader>vB", function()

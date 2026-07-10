@@ -142,6 +142,9 @@ bindsym --to-code {
     $mod+Shift+minus move scratchpad
     # Show the next scratchpad window or hide the focused scratchpad window
     $mod+minus scratchpad show
+
+    # Quick vim in home dir
+    $mod+Shift+Return exec $term -e bash -c 'cd ~ && vim'
 }
 
 # Focus previous window - use bindcode because caps:none kills the keysym

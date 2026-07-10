@@ -72,7 +72,7 @@ require("snacks").setup({
     enabled = true,
   },
   indent = {
-    enabled = true,
+    enabled = false,
   },
   scope = {
     enabled = true,

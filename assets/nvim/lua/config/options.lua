@@ -6,7 +6,7 @@ opt.relativenumber = true
 
 -- Whitespace rendering (matches VSCode "editor.renderWhitespace": "all")
 opt.list = true
-opt.listchars = { tab = "→ ", trail = "·", nbsp = "␣" }
+opt.listchars = { tab = "→ ", lead = "·", trail = "·", nbsp = "␣" }
 
 -- Indentation
 opt.expandtab = true
