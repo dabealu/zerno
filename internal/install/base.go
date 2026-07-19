@@ -178,6 +178,7 @@ func pacstrap() task.Task {
 				"go",
 				"lsof",
 				"strace",
+				"man",
 				"man-db",
 				"man-pages",
 			}

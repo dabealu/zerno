@@ -626,8 +626,6 @@ func utilsFontsThemes() task.Task {
 				"lshw",
 				"pciutils",
 				"usbutils",
-				"man",
-				"man-pages",
 				"bash-completion",
 				"materia-gtk-theme",
 				"papirus-icon-theme",
@@ -663,6 +661,7 @@ func installUtils() task.Task {
 	return task.Task{
 		Name: "install_utilities",
 		RunFunc: func(cfg *config.Config) error {
+			systemBinDir := "/usr/local/bin"
 			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
 
 			for src, bin := range map[string]string{
@@ -680,13 +679,17 @@ func installUtils() task.Task {
 					return err
 				}
 
-				dst := filepath.Join(homeBinDir, bin)
+				dst := filepath.Join(systemBinDir, bin)
 				cmd := exec.Command("go", "build", "-o", dst, srcPath)
 				cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
 				out, err := cmd.CombinedOutput()
 				if err != nil {
 					return fmt.Errorf("compile %s: %w\n%s", bin, err, out)
 				}
+			}
+
+			if err := os.MkdirAll(homeBinDir, 0755); err != nil {
+				return err
 			}
 
 			for _, src := range []string{
