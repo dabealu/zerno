@@ -143,8 +143,8 @@ bindsym --to-code {
     # Show the next scratchpad window or hide the focused scratchpad window
     $mod+minus scratchpad show
 
-    # Quick vim in home dir
-    $mod+Shift+Return exec $term -e bash -c 'cd ~ && vim'
+    # Quick vim with clipboard contents
+    $mod+Shift+Return exec $term -e bash -c 'wl-paste | vim -'
 }
 
 # Focus previous window - use bindcode because caps:none kills the keysym
@@ -192,16 +192,9 @@ bindsym --to-code $mod+Control+b exec swaylock --color "$black"
 
 # Screenshots
 bindsym --to-code --release {
-    # Full screenshot
-    Print exec "grim $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
-    # Screenshot selected and save to buffer
-    Shift+Print exec "slurp | grim -g - - | wl-copy"
-    # Screenshot selected and save as file
-    $mod+Shift+Print exec "slurp | grim -g - $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
-    # Same with calc key
-    XF86Calculator            exec "grim $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
-    Shift+XF86Calculator      exec "slurp | grim -g - - | wl-copy"
-    $mod+Shift+XF86Calculator exec "slurp | grim -g - $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
+    $mod+p         exec "slurp | grim -g - - | wl-copy"
+    $mod+Shift+p   exec "slurp | grim -g - $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
+    $mod+Control+p exec "grim $HOME/Pictures/$(date +'screenshot_%F-%T.png')"
 }
 
 bindsym --to-code {

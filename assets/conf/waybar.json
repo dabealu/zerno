@@ -92,7 +92,7 @@
         "format": "<span font-size='16pt' rise='-2000'>{icon}</span> {capacity}%",
         "format-charging": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
         "format-plugged": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
-        "format-alt": "bat: {time}",
+        "format-alt": "<span font-size='16pt' rise='-2000'>{icon}</span> {time}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
         "format-icons": ["󰁻", "󰁽", "󰁿", "󰂁", "󰁹"]
