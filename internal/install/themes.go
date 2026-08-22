@@ -24,6 +24,8 @@ func defaultPaths(homeDir string) []themeFile {
 		{path: filepath.Join(homeDir, ".config/dunst/dunstrc"), asset: "conf/dunstrc"},
 		{path: filepath.Join(swayDir, "config"), asset: "conf/config"},
 		{path: filepath.Join(swayDir, "waybar.css"), asset: "conf/waybar.css"},
+		{path: filepath.Join(swayDir, "waybar.json"), asset: "conf/waybar.json"},
+		{path: filepath.Join(swayDir, "nav.py"), asset: "conf/nav.py"},
 		{path: filepath.Join(swayDir, "power-menu.sh"), asset: "conf/power-menu.sh"},
 		{path: filepath.Join(swayDir, "fav-apps.sh"), asset: "conf/fav-apps.sh"},
 	}
@@ -33,6 +35,11 @@ func restoreConfigs() error {
 	for _, f := range defaultPaths(paths.HomeDir()) {
 		log.Printf("restoring %s -> %s", f.asset, f.path)
 		if err := assets.Restore(f.asset, f.path); err != nil {
+			return err
+		}
+	}
+	for _, f := range swayExecutables {
+		if err := os.Chmod(filepath.Join(paths.HomeDir(), f), 0755); err != nil {
 			return err
 		}
 	}
@@ -87,7 +94,7 @@ var Themes = map[string]map[string]string{
 	"suede": { // blue-warm suede
 		"#000000": "#151d2b", // bg
 		"#ffffff": "#E7C096", // fg
-		"#404040": "#25375F", // element
+		"#3a3a3a": "#25375F", // element
 		"#202020": "#1a2638", // inactive
 		"#232323": "#1e2a40", // output
 		"#c25c02": "#3C5899", // accent
@@ -105,7 +112,7 @@ var Themes = map[string]map[string]string{
 	"gruvbox-dark": { // warm retro
 		"#000000": "#282828", // bg
 		"#ffffff": "#ebdbb2", // fg
-		"#404040": "#504945", // element
+		"#3a3a3a": "#504945", // element
 		"#202020": "#3c3836", // inactive
 		"#232323": "#45403d", // output
 		"#c25c02": "#d65d0e", // accent
@@ -123,7 +130,7 @@ var Themes = map[string]map[string]string{
 	"wilderness": { // earthy brown-green
 		"#000000": "#1b1918", // bg
 		"#ffffff": "#dbd1b8", // fg
-		"#404040": "#3e3934", // element (lighter for contrast)
+		"#3a3a3a": "#3e3934", // element (lighter for contrast)
 		"#202020": "#262320", // inactive
 		"#232323": "#2a2623", // output
 		"#c25c02": "#5c6e5f", // accent (darker for bemenu)
@@ -141,7 +148,7 @@ var Themes = map[string]map[string]string{
 	"ayu-dark": { // deep indigo with warm gold accent
 		"#000000": "#0d1017", // bg
 		"#ffffff": "#d4d4d4", // fg
-		"#404040": "#2d3f52", // element
+		"#3a3a3a": "#2d3f52", // element
 		"#202020": "#11141c", // inactive
 		"#232323": "#151a23", // output
 		"#c25c02": "#a07a28", // accent
@@ -159,7 +166,7 @@ var Themes = map[string]map[string]string{
 	"ember": { // warm ember dark (ember-theme)
 		"#000000": "#1c1b19", // bg
 		"#ffffff": "#d8d0c0", // fg
-		"#404040": "#3e3c38", // element
+		"#3a3a3a": "#3e3c38", // element
 		"#202020": "#242320", // inactive
 		"#232323": "#2e2d2a", // output
 		"#c25c02": "#e08060", // accent (coral)

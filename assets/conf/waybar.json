@@ -9,9 +9,9 @@
     // Choose the order of the modules
     "modules-left": [
         "sway/workspaces",
+        "custom/nav",
         "sway/mode"
     ],
-    // "modules-center": ["sway/window"],
     "modules-right": [
         "mpris",
         "pulseaudio",
@@ -29,6 +29,17 @@
         "disable-scroll": false,
         "all-outputs": true,
         "format": "{name}"
+    },
+    "custom/nav": {
+        "exec": "~/.config/sway/nav.py",
+        "return-type": "json",
+        "format": "<span foreground='#3a3a3a'>│</span> {text}",
+        "tooltip": false,
+        "on-click": "swaymsg focus next sibling",
+        "on-click-right": "swaymsg focus prev sibling",
+        "on-click-middle": "swaymsg kill",
+        "on-scroll-up": "swaymsg focus prev sibling",
+        "on-scroll-down": "swaymsg focus next sibling"
     },
     "tray": {
         "icon-size": 24,
@@ -62,7 +73,7 @@
         }
     },
     "cpu": {
-        "format": "<span font-size='16pt' rise='-2000'>󰘷</span> {usage}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {usage}%",
         "tooltip": true,
         "states": {
             "critical": 95

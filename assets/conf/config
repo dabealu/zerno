@@ -1,10 +1,16 @@
 # ~/.config/sway/config
 
-font pango:JetBrainsMono Nerd Font Mono 12
+# Collapse titlebars everywhere incl. tabbed/stacked (sway draws them there
+# regardless of border mode; no native bool option exists).
+# See sway issues #1286, #6946, #7350: font size must be >=1 on sway >=1.8,
+# leaving a ~1px sliver that acts as a focus indicator.
+font pango:monospace 1
+default_border pixel 1
+titlebar_border_thickness 0
+titlebar_padding 0
 
-default_border normal 1
-
-for_window [class=".*"] title_format "<span foreground='#777777'> ▪ </span>%title"
+for_window [class=".*"] title_format " "
+for_window [app_id=".*"] title_format " "
 # Open pop-up windows in floating mode
 for_window [window_role="pop-up"] floating enable
 for_window [window_role="task_dialog"] floating enable
@@ -171,17 +177,24 @@ bindsym --to-code $mod+r mode "resize"
 
 # Colors
 set $white #ffffff
-set $gray #353535
+set $gray #3a3a3a
 set $dark #202020
 set $black #000000
 set $urgent #c25c02
+set $bg #232323
 
-# Frame colors          border    background   text     indicator   child_border
-client.focused          $gray     $gray        $white   $black      $black
-client.focused_inactive $dark     $dark        $white   $black      $black
-client.unfocused        $black    $black       $white   $black      $black
-client.urgent           $urgent   $urgent      $white   $black      $black
-client.placeholder      $black    $black       $white   $black      $black
+# Frame colors — border/background/text match output bg so the leftover 1px
+# titlebar strip is invisible; child_border keeps a subtle focus outline.
+# Pre-nav-widget header (titlebar strip colored $bg), revert if needed:
+#client.focused          $bg      $bg          $bg      $bg         #3a3a3a
+#client.focused_inactive $bg      $bg          $bg      $bg         $dark
+#client.unfocused        $bg      $bg          $bg      $bg         #101010
+#                       border   background   text     indicator   child_border
+client.focused          $bg      $black          $bg      $bg         $bg
+client.focused_inactive $bg      $black          $bg      $bg         $dark
+client.unfocused        $bg      $black          $bg      $bg         #101010
+client.urgent           $urgent  $urgent      $white   $bg         $urgent
+client.placeholder      $black   $black       $white   $black      $black
 client.background       $black
 
 exec_always ~/.config/sway/waybar.sh
