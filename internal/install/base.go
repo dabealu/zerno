@@ -292,10 +292,7 @@ func requireUEFI() task.Task {
 	return task.Task{
 		Name: "require_uefi",
 		RunFunc: func(cfg *config.Config) error {
-			if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
-				return fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
-			}
-			return nil
+			return config.CheckUEFI()
 		},
 	}
 }

@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"zerno/internal/steps"
 )
 
 type Config struct {
@@ -97,7 +99,7 @@ func Prompt() (*Config, error) {
 
 	fmt.Println("enter parameters:")
 
-	if err := checkUEFI(); err != nil {
+	if err := CheckUEFI(); err != nil {
 		return nil, err
 	}
 	if err := selectBlockDevice(cfg); err != nil {
@@ -115,18 +117,11 @@ func Prompt() (*Config, error) {
 
 	fmt.Printf("\nparameters:\n%s\n", cfg)
 
-	if !confirm("proceed with the installation?") {
+	if !steps.AskConfirmation("proceed with the installation?") {
 		os.Exit(0)
 	}
 
 	return cfg, nil
-}
-
-func checkUEFI() error {
-	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
-		return fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
-	}
-	return nil
 }
 
 func selectBlockDevice(cfg *Config) error {
@@ -288,18 +283,10 @@ func promptChoice(label string, options []string) string {
 	return choice
 }
 
-func confirm(msg string) bool {
-	for {
-		fmt.Printf("%s [yn] ", msg)
-		var input string
-		fmt.Scanln(&input)
-		switch input {
-		case "y", "Y":
-			return true
-		case "n", "N":
-			return false
-		default:
-			fmt.Printf("unknown input '%s', please enter y or n\n", input)
-		}
+// CheckUEFI reports whether the system booted in UEFI mode (required by systemd-boot).
+func CheckUEFI() error {
+	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
+		return fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
 	}
+	return nil
 }

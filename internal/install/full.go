@@ -18,6 +18,7 @@ import (
 
 func Full(cfg *config.Config) {
 	if err := task.RunTaskList([]task.Task{
+		task.RequireUser("root"),
 		network(),
 		resolved(),
 		wifi(),
@@ -140,6 +141,9 @@ AutoConnect=true
 			if err := steps.WriteFile(profilePath, profileContent); err != nil {
 				return err
 			}
+			if err := os.Chmod(profilePath, 0600); err != nil {
+				return err
+			}
 
 			if err := assets.Restore("files/iwd-main.conf", "/etc/iwd/main.conf"); err != nil {
 				return err
@@ -176,7 +180,6 @@ func swayPackages() task.Task {
 				"alacritty",
 				"ghostty",
 				"python",
-				"jq",
 			}
 			return steps.PacmanPackages(pkgs)
 		},
@@ -365,6 +368,9 @@ func hibernation() task.Task {
 					}
 					break
 				}
+			}
+			if offset == "" {
+				return fmt.Errorf("failed to parse resume offset from filefrag output, refusing to write broken cmdline")
 			}
 
 			cmdline := fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",

@@ -43,7 +43,9 @@ func CopyFile(from, to string) error {
 }
 
 // CopyRecursive recursively copies a file or directory tree from src to dst.
-// Regular files are copied with their source permissions. Symlinks are followed.
+// Regular files are copied with their source permissions. Symlinks are
+// recreated as-is (not followed); absolute targets may dangle until the
+// pointed-to files exist at the destination root.
 func CopyRecursive(src, dst string) error {
 	log.Printf("copy %s -> %s", src, dst)
 	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
@@ -206,8 +208,7 @@ func AskConfirmation(msg string) bool {
 		case "y", "yes":
 			return true
 		case "n", "no":
-			fmt.Println("exiting...")
-			os.Exit(0)
+			return false
 		default:
 			fmt.Printf("unknown input '%s', please enter y or n\n", input)
 		}

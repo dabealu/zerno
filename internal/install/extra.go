@@ -173,7 +173,10 @@ func FormatDevice(devPath, isoPath string) error {
 	}
 	isoLabel := fmt.Sprintf("ARCH_%s%s", parts[0], parts[1])
 
-	steps.AskConfirmation(fmt.Sprintf("warning: this will wipe data from %s, continue?", devPath))
+	if !steps.AskConfirmation(fmt.Sprintf("warning: this will wipe data from %s, continue?", devPath)) {
+		fmt.Println("aborted")
+		return nil
+	}
 
 	fmt.Println("creating partitions")
 	parted := fmt.Sprintf("parted -s %s", devPath)
