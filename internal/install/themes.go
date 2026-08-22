@@ -156,4 +156,22 @@ var Themes = map[string]map[string]string{
 		"#00ff00": "#aad94c", // green-alt
 		"#00FF00": "#d4d4d4", // cursor
 	},
+	"ember": { // warm ember dark (ember-theme)
+		"#000000": "#1c1b19", // bg
+		"#ffffff": "#d8d0c0", // fg
+		"#404040": "#3e3c38", // element
+		"#202020": "#242320", // inactive
+		"#232323": "#2e2d2a", // output
+		"#c25c02": "#e08060", // accent (coral)
+		"#777777": "#b8b0a0", // title
+		"#808080": "#706c61", // secondary
+		"#101010": "#1c1b19", // dunst-bg
+		"#301010": "#6a2e1e", // dunst-crit (dark coral)
+		"#999999": "#2e2d2a", // dunst-frame
+		"#ffead3": "#d8d0c0", // time
+		"#99ffdd": "#80a090", // green (sage)
+		"#ffcc66": "#c8b468", // yellow (gold)
+		"#00ff00": "#8a9868", // green-alt (olive)
+		"#00FF00": "#d8d0c0", // cursor
+	},
 }

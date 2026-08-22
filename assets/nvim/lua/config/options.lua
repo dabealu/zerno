@@ -4,8 +4,8 @@ local opt = vim.opt
 opt.number = true
 opt.relativenumber = true
 
--- Whitespace rendering (matches VSCode "editor.renderWhitespace": "all")
-opt.list = true
+-- Whitespace rendering (toggle with <leader>ti)
+opt.list = false
 opt.listchars = { tab = "→ ", lead = "·", trail = "·", nbsp = "␣" }
 
 -- Indentation

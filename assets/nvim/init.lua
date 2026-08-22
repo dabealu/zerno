@@ -24,10 +24,11 @@ vim.pack.add({
   { src = "https://github.com/nvim-tree/nvim-web-devicons" },
   { src = "https://github.com/petertriho/nvim-scrollbar" }, -- no tags available
   { src = "https://github.com/Bekaboo/dropbar.nvim", version = vim.version.range("~14") },
-  { src = "https://github.com/rebelot/kanagawa.nvim" },
+  { src = "https://github.com/EdenEast/nightfox.nvim" },
   { src = "https://github.com/nvim-lualine/lualine.nvim" },
   { src = "https://github.com/folke/trouble.nvim" },
   { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
+  { src = "https://github.com/MeanderingProgrammer/render-markdown.nvim", version = vim.version.range("~8") },
   { src = "https://github.com/rafamadriz/friendly-snippets" },
   { src = "https://github.com/nvim-lua/plenary.nvim" },
   { src = "https://github.com/folke/todo-comments.nvim" },
@@ -46,6 +47,7 @@ require("plugins.dropbar")
 require("plugins.lualine")
 require("plugins.trouble")
 require("plugins.treesitter")
+require("plugins.markdown")
 require("plugins.todo-comments")
 require("plugins.flash")
 require("plugins.vim")

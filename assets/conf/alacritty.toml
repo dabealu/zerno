@@ -13,7 +13,7 @@ shape = "Beam"
 blinking = "On"
 
 [colors.primary]
-background = '#161616'
+background = '#0d0d0d'
 foreground = '#d1d5da'
 
 [colors.normal]

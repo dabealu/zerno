@@ -9,10 +9,11 @@ require("which-key").setup({
     { "<leader>g", group = "git" },
     { "<leader>b", group = "buffer" },
     { "<leader>t", group = "toggle" },
+    { "<leader>m", group = "markdown" },
     { "<leader>d", group = "dropbar" },
     { "<leader>p", group = "project" },
     { "<leader>v", group = "vim" },
   },
 })
 
-vim.cmd.colorscheme("kanagawa-wave")
+vim.cmd.colorscheme("carbonfox")

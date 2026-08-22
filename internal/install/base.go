@@ -22,6 +22,7 @@ func Base(cfg *config.Config) {
 		kernelCmdline(),
 		task.Pacman("update_archlinux_keyring", []string{"archlinux-keyring"}),
 		pacstrap(),
+		cpuMicrocode(),
 		task.Command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
 		setTimezone(),
 		locales(),
@@ -183,6 +184,30 @@ func pacstrap() task.Task {
 				"man-pages",
 			}
 			_, err := steps.RunShell("pacstrap /mnt " + strings.Join(pkgs, " "))
+			return err
+		},
+	}
+}
+
+func cpuMicrocode() task.Task {
+	return task.Task{
+		Name: "install_cpu_microcode",
+		RunFunc: func(cfg *config.Config) error {
+			out, err := steps.RunCmd("grep", "-m1", "vendor_id", "/proc/cpuinfo")
+			if err != nil {
+				return err
+			}
+			var pkg string
+			switch {
+			case strings.Contains(out, "AuthenticAMD"):
+				pkg = "amd-ucode"
+			case strings.Contains(out, "GenuineIntel"):
+				pkg = "intel-ucode"
+			default:
+				fmt.Println("unknown CPU vendor, skipping microcode installation")
+				return nil
+			}
+			_, err = steps.RunShell(fmt.Sprintf("pacstrap /mnt %s", pkg))
 			return err
 		},
 	}
