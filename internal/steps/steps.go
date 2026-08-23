@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -199,11 +200,21 @@ func ReplaceLine(path, pattern, replacement string) error {
 	return WriteFile(path, strings.Join(lines, "\n"))
 }
 
+// stdin is the single shared buffered reader for all interactive input.
+// Multiple readers on os.Stdin would steal buffered bytes from each other.
+var stdin = bufio.NewReader(os.Stdin)
+
+// ReadLine reads one line from stdin without the trailing newline.
+// Input is trimmed of surrounding whitespace, matching old Scanln behavior.
+func ReadLine() string {
+	line, _ := stdin.ReadString('\n')
+	return strings.TrimSpace(line)
+}
+
 func AskConfirmation(msg string) bool {
 	for {
 		fmt.Printf("%s [yn] ", msg)
-		var input string
-		fmt.Scanln(&input)
+		input := ReadLine()
 		switch strings.ToLower(input) {
 		case "y", "yes":
 			return true

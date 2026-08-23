@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"zerno/assets"
 	"zerno/internal/config"
 	"zerno/internal/paths"
 	"zerno/internal/steps"
@@ -239,10 +240,10 @@ func locales() task.Task {
 			if _, err := steps.RunShell("arch-chroot /mnt locale-gen"); err != nil {
 				return err
 			}
-			if err := task.CopyFile("base/locale.conf", "/mnt/etc/locale.conf").RunFunc(cfg); err != nil {
+			if err := assets.Restore("base/locale.conf", "/mnt/etc/locale.conf"); err != nil {
 				return err
 			}
-			return task.CopyFile("base/vconsole.conf", "/mnt/etc/vconsole.conf").RunFunc(cfg)
+			return assets.Restore("base/vconsole.conf", "/mnt/etc/vconsole.conf")
 		},
 	}
 }
@@ -254,7 +255,7 @@ func hostname() task.Task {
 			if err := steps.WriteFile("/mnt/etc/hostname", cfg.Hostname); err != nil {
 				return err
 			}
-			return task.CopyTemplate("base/hosts.tpl", "/mnt/etc/hosts", cfg).RunFunc(cfg)
+			return assets.RestoreTemplate("base/hosts.tpl", "/mnt/etc/hosts", cfg)
 		},
 	}
 }

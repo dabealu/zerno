@@ -211,7 +211,7 @@ var swayConfAssets = map[string]string{
 	"conf/waybar.css":             "waybar.css",
 	"conf/waybar.json":            "waybar.json",
 	"conf/waybar.sh":              "waybar.sh",
-	"conf/nav.py":                 "nav.py",
+	"conf/waybar-nav.py":          "waybar-nav.py",
 }
 
 // swayExecutables get chmod 0755 after restore, relative to the user's home.
@@ -219,7 +219,7 @@ var swayExecutables = []string{
 	".config/sway/waybar.sh",
 	".config/sway/power-menu.sh",
 	".config/sway/fav-apps.sh",
-	".config/sway/nav.py",
+	".config/sway/waybar-nav.py",
 }
 
 func installSwayFiles(cfg *config.Config, homeDir string) error {

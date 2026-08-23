@@ -160,6 +160,17 @@ func FormatDevice(devPath, isoPath string) error {
 	if os.Getuid() != 0 {
 		return fmt.Errorf("boot-dev requires root privileges")
 	}
+	var devRe = regexp.MustCompile(`^/dev/[a-zA-Z0-9]+$`)
+	if !devRe.MatchString(devPath) {
+		return fmt.Errorf("invalid device path %q, expected /dev/<device>", devPath)
+	}
+	if strings.ContainsAny(isoPath, " \t\n") {
+		return fmt.Errorf("iso path must not contain whitespace: %q", isoPath)
+	}
+	if !steps.FileExists(isoPath) {
+		return fmt.Errorf("iso file not found: %s", isoPath)
+	}
+
 	isoName := filepath.Base(isoPath)
 	re := regexp.MustCompile(`archlinux-(\d+\.\d+\.\d+)-x86_64\.iso`)
 	matches := re.FindStringSubmatch(isoName)
@@ -198,6 +209,14 @@ func FormatDevice(devPath, isoPath string) error {
 		return err
 	}
 
+	mounted := false
+	cleanup := func(err error) error {
+		if mounted {
+			steps.RunCmd("umount", mntDir)
+		}
+		return err
+	}
+
 	for _, script := range []string{
 		fmt.Sprintf("mount %s1 %s", devPath, mntDir),
 		fmt.Sprintf("bsdtar -x -f %s -C %s", isoPath, mntDir),
@@ -207,8 +226,14 @@ func FormatDevice(devPath, isoPath string) error {
 		fmt.Sprintf("%s mkpart FlashDrive ext4 1024MiB 100%%", parted),
 		fmt.Sprintf("mkfs.ext4 %s2", devPath),
 	} {
+		if strings.HasPrefix(script, "mount ") {
+			mounted = true
+		}
 		if _, err := steps.RunShell(script); err != nil {
-			return err
+			return cleanup(fmt.Errorf("%s: %w", script, err))
+		}
+		if script == fmt.Sprintf("umount %s", mntDir) {
+			mounted = false
 		}
 	}
 

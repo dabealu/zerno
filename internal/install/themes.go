@@ -25,7 +25,7 @@ func defaultPaths(homeDir string) []themeFile {
 		{path: filepath.Join(swayDir, "config"), asset: "conf/config"},
 		{path: filepath.Join(swayDir, "waybar.css"), asset: "conf/waybar.css"},
 		{path: filepath.Join(swayDir, "waybar.json"), asset: "conf/waybar.json"},
-		{path: filepath.Join(swayDir, "nav.py"), asset: "conf/nav.py"},
+		{path: filepath.Join(swayDir, "waybar-nav.py"), asset: "conf/waybar-nav.py"},
 		{path: filepath.Join(swayDir, "power-menu.sh"), asset: "conf/power-menu.sh"},
 		{path: filepath.Join(swayDir, "fav-apps.sh"), asset: "conf/fav-apps.sh"},
 	}

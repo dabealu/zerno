@@ -112,19 +112,19 @@ func TestRestore_CreatesDirs(t *testing.T) {
 }
 
 func TestConfScriptsContent(t *testing.T) {
-	navPy, err := ReadFile("conf/nav.py")
+	navPy, err := ReadFile("conf/waybar-nav.py")
 	if err != nil {
-		t.Fatalf("conf/nav.py missing from embedded assets: %v", err)
+		t.Fatalf("conf/waybar-nav.py missing from embedded assets: %v", err)
 	}
 	content := string(navPy)
 	if !strings.HasPrefix(content, "#!/usr/bin/env python3") {
-		t.Error("nav.py: missing python shebang")
+		t.Error("waybar-nav.py: missing python shebang")
 	}
 	if !strings.Contains(content, `"i3-ipc"`) {
-		t.Error("nav.py: i3-ipc magic missing (content corrupted?)")
+		t.Error("waybar-nav.py: i3-ipc magic missing (content corrupted?)")
 	}
 	if !strings.Contains(content, `\uee15`) {
-		t.Error("nav.py: PUA escapes lost (stripped?)")
+		t.Error("waybar-nav.py: PUA escapes lost (stripped?)")
 	}
 
 	for _, script := range []string{"conf/waybar.sh", "conf/power-menu.sh", "conf/fav-apps.sh"} {

@@ -31,7 +31,7 @@
         "format": "{name}"
     },
     "custom/nav": {
-        "exec": "~/.config/sway/nav.py",
+        "exec": "~/.config/sway/waybar-nav.py",
         "return-type": "json",
         "format": "<span foreground='#3a3a3a'>│</span> {text}",
         "tooltip": false,
