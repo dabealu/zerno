@@ -9,6 +9,8 @@ default_border pixel 1
 titlebar_border_thickness 0
 titlebar_padding 0
 
+# Old header style with visible title marker, revert if needed:
+#for_window [class=".*"] title_format "<span foreground='#777777'> ▪ </span>%title"
 for_window [class=".*"] title_format " "
 for_window [app_id=".*"] title_format " "
 # Open pop-up windows in floating mode
@@ -182,6 +184,7 @@ set $dark #202020
 set $black #000000
 set $urgent #c25c02
 set $bg #232323
+set $darker #101010
 
 # Frame colors — border/background/text match output bg so the leftover 1px
 # titlebar strip is invisible; child_border keeps a subtle focus outline.
@@ -189,12 +192,12 @@ set $bg #232323
 #client.focused          $bg      $bg          $bg      $bg         #3a3a3a
 #client.focused_inactive $bg      $bg          $bg      $bg         $dark
 #client.unfocused        $bg      $bg          $bg      $bg         #101010
-#                       border   background   text     indicator   child_border
-client.focused          $bg      $black          $bg      $bg         $bg
-client.focused_inactive $bg      $black          $bg      $bg         $dark
-client.unfocused        $bg      $black          $bg      $bg         #101010
-client.urgent           $urgent  $urgent      $white   $bg         $urgent
-client.placeholder      $black   $black       $white   $black      $black
+#                       border   background    text     indicator   child_border
+client.focused          $bg      $black        $bg      $bg         $bg
+client.focused_inactive $bg      $black        $bg      $bg         $dark
+client.unfocused        $bg      $black        $bg      $bg         $darker
+client.urgent           $urgent  $urgent       $white   $bg         $urgent
+client.placeholder      $black   $black        $white   $black      $black
 client.background       $black
 
 exec_always ~/.config/sway/waybar.sh

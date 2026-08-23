@@ -16,6 +16,10 @@ build() {
 test() {
     echo "Running tests..."
     go test ./... "$@"
+    echo "Checking python syntax..."
+    for f in assets/files/*.py assets/conf/*.py; do
+        python3 -c "import ast,sys; ast.parse(open(sys.argv[1]).read())" "$f" || exit 1
+    done
 }
 
 vet() {
