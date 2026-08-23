@@ -9,7 +9,6 @@ Zerno is a Go tool for automated Arch Linux installation with Sway window manage
 - **Standalone binary** - all configs/templates embedded via `//go:embed`
 - **Two-phase installation** - `install-base` (Phase 1, chroot) + `install-full` (Phase 2, after reboot)
 - **Re-run `install-full` to sync** - re-running Phase 2 syncs configs and packages
-- **CachyOS support** - `cachyos` command to enable repos and kernel
 - **No repo required during install** - binary is self-contained
 
 ## Key Packages
@@ -81,7 +80,6 @@ Utilities are stored as `.embed` files in `assets/utilsfs/`. They are embedded a
 | install-base | b | (Phase 1) Run base system installation (chroot stage) |
 | install-full | i | (Phase 2) Desktop/full installation (after reboot, re-run to sync) |
 | qemu | q | Install and configure qemu/kvm |
-| cachyos | c | (sudo) Enable CachyOS repos and kernel |
 | update-bin | u | Compile new bin from local repo |
 | build-iso | m | Create iso with zerno bin included |
 | boot-dev | f | Format device creating storage and boot partitions |
@@ -146,17 +144,6 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block 
 - Kernel PostTransaction hook generates new `arch-linux.efi`
 - Result: always have 2 UKIs (current + previous) after first kernel update
 
-### CachyOS kernel swap
-When `cachyos` command runs, it:
-1. Saves `arch-linux.efi` → `arch-linux-fallback.efi` (preserve old kernel)
-2. Overrides `/etc/mkinitcpio.d/linux.preset` with `ALL_kver="/boot/vmlinuz-linux-cachyos"`
-3. Runs `mkinitcpio -p linux` → generates CachyOS UKI as `arch-linux.efi`
-4. Future updates follow the same pacman hook — `arch-linux.efi` is now CachyOS
-
-### Secure Boot (always-on preparation)
-- Always creates keys and signs binaries via `sbctl`. Never auto-enrolls.
-- Works with Secure Boot both ON (if keys enrolled) and OFF (signatures ignored)
-- To enable Secure Boot: `sbctl enroll-keys -m` + flip switch in UEFI
 
 ## Network Architecture
 
@@ -207,5 +194,5 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
 - **Repo optional** - only needed for `update-bin`, `build-iso`, `repo-pull`
 - **systemd-boot over GRUB** — simpler, modern (UKI, auto-discovery, Secure Boot native), no scripting language
 - **MBR/BIOS dropped** — systemd-boot requires UEFI; legacy BIOS is increasingly rare for new installs
-- **Single `linux.preset`** — always describes the "active" kernel; CachyOS replaces it in-place
+- **Single `linux.preset`** — always describes the "active" kernel
 - **Always sign Secure Boot keys** — zero user friction, works whether SB is on or off

@@ -29,7 +29,6 @@ func printHelp() {
   b, install-base          base system installation (chroot)
   i, install-full          full installation and sync configs
   q, qemu                  install and configure qemu/kvm
-  c, cachyos               enable CachyOS repos and kernel
   u, update-bin            compile new bin from the local repo
   m, build-iso             create iso with zerno bin included
   f, boot-dev <dev> <iso>  format device with storage + boot partitions
@@ -82,9 +81,6 @@ func main() {
 		cfg, err := config.LoadOrPrompt()
 		fatalOnErr(err)
 		fatalOnErr(install.RepoPull(cfg))
-
-	case "c", "cachyos":
-		install.Cachyos()
 
 	case "t", "theme":
 		requireArgCount(3)
