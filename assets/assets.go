@@ -10,7 +10,7 @@ import (
 	"text/template"
 )
 
-//go:embed base conf files qemu sysctl.d utilsfs nvim
+//go:embed base conf files qemu sysctl.d nvim
 var assetsDir embed.FS
 
 // ReadFile returns the raw embedded content of an asset.

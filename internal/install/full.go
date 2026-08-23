@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -681,32 +680,21 @@ func installUtils() task.Task {
 		Name: "install_utilities",
 		RunFunc: func(cfg *config.Config) error {
 			systemBinDir := "/usr/local/bin"
-			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
 
 			for src, bin := range map[string]string{
-				"utilsfs/brightness_control.embed": "brightness-control",
-				"utilsfs/translate.embed":          "translate",
+				"files/brightness-control.py": "brightness-control",
+				"files/translate.py":          "translate",
 			} {
-				tmpDir, err := os.MkdirTemp("", "zerno-")
-				if err != nil {
-					return err
-				}
-				defer os.RemoveAll(tmpDir)
-
-				srcPath := filepath.Join(tmpDir, strings.ReplaceAll(filepath.Base(src), ".embed", ".go"))
-				if err := assets.Restore(src, srcPath); err != nil {
-					return err
-				}
-
 				dst := filepath.Join(systemBinDir, bin)
-				cmd := exec.Command("go", "build", "-o", dst, srcPath)
-				cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
-				out, err := cmd.CombinedOutput()
-				if err != nil {
-					return fmt.Errorf("compile %s: %w\n%s", bin, err, out)
+				if err := assets.Restore(src, dst); err != nil {
+					return err
+				}
+				if err := os.Chmod(dst, 0755); err != nil {
+					return err
 				}
 			}
 
+			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
 			if err := os.MkdirAll(homeBinDir, 0755); err != nil {
 				return err
 			}

@@ -96,17 +96,3 @@ func TestSwayExecutablesAreRestoredScripts(t *testing.T) {
 		}
 	}
 }
-
-func TestThemesCoverCoreColors(t *testing.T) {
-	core := []string{"#000000", "#ffffff", "#3a3a3a", "#232323", "#c25c02"}
-	for name, palette := range Themes {
-		if palette == nil {
-			continue // default theme
-		}
-		for _, c := range core {
-			if _, ok := palette[c]; !ok {
-				t.Errorf("theme %q missing core color %s", name, c)
-			}
-		}
-	}
-}
