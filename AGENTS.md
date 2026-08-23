@@ -48,7 +48,7 @@ func myTask(cfg *config.Config) Task {
 }
 ```
 
-Tasks are executed via `runTaskList(tasks, cfg)`.
+Tasks are executed via `task.RunTaskList(tasks, cfg)`.
 
 ### Adding Config Files and Templates
 
@@ -56,9 +56,12 @@ Tasks are executed via `runTaskList(tasks, cfg)`.
 2. Use `assets.Restore("path/in/assets", "/destination/path")` or `assets.RestoreTemplate("path/in/assets", "/destination/path", cfg)`
 3. For directories (like `nvim/`), use `assets.RestoreDir("path/in/assets", "/destination/path")`
 
-### Utils Source Files
+### Utility Scripts
 
-Utilities are stored as `.embed` files in `assets/utilsfs/`. They are embedded and compiled at runtime.
+System utilities live in `assets/files/*.py` (python, stdlib only) and are
+restored to `/usr/local/bin/<name>` (extensionless) with exec bit by `installUtils()`.
+No compilation step. Desktop scripts (`.sh`, `waybar-nav.py`) go to `~/.config/sway/`
+via `swayConfigs()` + `swayExecutables` chmod list.
 
 ## Commands
 
@@ -166,9 +169,10 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
 
 - `network()` in `full.go` writes a `.network` file:
   - **WiFi**: `10-wlan.network` with `[Match] Type=wlan`, `DHCP=yes`, `IgnoreCarrierLoss=3s`.
-  - **Ethernet**: `0-{NetDev}-dhcp.network` with `[Match] Name={cfg.NetDev}` (predictable name).
+  - **Ethernet**: `0-eth-dhcp.network` (fixed filename) with `[Match] Name={cfg.NetDev}`.
 - `wifi()` in `full.go` writes `/var/lib/iwd/{SSID}.psk` (profile), `/etc/iwd/main.conf` (daemon config), enables `iwd.service`.
-- `iwd` profiles use `Passphrase=` in `[Security]` section. SSID is used as filename with spaces replaced by `_`.
+- `iwd` profiles use `Passphrase=` in `[Security]` section; profile file is chmod 0600.
+- Profile filename via `SSIDFilename()` (`full.go`): SSID kept as-is when it contains only `[a-zA-Z0-9 _-]`, otherwise the whole string is hex-encoded with `=` prefix (e.g. `=436166c3a9.psk`).
 
 ### QEMU bridge
 
@@ -184,6 +188,37 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
 | `internal/install/extra.go` | QEMU uplink |
 | `assets/files/iwd-main.conf` | iwd daemon config (`EnableNetworkConfiguration=false`, `NameResolvingService=systemd`) |
 | `assets/qemu/uplink.network` | QEMU bridge uplink template |
+
+## Sway/Waybar Nav Widget
+
+Headerless tabs replacement: window icons of the focused workspace rendered in waybar.
+
+- `assets/conf/waybar-nav.py` — resident python daemon (stdlib only), one instance
+  per output (`$WAYBAR_OUTPUT_NAME` set by waybar). Subscribes to sway IPC directly
+  (framed JSON over `$SWAYSOCK`), renders pango icon spans on window/workspace events.
+  No polling; ~1.6 ms per event. Self-culls same-output duplicates via `/proc` scan;
+  reconnect loop survives sway restarts. Icon glyphs are PUA codepoints written as
+  escapes (literals get stripped in transit) - see `~/src/waybar-icons.md`.
+- `assets/conf/waybar.sh` — lifecycle entry, `exec_always` from sway config:
+  kills waybar + all `sway/waybar-nav[.]py`, then execs waybar (which spawns one nav per bar).
+- waybar module `custom/nav`: `return-type json`, consumes stdout lines; click/scroll
+  bindings focus prev/next sibling, middle-click kills.
+
+## Colors Map
+
+No theme engine - colors are literal hex values. To retheme, touch these places
+(keep values in sync manually):
+
+| Role | Locations |
+|------|-----------|
+| bg/output | sway `config`: `$bg #232323`, `$black #000000`; bar bg + tooltip in `waybar.css` |
+| gray/element | sway `$gray #3a3a3a`; same hex in `waybar.css` (focused ws, borders, muted) and `waybar.json` separator span; `waybar-nav.py` `CHIP_BG` |
+| fg/active | `#ffffff`: sway `$white`; nav `ACTIVE`; css text colors |
+| inactive/dim | sway `$dark #202020`; css `#101010` unfocused child_border equivalents live in sway config only |
+| accent | sway `$urgent #c25c02` (+ client.urgent row); reused for warnings elsewhere |
+
+Independent palettes NOT covered by the above (own schemes): `alacritty.toml`,
+ghostty config, nvim colorscheme (see vim.md).
 
 ## Design Decisions
 
