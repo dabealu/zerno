@@ -27,3 +27,7 @@ iso-device-mnt/
 
 # Local config (may contain secrets)
 .zerno/
+
+# Python
+__pycache__/
+*.pyc

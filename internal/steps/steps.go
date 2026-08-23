@@ -1,6 +1,7 @@
 package steps
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"io"
@@ -43,7 +44,9 @@ func CopyFile(from, to string) error {
 }
 
 // CopyRecursive recursively copies a file or directory tree from src to dst.
-// Regular files are copied with their source permissions. Symlinks are followed.
+// Regular files are copied with their source permissions. Symlinks are
+// recreated as-is (not followed); absolute targets may dangle until the
+// pointed-to files exist at the destination root.
 func CopyRecursive(src, dst string) error {
 	log.Printf("copy %s -> %s", src, dst)
 	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
@@ -197,17 +200,26 @@ func ReplaceLine(path, pattern, replacement string) error {
 	return WriteFile(path, strings.Join(lines, "\n"))
 }
 
+// stdin is the single shared buffered reader for all interactive input.
+// Multiple readers on os.Stdin would steal buffered bytes from each other.
+var stdin = bufio.NewReader(os.Stdin)
+
+// ReadLine reads one line from stdin without the trailing newline.
+// Input is trimmed of surrounding whitespace, matching old Scanln behavior.
+func ReadLine() string {
+	line, _ := stdin.ReadString('\n')
+	return strings.TrimSpace(line)
+}
+
 func AskConfirmation(msg string) bool {
 	for {
 		fmt.Printf("%s [yn] ", msg)
-		var input string
-		fmt.Scanln(&input)
+		input := ReadLine()
 		switch strings.ToLower(input) {
 		case "y", "yes":
 			return true
 		case "n", "no":
-			fmt.Println("exiting...")
-			os.Exit(0)
+			return false
 		default:
 			fmt.Printf("unknown input '%s', please enter y or n\n", input)
 		}

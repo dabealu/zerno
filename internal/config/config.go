@@ -1,7 +1,6 @@
 package config
 
 import (
-	"bufio"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -9,6 +8,8 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"zerno/internal/steps"
 )
 
 type Config struct {
@@ -47,6 +48,27 @@ func (c *Config) Validate() error {
 	}
 	if c.NetDev == "" {
 		return fmt.Errorf("network device is required")
+	}
+	return nil
+}
+
+// ValidateStrict applies basic sanity checks to freshly prompted input:
+// each field must consist only of characters that are valid for it. This
+// catches typos and shell-hostile garbage while staying lax enough to never
+// block a reasonable install. Load() intentionally stays lenient so
+// pre-existing parameters.json files never break re-runs of install-full.
+func (c *Config) ValidateStrict() error {
+	if !regexp.MustCompile(`^[a-zA-Z0-9._-]+$`).MatchString(c.Hostname) {
+		return fmt.Errorf("invalid hostname %q: allowed: letters, digits, '.', '-', '_'", c.Hostname)
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9._-]+$`).MatchString(c.Username) {
+		return fmt.Errorf("invalid username %q: allowed: letters, digits, '.', '-', '_'", c.Username)
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(c.BlockDevice) {
+		return fmt.Errorf("invalid block device %q: allowed: letters and digits", c.BlockDevice)
+	}
+	if !regexp.MustCompile(`^[a-zA-Z0-9]+(?:[/_+-][a-zA-Z0-9]+)*$`).MatchString(c.Timezone) {
+		return fmt.Errorf("invalid timezone %q: allowed: letters, digits, '/', '_', '+', '-'", c.Timezone)
 	}
 	return nil
 }
@@ -97,7 +119,7 @@ func Prompt() (*Config, error) {
 
 	fmt.Println("enter parameters:")
 
-	if err := checkUEFI(); err != nil {
+	if err := CheckUEFI(); err != nil {
 		return nil, err
 	}
 	if err := selectBlockDevice(cfg); err != nil {
@@ -109,24 +131,17 @@ func Prompt() (*Config, error) {
 	}
 	promptWiFi(cfg)
 
-	if err := cfg.Validate(); err != nil {
+	if err := cfg.ValidateStrict(); err != nil {
 		return nil, err
 	}
 
 	fmt.Printf("\nparameters:\n%s\n", cfg)
 
-	if !confirm("proceed with the installation?") {
+	if !steps.AskConfirmation("proceed with the installation?") {
 		os.Exit(0)
 	}
 
 	return cfg, nil
-}
-
-func checkUEFI() error {
-	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
-		return fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
-	}
-	return nil
 }
 
 func selectBlockDevice(cfg *Config) error {
@@ -147,7 +162,7 @@ func selectBlockDevice(cfg *Config) error {
 	fmt.Println()
 
 	fmt.Printf("block device %v: ", devices)
-	fmt.Scanln(&cfg.BlockDevice)
+	cfg.BlockDevice = steps.ReadLine()
 	if cfg.BlockDevice == "" {
 		cfg.BlockDevice = devices[0]
 	}
@@ -185,8 +200,7 @@ func promptWiFi(cfg *Config) {
 	cfg.WiFiEnabled = defaultWiFi
 
 	fmt.Print("configure wifi [", defaultWiFi, "]: ")
-	var wifiStr string
-	fmt.Scanln(&wifiStr)
+	wifiStr := steps.ReadLine()
 	if wifiStr != "" {
 		cfg.WiFiEnabled = wifiStr == "true" || wifiStr == "1"
 	}
@@ -271,8 +285,7 @@ func getNetDevName(isoDev string) string {
 
 func prompt(label string, value *string, fallback string) {
 	fmt.Printf("%s [%s]: ", label, fallback)
-	input, _ := bufio.NewReader(os.Stdin).ReadString('\n')
-	*value = strings.TrimSpace(input)
+	*value = steps.ReadLine()
 	if *value == "" {
 		*value = fallback
 	}
@@ -280,26 +293,17 @@ func prompt(label string, value *string, fallback string) {
 
 func promptChoice(label string, options []string) string {
 	fmt.Printf("%s %v: ", label, options)
-	var choice string
-	fmt.Scanln(&choice)
+	choice := steps.ReadLine()
 	if choice == "" && len(options) > 0 {
 		return options[0]
 	}
 	return choice
 }
 
-func confirm(msg string) bool {
-	for {
-		fmt.Printf("%s [yn] ", msg)
-		var input string
-		fmt.Scanln(&input)
-		switch input {
-		case "y", "Y":
-			return true
-		case "n", "N":
-			return false
-		default:
-			fmt.Printf("unknown input '%s', please enter y or n\n", input)
-		}
+// CheckUEFI reports whether the system booted in UEFI mode (required by systemd-boot).
+func CheckUEFI() error {
+	if _, err := os.Stat("/sys/firmware/efi"); os.IsNotExist(err) {
+		return fmt.Errorf("systemd-boot requires UEFI — /sys/firmware/efi not found")
 	}
+	return nil
 }

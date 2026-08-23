@@ -29,14 +29,12 @@ func printHelp() {
   b, install-base          base system installation (chroot)
   i, install-full          full installation and sync configs
   q, qemu                  install and configure qemu/kvm
-  c, cachyos               enable CachyOS repos and kernel
   u, update-bin            compile new bin from the local repo
   m, build-iso             create iso with zerno bin included
   f, boot-dev <dev> <iso>  format device with storage + boot partitions
   e, steam <vga>           install steam, vga: intel, nvidia, amd
   v, version               print version and exit
-  r, repo-pull             clone or update repo in ~/src/zerno
-  t, theme <name>          set color theme`)
+  r, repo-pull             clone or update repo in ~/src/zerno`)
 }
 
 func main() {
@@ -82,28 +80,6 @@ func main() {
 		cfg, err := config.LoadOrPrompt()
 		fatalOnErr(err)
 		fatalOnErr(install.RepoPull(cfg))
-
-	case "c", "cachyos":
-		install.Cachyos()
-
-	case "t", "theme":
-		requireArgCount(3)
-		paletteName := os.Args[2]
-		palette, ok := install.Themes[paletteName]
-		if !ok {
-			themes := []string{}
-			for name := range install.Themes {
-				themes = append(themes, name)
-			}
-			log.Fatalf("unknown theme, available: %v", themes)
-		}
-
-		switch paletteName {
-		case "default":
-			fatalOnErr(install.ThemeDefault())
-		default:
-			fatalOnErr(install.ApplyTheme(palette))
-		}
 
 	default:
 		log.Println("unknown command...")

@@ -60,5 +60,5 @@ func IsoMountDir() string {
 }
 
 func RepoSrcDir() string {
-	return filepath.Join(os.Getenv("HOME"), RepoPath)
+	return filepath.Join(HomeDir(), RepoPath)
 }

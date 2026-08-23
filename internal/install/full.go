@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -18,6 +17,7 @@ import (
 
 func Full(cfg *config.Config) {
 	if err := task.RunTaskList([]task.Task{
+		task.RequireUser("root"),
 		network(),
 		resolved(),
 		wifi(),
@@ -140,6 +140,9 @@ AutoConnect=true
 			if err := steps.WriteFile(profilePath, profileContent); err != nil {
 				return err
 			}
+			if err := os.Chmod(profilePath, 0600); err != nil {
+				return err
+			}
 
 			if err := assets.Restore("files/iwd-main.conf", "/etc/iwd/main.conf"); err != nil {
 				return err
@@ -175,6 +178,7 @@ func swayPackages() task.Task {
 				"wl-clipboard",
 				"alacritty",
 				"ghostty",
+				"python",
 			}
 			return steps.PacmanPackages(pkgs)
 		},
@@ -195,38 +199,65 @@ func globalVars() task.Task {
 	}
 }
 
+// swayConfAssets maps embedded asset paths to file names under ~/.config/sway.
+var swayConfAssets = map[string]string{
+	"conf/alacritty.toml":         "alacritty.toml",
+	"conf/config":                 "config",
+	"conf/dunstrc":                "dunstrc",
+	"conf/libinput-gestures.conf": "libinput-gestures.conf",
+	"conf/power-menu.sh":          "power-menu.sh",
+	"conf/fav-apps.sh":            "fav-apps.sh",
+	"conf/waybar.css":             "waybar.css",
+	"conf/waybar.json":            "waybar.json",
+	"conf/waybar.sh":              "waybar.sh",
+	"conf/waybar-nav.py":          "waybar-nav.py",
+}
+
+// swayExecutables get chmod 0755 after restore, relative to the user's home.
+var swayExecutables = []string{
+	".config/sway/waybar.sh",
+	".config/sway/power-menu.sh",
+	".config/sway/fav-apps.sh",
+	".config/sway/waybar-nav.py",
+}
+
+func installSwayFiles(cfg *config.Config, homeDir string) error {
+	swayDir := filepath.Join(homeDir, ".config/sway")
+	if err := os.MkdirAll(swayDir, 0755); err != nil {
+		return err
+	}
+
+	for src, name := range swayConfAssets {
+		if err := assets.Restore(src, filepath.Join(swayDir, name)); err != nil {
+			return err
+		}
+	}
+
+	ghosttyDir := filepath.Join(homeDir, ".config/ghostty")
+	if err := os.MkdirAll(ghosttyDir, 0755); err != nil {
+		return err
+	}
+	if err := assets.Restore("conf/ghostty", filepath.Join(ghosttyDir, "config")); err != nil {
+		return err
+	}
+
+	if err := steps.ChownRecursive(homeDir, cfg.UserID, cfg.UserGID); err != nil {
+		return err
+	}
+	for _, f := range swayExecutables {
+		if err := os.Chmod(filepath.Join(homeDir, f), 0755); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func swayConfigs() task.Task {
 	return task.Task{
 		Name: "create_sway_config_files",
 		RunFunc: func(cfg *config.Config) error {
 			homeDir := fmt.Sprintf("/home/%s", cfg.Username)
-			swayDir := filepath.Join(homeDir, ".config/sway")
-			if err := os.MkdirAll(swayDir, 0755); err != nil {
-				return err
-			}
-
-			swayFiles := map[string]string{
-				"conf/alacritty.toml":         swayDir + "/alacritty.toml",
-				"conf/config":                 swayDir + "/config",
-				"conf/dunstrc":                swayDir + "/dunstrc",
-				"conf/libinput-gestures.conf": swayDir + "/libinput-gestures.conf",
-				"conf/power-menu.sh":          swayDir + "/power-menu.sh",
-				"conf/fav-apps.sh":            swayDir + "/fav-apps.sh",
-				"conf/waybar.css":             swayDir + "/waybar.css",
-				"conf/waybar.json":            swayDir + "/waybar.json",
-				"conf/waybar.sh":              swayDir + "/waybar.sh",
-			}
-			for src, dst := range swayFiles {
-				if err := assets.Restore(src, dst); err != nil {
-					return err
-				}
-			}
-
-			ghosttyDir := filepath.Join(homeDir, ".config/ghostty")
-			if err := os.MkdirAll(ghosttyDir, 0755); err != nil {
-				return err
-			}
-			if err := assets.Restore("conf/ghostty", filepath.Join(ghosttyDir, "config")); err != nil {
+			if err := installSwayFiles(cfg, homeDir); err != nil {
 				return err
 			}
 
@@ -237,23 +268,7 @@ func swayConfigs() task.Task {
 			if err := os.Chmod(deDst, 0755); err != nil {
 				return err
 			}
-			if err := steps.Symlink(deDst, filepath.Join(homeDir, "de")); err != nil {
-				return err
-			}
-
-			if err := steps.ChownRecursive(homeDir, cfg.UserID, cfg.UserGID); err != nil {
-				return err
-			}
-			for _, f := range []string{
-				".config/sway/waybar.sh",
-				".config/sway/power-menu.sh",
-				".config/sway/fav-apps.sh",
-			} {
-				if err := os.Chmod(filepath.Join(homeDir, f), 0755); err != nil {
-					return err
-				}
-			}
-			return nil
+			return steps.Symlink(deDst, filepath.Join(homeDir, "de"))
 		},
 	}
 }
@@ -352,6 +367,9 @@ func hibernation() task.Task {
 					}
 					break
 				}
+			}
+			if offset == "" {
+				return fmt.Errorf("failed to parse resume offset from filefrag output, refusing to write broken cmdline")
 			}
 
 			cmdline := fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",
@@ -662,32 +680,21 @@ func installUtils() task.Task {
 		Name: "install_utilities",
 		RunFunc: func(cfg *config.Config) error {
 			systemBinDir := "/usr/local/bin"
-			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
 
 			for src, bin := range map[string]string{
-				"utilsfs/brightness_control.embed": "brightness-control",
-				"utilsfs/translate.embed":          "translate",
+				"files/brightness-control.py": "brightness-control",
+				"files/translate.py":          "translate",
 			} {
-				tmpDir, err := os.MkdirTemp("", "zerno-")
-				if err != nil {
-					return err
-				}
-				defer os.RemoveAll(tmpDir)
-
-				srcPath := filepath.Join(tmpDir, strings.ReplaceAll(filepath.Base(src), ".embed", ".go"))
-				if err := assets.Restore(src, srcPath); err != nil {
-					return err
-				}
-
 				dst := filepath.Join(systemBinDir, bin)
-				cmd := exec.Command("go", "build", "-o", dst, srcPath)
-				cmd.Env = append(os.Environ(), "HOME="+os.Getenv("HOME"))
-				out, err := cmd.CombinedOutput()
-				if err != nil {
-					return fmt.Errorf("compile %s: %w\n%s", bin, err, out)
+				if err := assets.Restore(src, dst); err != nil {
+					return err
+				}
+				if err := os.Chmod(dst, 0755); err != nil {
+					return err
 				}
 			}
 
+			homeBinDir := fmt.Sprintf("/home/%s/bin", cfg.Username)
 			if err := os.MkdirAll(homeBinDir, 0755); err != nil {
 				return err
 			}

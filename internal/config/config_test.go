@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -150,4 +151,72 @@ func TestConfigJSONRoundtrip(t *testing.T) {
 	if loaded.WiFiPassword != cfg.WiFiPassword {
 		t.Errorf("WiFiPassword = %v, want %v", loaded.WiFiPassword, cfg.WiFiPassword)
 	}
+}
+
+func TestValidateStrict(t *testing.T) {
+	valid := Config{
+		Hostname:    "dhost",
+		BlockDevice: "sda",
+		Username:    "user",
+		PartNum:     2,
+		NetDev:      "enp3s0",
+		Timezone:    "Asia/Singapore",
+	}
+	if err := valid.ValidateStrict(); err != nil {
+		t.Fatalf("valid config rejected: %v", err)
+	}
+
+	cases := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{"hostname space", func(c *Config) { c.Hostname = "my host" }},
+		{"hostname shell chars", func(c *Config) { c.Hostname = "host$(reboot)" }},
+		{"username space", func(c *Config) { c.Username = "my user" }},
+		{"username semicolon", func(c *Config) { c.Username = "user;x" }},
+		{"block device path", func(c *Config) { c.BlockDevice = "sda;rm" }},
+		{"block device slash", func(c *Config) { c.BlockDevice = "a/b" }},
+		{"timezone space", func(c *Config) { c.Timezone = "Mars Olympus" }},
+	}
+	for _, tc := range cases {
+		cfg := valid
+		tc.mutate(&cfg)
+		if err := cfg.ValidateStrict(); err == nil {
+			t.Errorf("%s: expected error, got nil", tc.name)
+		}
+	}
+
+	// accepted variants that must NOT fail (lax rules: no false positives)
+	good := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{"single-char hostname", func(c *Config) { c.Hostname = "x" }},
+		{"hyphenated username", func(c *Config) { c.Username = "john-doe_2" }},
+		{"uppercase username", func(c *Config) { c.Username = "User" }},
+		{"long hostname", func(c *Config) { c.Hostname = strings.Repeat("a", 100) }},
+		{"dotted hostname", func(c *Config) { c.Hostname = "arch.local" }},
+		{"underscore hostname", func(c *Config) { c.Hostname = "my_host" }},
+		{"nvme device", func(c *Config) { c.BlockDevice = "nvme0n1" }},
+		{"unknown timezone", func(c *Config) { c.Timezone = "Mars/Olympus" }},
+		{"utc offset timezone", func(c *Config) { c.Timezone = "Etc/UTC+5" }},
+		{"wifi enabled ok", func(c *Config) {
+			c.WiFiEnabled = true
+			c.WiFiSSID = "Home Network"
+			c.WiFiPassword = "hunter2"
+		}},
+		{"open network no password", func(c *Config) {
+			c.WiFiEnabled = true
+			c.WiFiSSID = "FreeWiFi"
+			c.WiFiPassword = ""
+		}},
+	}
+	for _, tc := range good {
+		cfg := valid
+		tc.mutate(&cfg)
+		if err := cfg.ValidateStrict(); err != nil {
+			t.Errorf("%s: unexpected error: %v", tc.name, err)
+		}
+	}
+
 }
