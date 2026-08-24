@@ -38,9 +38,16 @@ press `ctrl+x` to save and load.
 
 ref: https://wiki.archlinux.org/title/Kernel_parameters
 
-### Disable mitigations
-this may increase CPU performance, but **potentially dangerous**.
-disable hardware vulnerability mitigations by setting `mitigations=off` kernel parameter.
+### Memory running below rated speed (EXPO/XMP)
+RAM often runs at JEDEC baseline instead of the kit's rated profile —
+worth ~20% for memory-bound workloads (iGPU gaming, local LLM inference).
+check:
+```bash
+sudo dmidecode -t memory | grep -E 'Speed:|Configured'
+```
+if `Configured Memory Speed` is lower than the module's rated `Speed`,
+the XMP/EXPO profile is disabled — enable it in BIOS (named DOCP on ASUS,
+A-XMP on MSI, XMP on Gigabyte). if configured == rated, nothing to do.
 
 ### Pipewire
 https://wiki.archlinux.org/title/PipeWire

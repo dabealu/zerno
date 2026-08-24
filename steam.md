@@ -3,20 +3,21 @@
 ## Installation
 
 ```sh
-zerno steam <vga>    # or: zerno e <vga>
+zerno steam    # or: zerno e
 ```
 
-This enables multilib and installs Steam + the correct Vulkan driver for your GPU (`intel`, `nvidia`, or `amd`).
+GPU vendor is auto-detected from sysfs (AMD `0x1002`, Intel `0x8086`; discrete
+AMD preferred over Intel iGPU). NVIDIA is not supported yet — see
+[NVIDIA](#nvidia-manual-setup) below.
 
-If running the command manually, the packages installed are:
+This enables multilib and installs Steam, gamescope and the matching Vulkan driver:
 
 | GPU | Packages |
 |-----|----------|
 | Intel | `vulkan-intel lib32-vulkan-intel` |
 | AMD | `vulkan-radeon lib32-vulkan-radeon` |
-| NVIDIA | `nvidia-utils lib32-nvidia-utils` |
 
-All modes also install: `ttf-liberation vulkan-icd-loader vulkan-tools lib32-mesa lib32-systemd steam`
+All modes also install: `ttf-liberation vulkan-icd-loader vulkan-tools lib32-mesa lib32-systemd steam gamescope`
 
 > The `lib32-*` Vulkan driver must match your GPU vendor. If pacman prompts for a 32-bit Vulkan driver, do NOT pick `lib32-nvidia-utils` on Intel/AMD.
 
@@ -41,11 +42,10 @@ Proton includes DXVK (DirectX 9/10/11 → Vulkan) and VKD3D-Proton (DirectX 12 �
 
 ## Optimizations
 
-gamemode + gamescope together with a tuned kernel (e.g. CachyOS) provide easy performance gains.
-Both packages available in extra repo:
-```sh
-pacman -S gamescope gamemode lib32-gamemode
-```
+`gamescope` is installed automatically by `zerno steam`.
+`gamemode` + `mangohud` (optional, not installed): gamemode switches CPU/GPU
+to performance mode on demand, mangohud overlays fps/CPU/GPU stats — consider
+adding `gamemode lib32-gamemode mangohud lib32-mangohud` if needed.
 
 Example Steam launch options:
 ```sh
@@ -81,6 +81,32 @@ Switch between TTYs with `Ctrl+Alt+F<N>` or programmatically with:
 ```sh
 sudo chvt 3   # same as Ctrl+Alt+F3
 ```
+
+## NVIDIA (manual setup)
+
+NVIDIA is not auto-installed. Manual steps for Turing or newer
+(GTX 16xx / RTX 20xx+); pre-Turing cards need legacy `nvidia-dkms` instead of
+`nvidia-open-dkms`:
+
+```sh
+sudo pacman -S linux-headers nvidia-open-dkms nvidia-utils lib32-nvidia-utils
+```
+
+**Initramfs trap:** zerno's mkinitcpio HOOKS include `kms`, which bundles
+nouveau into the initramfs/UKI. After installing the proprietary driver,
+nouveau claims the card first and graphics break. Fix:
+
+1. remove `kms` from the `HOOKS=(...)` line in `/etc/mkinitcpio.conf`
+2. blacklist nouveau:
+   ```sh
+   echo 'blacklist nouveau' | sudo tee /etc/modprobe.d/nouveau.conf
+   ```
+3. regenerate the UKI: `sudo mkinitcpio -P`
+
+Console falls back to simpledrm (basic resolution until Sway starts) — cosmetic only.
+
+Optionally enable the persistence daemon (`systemctl enable --now nvidia-persistenced`)
+to avoid GPU re-init latency between clients; not needed for typical desktop use.
 
 ## Links
 

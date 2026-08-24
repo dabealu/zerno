@@ -7,8 +7,8 @@ set -e
 export XDG_CURRENT_DESKTOP=sway
 export XDG_SESSION_TYPE=wayland
 
-# export WLR_RENDERER=vulkan
-export WLR_DRM_NO_MODIFIERS=1
+# uncomment if screen stays black at sway launch (modeset failure workaround)
+# export WLR_DRM_NO_MODIFIERS=1
 
 export QT_QPA_PLATFORM=wayland
 export QT_QPA_PLATFORMTHEME=gtk3

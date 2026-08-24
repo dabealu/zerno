@@ -32,7 +32,7 @@ func printHelp() {
   u, update-bin            compile new bin from the local repo
   m, build-iso             create iso with zerno bin included
   f, boot-dev <dev> <iso>  format device with storage + boot partitions
-  e, steam <vga>           install steam, vga: intel, nvidia, amd
+  e, steam                 install steam
   v, version               print version and exit
   r, repo-pull             clone or update repo in ~/src/zerno`)
 }
@@ -70,8 +70,8 @@ func main() {
 		fatalOnErr(install.FormatDevice(os.Args[2], os.Args[3]))
 
 	case "e", "steam":
-		requireArgCount(3)
-		fatalOnErr(install.InstallSteam(os.Args[2]))
+		requireArgCount(2)
+		fatalOnErr(install.InstallSteam())
 
 	case "v", "version":
 		fmt.Println(version)

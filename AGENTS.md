@@ -86,7 +86,7 @@ via `swayConfigs()` + `swayExecutables` chmod list.
 | update-bin | u | Compile new bin from local repo |
 | build-iso | m | Create iso with zerno bin included |
 | boot-dev | f | Format device creating storage and boot partitions |
-| steam <vga> | e | (sudo) Install steam, vga: intel, nvidia, amd |
+| steam | e | (sudo) Install steam + gamescope, gpu vendor auto-detected (nvidia unsupported, see steam.md) |
 | version | v | Print version and exit |
 | repo-pull | r | Clone or update repo in ~/src/zerno |
 

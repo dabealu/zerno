@@ -274,24 +274,70 @@ func ensureMultilib() error {
 	return steps.WriteFile("/etc/pacman.conf", strings.Join(newLines, "\n"))
 }
 
+// PCI-SIG vendor IDs (static values from the PCI-SIG vendor registry).
+const (
+	pciVendorIntel  = "0x8086"
+	pciVendorAMD    = "0x1002"
+	pciVendorNVIDIA = "0x10de"
+)
+
+// detectGPUVendor walks /sys/bus/pci/devices and classifies display
+// controllers by class prefix 0x03 (0x030000 = VGA, 0x030200 = 3D — NVIDIA
+// dGPUs in Optimus laptops enumerate as 3D, not VGA). Vendor IDs are read
+// from the same sysfs entries. Discrete AMD wins over Intel iGPU; any NVIDIA
+// is reported as unsupported.
+func detectGPUVendor() (string, error) {
+	entries, err := os.ReadDir("/sys/bus/pci/devices")
+	if err != nil {
+		return "", fmt.Errorf("failed to list pci devices: %w", err)
+	}
+
+	amd, intel := false, false
+	for _, entry := range entries {
+		base := filepath.Join("/sys/bus/pci/devices", entry.Name())
+		class, err := os.ReadFile(filepath.Join(base, "class"))
+		if err != nil || !strings.HasPrefix(strings.TrimSpace(string(class)), "0x03") {
+			continue
+		}
+		vendor, err := os.ReadFile(filepath.Join(base, "vendor"))
+		if err != nil {
+			continue
+		}
+		switch strings.TrimSpace(string(vendor)) {
+		case pciVendorNVIDIA:
+			return "", fmt.Errorf("nvidia gpus are not supported yet — see steam.md for manual setup")
+		case pciVendorAMD:
+			amd = true
+		case pciVendorIntel:
+			intel = true
+		}
+	}
+
+	switch {
+	case amd:
+		return "amd", nil
+	case intel:
+		return "intel", nil
+	default:
+		return "", fmt.Errorf("no supported gpu found (looking for amd %s or intel %s display controllers)", pciVendorAMD, pciVendorIntel)
+	}
+}
+
 // TODO: organize as a task list
-func InstallSteam(vgaType string) error {
+func InstallSteam() error {
 	if os.Getuid() != 0 {
 		return fmt.Errorf("steam requires root privileges")
 	}
-	driverPackages := map[string]string{
-		"intel":  "vulkan-intel lib32-vulkan-intel",
-		"nvidia": "nvidia-utils lib32-nvidia-utils",
-		"amd":    "vulkan-radeon lib32-vulkan-radeon",
-	}
 
-	vulkanPackage, ok := driverPackages[vgaType]
-	if !ok {
-		return fmt.Errorf("unknown vga type: %q, supported values: intel, nvidia, amd", vgaType)
-	}
-
-	if err := ensureMultilib(); err != nil {
+	vendor, err := detectGPUVendor()
+	if err != nil {
 		return err
+	}
+	fmt.Println("detected gpu vendor:", vendor)
+
+	driverPackages := map[string]string{
+		"intel": "vulkan-intel lib32-vulkan-intel",
+		"amd":   "vulkan-radeon lib32-vulkan-radeon",
 	}
 
 	pkgs := []string{
@@ -301,7 +347,13 @@ func InstallSteam(vgaType string) error {
 		"lib32-mesa",
 		"lib32-systemd",
 		"steam",
-		vulkanPackage,
+		"gamescope",
+		driverPackages[vendor],
 	}
+
+	if err := ensureMultilib(); err != nil {
+		return err
+	}
+
 	return steps.PacmanPackages(pkgs)
 }

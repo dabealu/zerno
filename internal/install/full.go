@@ -30,6 +30,7 @@ func Full(cfg *config.Config) {
 		swap(),
 		hibernation(),
 		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
+		splitLockMitigate(),
 		cpuGovernor(),
 		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
 		bluetooth(),
@@ -420,6 +421,25 @@ func cpuGovernor() task.Task {
 			}
 			fmt.Print(strings.TrimSpace(string(data)))
 			return nil
+		},
+	}
+}
+
+// splitLockMitigate disables the intel-only split-lock stall (kernel >=5.19
+// penalty that wrecks some proton/wine games); amd has no detector, skip.
+func splitLockMitigate() task.Task {
+	return task.Task{
+		Name: "intel_split_lock_mitigate_off",
+		RunFunc: func(cfg *config.Config) error {
+			cpuInfo, err := os.ReadFile("/proc/cpuinfo")
+			if err != nil {
+				return err
+			}
+			if !strings.Contains(string(cpuInfo), "GenuineIntel") {
+				fmt.Println("non-intel cpu, skipping split lock sysctl")
+				return nil
+			}
+			return assets.Restore("sysctl.d/30-splitlock.conf", "/etc/sysctl.d/30-splitlock.conf")
 		},
 	}
 }
