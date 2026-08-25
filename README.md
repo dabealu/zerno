@@ -23,6 +23,10 @@ iwctl station wlan0 connect "SSID"
 ```
 `iwctl station wlan0 get-networks` scans for available networks
 
+### DNS
+systemd-resolved is configured with hardcoded public resolvers (`assets/files/dns_servers.conf`);
+they override DHCP-provided DNS servers.
+
 ### Running on VM
 - select `QXL` video device in QEMU, run sway via `WLR_NO_HARDWARE_CURSORS=1 sway`
 - archiso environment have sshd and root password access enabled - easy to upload binary and start installation using `scp`/`ssh`
@@ -101,11 +105,51 @@ See `vim.md` for detailed documentation, plugins, and keybindings.
 Zerno uses systemd-boot with Unified Kernel Images (UKIs). Kernel cmdline is embedded in the UKI via `/etc/kernel/cmdline`. systemd-boot auto-discovers UKIs in `/efi/EFI/Linux/`. A pacman hook preserves the previous kernel as fallback on upgrades. See `AGENTS.md` for full boot architecture.
 
 ### Secure Boot
-Zerno always creates Secure Boot keys and signs all EFI binaries via `sbctl`. Works with Secure Boot OFF (signatures ignored). To enable Secure Boot:
+
+Secure Boot (SB) is **opt-in**, controlled by the `SecureBoot` parameter
+(asked during `install-base`, stored in `~/.zerno/parameters.json`).
+
+- `false` (default): nothing SB-related exists on the system — no sbctl package,
+  no keys, no hooks. Zero footprint.
+- `true`: zerno creates signing keys and keeps the bootloader and UKI signed
+  automatically. Signatures do nothing until SB is activated in firmware — the
+  system boots normally either way.
+
+How it works, one line: your private key (on disk) signs boot files at every
+rebuild; your public key (enrolled into firmware once) lets the firmware refuse
+anything forged at power-on.
+
+#### Enabling (after install)
 ```bash
-sudo sbctl enroll-keys -m
+# 1. set "SecureBoot": true in ~/.zerno/parameters.json
+sudo zerno i            # 2. installs sbctl, creates keys if missing, signs EFI files
+sudo sbctl verify       # 3. every file must show ✓ before continuing
+# 4. reboot into firmware setup, enter Setup Mode (clear/delete existing SB keys)
+sudo sbctl enroll-keys -m   # 5. -m includes Microsoft certs, avoids OptionROM issues
+# 6. enable Secure Boot in firmware settings; recommended: also set a BIOS
+#    supervisor password - anyone with firmware setup access could just turn SB off
 ```
-Then enable Secure Boot in your UEFI firmware settings.
+`zerno install-full` prints this checklist too.
+
+#### Disabling
+- firmware setup → Secure Boot → Disabled. Reversible: signed files stay signed,
+  toggling back on later just works.
+- if you cleared all keys (Setup Mode) instead: run `sudo sbctl enroll-keys -m`
+  again before re-enabling.
+- optionally set `"SecureBoot": false` so zerno stops maintaining signatures.
+- heads-up: dual-boot Windows BitLocker may demand its recovery key after any
+  SB state change.
+
+#### Troubleshooting
+- `sbctl status` — current Setup Mode / Secure Boot state.
+- `sbctl verify` — ✗ marks unsigned files; fix with `sudo zerno i` or `sudo sbctl sign-all`.
+- boot failure right after enabling: switch SB off in firmware, run `sbctl verify`,
+  fix ✗ entries, retry. Not a brick — data is untouched by any of this.
+- lost/wiped keys (`/var/lib/sbctl` gone): `sudo sbctl create-keys`, then re-run
+  `sudo zerno i`; if old keys were already enrolled, replace them via Setup Mode +
+  `enroll-keys -m`.
+- kernel updates and `install-full` re-runs re-sign automatically; UKIs must only
+  ever be regenerated through mkinitcpio.
 
 ### TODO
 - encrypted volume

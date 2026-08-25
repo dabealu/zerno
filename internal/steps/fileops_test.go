@@ -215,18 +215,6 @@ func TestCopyFile(t *testing.T) {
 	}
 }
 
-func TestCreateDir(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "a", "b", "c")
-
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatalf("CreateDir() error = %v", err)
-	}
-
-	if !FileExists(dir) {
-		t.Errorf("CreateDir() did not create directory")
-	}
-}
-
 func TestSymlink(t *testing.T) {
 	dir := t.TempDir()
 	target := filepath.Join(dir, "target")

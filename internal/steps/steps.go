@@ -91,12 +91,19 @@ func CopyRecursive(src, dst string) error {
 	})
 }
 
-// ChownRecursive recursively changes the owner and group of path and all its contents.
+// ChownRecursive recursively changes the owner and group of path and all its
+// contents. Symlinks are skipped: chown(2) dereferences them, so walking a
+// tree containing links (e.g. ~/de -> /usr/local/bin/de) would otherwise
+// change ownership of targets outside the tree. Link ownership itself is
+// irrelevant on Linux.
 func ChownRecursive(path string, uid, gid int) error {
 	log.Printf("chown -R %d:%d %s", uid, gid, path)
 	return filepath.WalkDir(path, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+		if d.Type()&os.ModeSymlink != 0 {
+			return nil
 		}
 		return os.Chown(p, uid, gid)
 	})
@@ -119,10 +126,6 @@ func Move(src, dst string) error {
 	return os.RemoveAll(src)
 }
 
-func CreateDir(path string) error {
-	return os.MkdirAll(path, 0755)
-}
-
 func Symlink(origin, link string) error {
 	os.Remove(link)
 	return os.Symlink(origin, link)
@@ -133,22 +136,63 @@ func ReadFile(path string) (string, error) {
 	return string(data), err
 }
 
+// errorLogFile collects full output of failed commands so the returned error
+// can stay short while details remain available for debugging.
+const errorLogFile = "/tmp/zerno-install.log"
+
+// runFailure appends the failing command and its full output to the log file
+// and returns a compact error carrying the last output lines.
+func runFailure(label, out string, cause error) error {
+	if f, ferr := os.OpenFile(errorLogFile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644); ferr == nil {
+		fmt.Fprintf(f, "\n=== %s ===\n$ %s\n%s\n", time.Now().Format("2006-01-02 15:04:05"), label, out)
+		f.Close()
+	}
+
+	var lines []string
+	for _, l := range strings.Split(strings.TrimSpace(out), "\n") {
+		if t := strings.TrimSpace(l); t != "" {
+			lines = append(lines, t)
+		}
+	}
+	const maxTailLines = 5
+	if len(lines) > maxTailLines {
+		lines = lines[len(lines)-maxTailLines:]
+	}
+	if len(lines) == 0 {
+		return fmt.Errorf("%s failed: %w", label, cause)
+	}
+	return fmt.Errorf("%s failed: %w; last output: %q (full output: %s)",
+		label, cause, strings.Join(lines, " | "), errorLogFile)
+}
+
 func RunCmd(name string, args ...string) (string, error) {
-	log.Printf("cmd: %s %s", name, strings.Join(args, " "))
+	label := strings.Join(append([]string{name}, args...), " ")
+	log.Printf("cmd: %s", label)
+	out, err := exec.Command(name, args...).CombinedOutput()
+	if err != nil {
+		return string(out), runFailure(label, string(out), err)
+	}
+	return string(out), nil
+}
+
+// RunCmdIn runs a command with working directory dir (same semantics as RunCmd).
+func RunCmdIn(dir, name string, args ...string) (string, error) {
+	label := fmt.Sprintf("(in %s) %s", dir, strings.Join(append([]string{name}, args...), " "))
+	log.Printf("cmd: %s", label)
 	cmd := exec.Command(name, args...)
+	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf("%s: %w", string(out), err)
+		return string(out), runFailure(label, string(out), err)
 	}
 	return string(out), nil
 }
 
 func RunShell(script string) (string, error) {
 	log.Printf("shell: %s", script)
-	cmd := exec.Command("bash", "-o", "pipefail", "-ec", script)
-	out, err := cmd.CombinedOutput()
+	out, err := exec.Command("bash", "-o", "pipefail", "-ec", script).CombinedOutput()
 	if err != nil {
-		return string(out), fmt.Errorf("%s: %w", string(out), err)
+		return string(out), runFailure(script, string(out), err)
 	}
 	return string(out), nil
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -24,6 +25,18 @@ func fatalOnErr(err error) {
 	}
 }
 
+// loadConfig loads or prompts for parameters, treating a user-declined
+// confirmation as a clean exit.
+func loadConfig() *config.Config {
+	cfg, err := config.LoadOrPrompt()
+	if errors.Is(err, config.ErrAborted) {
+		fmt.Println(err)
+		os.Exit(0)
+	}
+	fatalOnErr(err)
+	return cfg
+}
+
 func printHelp() {
 	fmt.Println(`available commands:
   b, install-base          base system installation (chroot)
@@ -45,19 +58,13 @@ func main() {
 
 	switch os.Args[1] {
 	case "b", "install-base":
-		cfg, err := config.LoadOrPrompt()
-		fatalOnErr(err)
-		install.Base(cfg)
+		install.Base(loadConfig())
 
 	case "i", "install-full":
-		cfg, err := config.LoadOrPrompt()
-		fatalOnErr(err)
-		install.Full(cfg)
+		install.Full(loadConfig())
 
 	case "q", "qemu":
-		cfg, err := config.LoadOrPrompt()
-		fatalOnErr(err)
-		install.Qemu(cfg)
+		install.Qemu(loadConfig())
 
 	case "u", "update-bin":
 		fatalOnErr(install.UpdateBin())
@@ -77,9 +84,7 @@ func main() {
 		fmt.Println(version)
 
 	case "r", "repo-pull":
-		cfg, err := config.LoadOrPrompt()
-		fatalOnErr(err)
-		fatalOnErr(install.RepoPull(cfg))
+		fatalOnErr(install.RepoPull(loadConfig()))
 
 	default:
 		log.Println("unknown command...")

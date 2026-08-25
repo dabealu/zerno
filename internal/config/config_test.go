@@ -55,9 +55,109 @@ func TestConfigSaveLoad(t *testing.T) {
 }
 
 func TestConfigLoad_FileNotFound(t *testing.T) {
+	paramsFileOverride = filepath.Join(t.TempDir(), "parameters.json")
+	t.Cleanup(func() { paramsFileOverride = "" })
+
 	_, err := Load()
 	if err == nil {
 		t.Error("Load() should return error for nonexistent file")
+	}
+}
+
+func TestConfigSaveLoad_Roundtrip(t *testing.T) {
+	dir := t.TempDir()
+	paramsFileOverride = filepath.Join(dir, "parameters.json")
+	t.Cleanup(func() { paramsFileOverride = "" })
+
+	cfg := &Config{
+		BlockDevice:   "nvme0n1",
+		PartNum:       2,
+		PartNumPrefix: "p",
+		Timezone:      "Europe/Berlin",
+		Hostname:      "testhost",
+		Username:      "testuser",
+		UserID:        1000,
+		UserGID:       1000,
+		NetDev:        "enp3s0",
+		NetDevISO:     "eth0",
+		WiFiEnabled:   true,
+		WiFiSSID:      "Home Network",
+		WiFiPassword:  "hunter2",
+		SecureBoot:    true,
+	}
+
+	if err := cfg.Save(); err != nil {
+		t.Fatalf("Save() error = %v", err)
+	}
+	info, err := os.Stat(paramsFileOverride)
+	if err != nil {
+		t.Fatalf("Save() did not write params file: %v", err)
+	}
+	if info.IsDir() {
+		t.Error("params path should be a regular file")
+	}
+
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if loaded.Hostname != cfg.Hostname {
+		t.Errorf("Hostname = %q, want %q", loaded.Hostname, cfg.Hostname)
+	}
+	if loaded.WiFiSSID != cfg.WiFiSSID {
+		t.Errorf("WiFiSSID = %q, want %q", loaded.WiFiSSID, cfg.WiFiSSID)
+	}
+	if loaded.WiFiPassword != cfg.WiFiPassword {
+		t.Errorf("WiFiPassword = %q, want %q", loaded.WiFiPassword, cfg.WiFiPassword)
+	}
+	if loaded.NetDev != cfg.NetDev {
+		t.Errorf("NetDev = %q, want %q", loaded.NetDev, cfg.NetDev)
+	}
+	if loaded.SecureBoot != cfg.SecureBoot {
+		t.Errorf("SecureBoot = %v, want %v", loaded.SecureBoot, cfg.SecureBoot)
+	}
+}
+
+func TestLoad_DefaultsSecureBootFalse(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "parameters.json")
+	paramsFileOverride = path
+	t.Cleanup(func() { paramsFileOverride = "" })
+
+	// pre-existing parameters.json without the SecureBoot field must load
+	// as false (backward compatibility)
+	data, err := json.Marshal(&Config{
+		BlockDevice: "sda",
+		PartNum:     2,
+		Hostname:    "h",
+		Username:    "u",
+		NetDev:      "enp3s0",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	loaded, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if loaded.SecureBoot {
+		t.Error("SecureBoot should default to false for legacy parameters.json")
+	}
+}
+
+func TestLoad_RejectsIncompleteConfig(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "parameters.json")
+	paramsFileOverride = path
+	t.Cleanup(func() { paramsFileOverride = "" })
+
+	if err := os.WriteFile(path, []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(); err == nil {
+		t.Error("Load() should reject config missing required fields")
 	}
 }
 

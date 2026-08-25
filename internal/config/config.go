@@ -2,6 +2,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,6 +12,9 @@ import (
 
 	"zerno/internal/steps"
 )
+
+// ErrAborted is returned when the user declines to proceed.
+var ErrAborted = errors.New("aborted by user")
 
 type Config struct {
 	BlockDevice   string
@@ -26,6 +30,7 @@ type Config struct {
 	WiFiEnabled   bool
 	WiFiSSID      string
 	WiFiPassword  string
+	SecureBoot    bool
 }
 
 func (c *Config) String() string {
@@ -70,6 +75,9 @@ func (c *Config) ValidateStrict() error {
 	if !regexp.MustCompile(`^[a-zA-Z0-9]+(?:[/_+-][a-zA-Z0-9]+)*$`).MatchString(c.Timezone) {
 		return fmt.Errorf("invalid timezone %q: allowed: letters, digits, '/', '_', '+', '-'", c.Timezone)
 	}
+	if c.NetDev == "" {
+		return fmt.Errorf("network device is required")
+	}
 	return nil
 }
 
@@ -81,13 +89,20 @@ func getConfigDir() string {
 	return filepath.Join(home, ".zerno")
 }
 
+// paramsFileOverride redirects getParametersFile() to a custom location;
+// used by tests. Empty means the default ~/.zerno/parameters.json.
+var paramsFileOverride string
+
 func getParametersFile() string {
+	if paramsFileOverride != "" {
+		return paramsFileOverride
+	}
 	return filepath.Join(getConfigDir(), "parameters.json")
 }
 
 func (c *Config) Save() error {
-	dir := getConfigDir()
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	paramsFile := getParametersFile()
+	if err := os.MkdirAll(filepath.Dir(paramsFile), 0755); err != nil {
 		return fmt.Errorf("create config dir: %w", err)
 	}
 
@@ -95,7 +110,7 @@ func (c *Config) Save() error {
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
-	return os.WriteFile(getParametersFile(), data, 0644)
+	return os.WriteFile(paramsFile, data, 0644)
 }
 
 func Load() (*Config, error) {
@@ -130,6 +145,7 @@ func Prompt() (*Config, error) {
 		return nil, err
 	}
 	promptWiFi(cfg)
+	promptSecureBoot(cfg)
 
 	if err := cfg.ValidateStrict(); err != nil {
 		return nil, err
@@ -138,7 +154,7 @@ func Prompt() (*Config, error) {
 	fmt.Printf("\nparameters:\n%s\n", cfg)
 
 	if !steps.AskConfirmation("proceed with the installation?") {
-		os.Exit(0)
+		return nil, ErrAborted
 	}
 
 	return cfg, nil
@@ -191,6 +207,11 @@ func selectNetworkDevice(cfg *Config) error {
 	}
 
 	cfg.NetDev = getNetDevName(cfg.NetDevISO)
+	if cfg.NetDev == "" {
+		return fmt.Errorf(
+			"failed to resolve persistent interface name for %s (udevadm net_id returned nothing) - networking would be broken after install",
+			cfg.NetDevISO)
+	}
 	fmt.Printf("%s will be named %s after archiso\n", cfg.NetDevISO, cfg.NetDev)
 	return nil
 }
@@ -209,6 +230,14 @@ func promptWiFi(cfg *Config) {
 		prompt("wifi ssid", &cfg.WiFiSSID, "")
 		prompt("wifi password", &cfg.WiFiPassword, "")
 	}
+}
+
+// promptSecureBoot asks whether Secure Boot material should be maintained.
+// Default is false: empty input keeps SB fully out of the install.
+func promptSecureBoot(cfg *Config) {
+	fmt.Print("configure secure boot [false]: ")
+	input := steps.ReadLine()
+	cfg.SecureBoot = input == "true" || input == "1" || input == "y" || input == "yes"
 }
 
 func LoadOrPrompt() (*Config, error) {
@@ -230,16 +259,19 @@ func LoadOrPrompt() (*Config, error) {
 	return cfg, nil
 }
 
+// listBlockDevices returns physical disks only (lsblk TYPE=disk):
+// loop/ram/zram devices are not valid install targets.
 func listBlockDevices() ([]string, error) {
-	out, err := exec.Command("lsblk", "--output=NAME", "--noheadings", "--nodeps").Output()
+	out, err := exec.Command("lsblk", "--output=NAME,TYPE", "--noheadings", "--nodeps").Output()
 	if err != nil {
 		return nil, fmt.Errorf("list block devices: %w", err)
 	}
 
 	var devices []string
-	for _, line := range strings.Fields(string(out)) {
-		if line != "" {
-			devices = append(devices, line)
+	for _, line := range strings.Split(string(out), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) == 2 && fields[1] == "disk" {
+			devices = append(devices, fields[0])
 		}
 	}
 	return devices, nil

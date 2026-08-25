@@ -29,17 +29,17 @@ func Full(cfg *config.Config) {
 		pipewire(),
 		swap(),
 		hibernation(),
+		secureBoot(),
 		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
 		splitLockMitigate(),
 		cpuGovernor(),
 		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
 		bluetooth(),
 		docker(),
-		// rustToolchain(),
 		userSrcDir(),
 		yayAur(),
 		aurPackages(),
-		task.Command("add_user_to_input_group", "usermod -aG input "+cfg.Username),
+		task.Run("add_user_to_input_group", "usermod", "-aG", "input", cfg.Username),
 		pipewireUser(),
 		bashrc(),
 		desktopApps(),
@@ -242,7 +242,11 @@ func installSwayFiles(cfg *config.Config, homeDir string) error {
 		return err
 	}
 
-	if err := steps.ChownRecursive(homeDir, cfg.UserID, cfg.UserGID); err != nil {
+	// chown only what was written - never walk the whole home directory
+	if err := steps.ChownRecursive(swayDir, cfg.UserID, cfg.UserGID); err != nil {
+		return err
+	}
+	if err := steps.ChownRecursive(ghosttyDir, cfg.UserID, cfg.UserGID); err != nil {
 		return err
 	}
 	for _, f := range swayExecutables {
@@ -318,7 +322,8 @@ func swap() task.Task {
 				}
 			}
 
-			if _, err := steps.RunShell(fmt.Sprintf("fallocate -l %dK /swapfile", memSizeKB)); err != nil {
+			if _, err := steps.RunCmd("fallocate", "-l",
+				fmt.Sprintf("%dK", memSizeKB), "/swapfile"); err != nil {
 				return err
 			}
 			if err := os.Chmod("/swapfile", 0600); err != nil {
@@ -333,6 +338,49 @@ func swap() task.Task {
 			if err := steps.LineInFile("/etc/fstab", "/swapfile none swap defaults 0 0"); err != nil {
 				return err
 			}
+			return nil
+		},
+	}
+}
+
+// secureBoot maintains Secure Boot material when enabled: ensures the sbctl
+// package, creates keys if missing and keeps bootloader + UKI signed.
+// Disabled means zero footprint - nothing is installed or modified.
+func secureBoot() task.Task {
+	return task.Task{
+		Name: "configure_secure_boot",
+		RunFunc: func(cfg *config.Config) error {
+			if !cfg.SecureBoot {
+				return nil
+			}
+
+			if err := steps.PacmanPackages([]string{"sbctl"}); err != nil {
+				return err
+			}
+
+			if !steps.FileExists("/var/lib/sbctl/keys/db/db.pem") {
+				if _, err := steps.RunCmd("sbctl", "create-keys"); err != nil {
+					return fmt.Errorf("create keys: %w", err)
+				}
+			}
+
+			// sign -s is idempotent (skips already-signed files) and keeps
+			// paths in the sbctl database for automatic re-signing later
+			for _, path := range []string{
+				"/efi/EFI/systemd/systemd-bootx64.efi",
+				"/efi/EFI/Linux/arch-linux.efi",
+			} {
+				if _, err := steps.RunCmd("sbctl", "sign", "-s", path); err != nil {
+					return fmt.Errorf("sign %s: %w\nfix hints: run `sbctl status`, inspect README 'Secure Boot' section; broken keys can be recreated via `sbctl create-keys` followed by re-running `zerno install-full`", path, err)
+				}
+			}
+
+			fmt.Println(`Secure Boot prepared. To activate:
+  1. sudo sbctl verify          # every file must show a checkmark
+  2. reboot into firmware setup, enter Setup Mode (clear SB keys)
+  3. sudo sbctl enroll-keys -m  # -m includes Microsoft certs
+  4. enable Secure Boot in firmware settings
+see README -> Secure Boot for details and troubleshooting`)
 			return nil
 		},
 	}
@@ -373,13 +421,12 @@ func hibernation() task.Task {
 				return fmt.Errorf("failed to parse resume offset from filefrag output, refusing to write broken cmdline")
 			}
 
-			cmdline := fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",
-				rootUUID, swapDevice, strings.TrimSpace(offset))
-			if err := steps.WriteFile("/etc/kernel/cmdline", cmdline); err != nil {
+			if err := steps.WriteFile("/etc/kernel/cmdline",
+				hibernationKernelCmdline(rootUUID, swapDevice, strings.TrimSpace(offset))); err != nil {
 				return err
 			}
 
-			if _, err := steps.RunShell("mkinitcpio -p linux"); err != nil {
+			if _, err := steps.RunCmd("mkinitcpio", "-p", "linux"); err != nil {
 				return err
 			}
 
@@ -475,7 +522,7 @@ func docker() task.Task {
 			if err := steps.PacmanPackages([]string{"docker"}); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell(fmt.Sprintf("usermod -aG docker %s", cfg.Username)); err != nil {
+			if _, err := steps.RunCmd("usermod", "-aG", "docker", cfg.Username); err != nil {
 				return err
 			}
 			if _, err := steps.RunCmd("systemctl", "enable", "docker"); err != nil {
@@ -486,20 +533,6 @@ func docker() task.Task {
 		},
 	}
 }
-
-// func rustToolchain() task.Task {
-// 	return task.Task{
-// 		Name: "install_rust_toolchain",
-// 		RunFunc: func(cfg *config.Config) error {
-// 			if _, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "rustup"); err != nil {
-// 				return err
-// 			}
-// 			script := fmt.Sprintf(`sudo -u %s -- rustup default stable`, cfg.Username)
-// 			_, err := steps.RunShell(script)
-// 			return err
-// 		},
-// 	}
-// }
 
 func yayAur() task.Task {
 	return task.Task{
@@ -518,8 +551,8 @@ func yayAur() task.Task {
 				return err
 			}
 
-			script := fmt.Sprintf("cd %s && sudo -u %s makepkg --noconfirm -si", yayDir, cfg.Username)
-			if _, err := steps.RunShell(script); err != nil {
+			if _, err := steps.RunCmdIn(yayDir, "sudo", "-u", cfg.Username,
+				"makepkg", "--noconfirm", "-si"); err != nil {
 				return err
 			}
 			return nil
@@ -531,14 +564,10 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := strings.Join([]string{
-				"wdisplays",
-				"libinput-gestures",
-				"google-chrome",
-			}, " ")
-			_, err := steps.RunShell(
-				fmt.Sprintf("sudo -u %s yay --noconfirm -Sy %s", cfg.Username, pkgs),
-			)
+			args := append([]string{
+				"sudo", "-u", cfg.Username, "yay", "--noconfirm", "-Sy",
+			}, "wdisplays", "libinput-gestures", "google-chrome")
+			_, err := steps.RunCmd(args[0], args[1:]...)
 			return err
 		},
 	}
@@ -759,7 +788,7 @@ func migrateUserConfig() task.Task {
 			dstDir := fmt.Sprintf("/home/%s/.zerno", cfg.Username)
 			dst := filepath.Join(dstDir, "parameters.json")
 
-			if err := steps.CreateDir(dstDir); err != nil {
+			if err := os.MkdirAll(dstDir, 0755); err != nil {
 				return err
 			}
 			if err := steps.CopyFile(src, dst); err != nil {
