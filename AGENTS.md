@@ -138,6 +138,7 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block 
 - `microcode` loads CPU microcode updates early (no-op if intel-ucode/amd-ucode not installed)
 - `sd-vconsole` manages console font/keymap via systemd (reads `/etc/vconsole.conf`)
 - `sd-encrypt` for future LUKS support (no-op when no encrypted volumes configured)
+- **Source of truth**: the upstream [mkinitcpio.conf](https://github.com/archlinux/mkinitcpio/blob/master/mkinitcpio.conf) contains commented examples; our list is the "systemd + encrypted root" example verbatim. When Arch changes hooks, it'll be front-page news. Review the constant `initramfsHooks` in `base.go` against upstream source once in a while.
 
 ### UKI fallback strategy
 - Initial install: single UKI (`arch-linux.efi`)

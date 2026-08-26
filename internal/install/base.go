@@ -329,6 +329,8 @@ func hibernationKernelCmdline(rootUUID, swapUUID, resumeOffset string) string {
 const (
 	loaderConf = "timeout 3\nconsole-mode keep\ndefault arch-linux*\n"
 
+	// systemd initramfs with encrypted root — keep in sync with upstream:
+	// https://github.com/archlinux/mkinitcpio/blob/master/mkinitcpio.conf
 	initramfsHooks = "HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)"
 
 	linuxPreset = `# /etc/mkinitcpio.d/linux.preset
