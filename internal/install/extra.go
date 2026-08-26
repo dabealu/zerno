@@ -5,8 +5,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	osuser "os/user"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +36,25 @@ func Qemu(cfg *config.Config) {
 	}
 }
 
+// chownToInvokeUser returns paths to the user who ran sudo, so root-run
+// builds do not accumulate root-owned files in a user-owned repo.
+// Best-effort no-op for plain-root sessions (no SUDO_USER).
+func chownToInvokeUser(paths ...string) {
+	sudoUser := os.Getenv("SUDO_USER")
+	if sudoUser == "" {
+		return
+	}
+	usr, err := osuser.Lookup(sudoUser)
+	if err != nil {
+		return
+	}
+	uid, _ := strconv.Atoi(usr.Uid)
+	gid, _ := strconv.Atoi(usr.Gid)
+	for _, p := range paths {
+		_ = os.Chown(p, uid, gid)
+	}
+}
+
 func UpdateBin() error {
 	if os.Getuid() != 0 {
 		return fmt.Errorf("update-bin requires root privileges")
@@ -48,6 +69,7 @@ func UpdateBin() error {
 	}
 
 	binSrc := filepath.Join(repoDir, "zerno")
+	chownToInvokeUser(binSrc)
 	binDest := "/usr/local/bin/zerno"
 	tmpDest := binDest + ".new"
 	if err := steps.CopyRecursive(binSrc, tmpDest); err != nil {

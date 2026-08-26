@@ -429,16 +429,20 @@ func secureBootSign() task.Task {
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "create-keys"); err != nil {
 				return err
 			}
-			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s",
-				"/efi/EFI/systemd/systemd-bootx64.efi"); err != nil {
-				return err
-			}
 			if err := os.MkdirAll("/mnt/efi/EFI/Linux", 0755); err != nil {
 				return err
 			}
-			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s",
-				"/efi/EFI/Linux/arch-linux.efi"); err != nil {
-				return err
+
+			// BOOTX64.EFI is the firmware's universal fallback path - under
+			// Secure Boot it must be signed too, or recovery boots fail
+			for _, path := range []string{
+				"/efi/EFI/systemd/systemd-bootx64.efi",
+				"/efi/EFI/BOOT/BOOTX64.EFI",
+				"/efi/EFI/Linux/arch-linux.efi",
+			} {
+				if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s", path); err != nil {
+					return err
+				}
 			}
 
 			return nil

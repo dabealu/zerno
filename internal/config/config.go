@@ -165,6 +165,15 @@ func Prompt() (*Config, error) {
 	return cfg, nil
 }
 
+// partNumPrefix returns the separator between device name and partition
+// number: nvme0n1p2 / mmcblk0p2-style devices need "p", classic sda2 needs "".
+func partNumPrefix(dev string) string {
+	if strings.HasPrefix(dev, "nvme") || strings.HasPrefix(dev, "mmcblk") {
+		return "p"
+	}
+	return ""
+}
+
 func selectBlockDevice(cfg *Config) error {
 	devices, err := listBlockDevices()
 	if err != nil {
@@ -188,11 +197,7 @@ func selectBlockDevice(cfg *Config) error {
 		cfg.BlockDevice = devices[0]
 	}
 
-	if len(cfg.BlockDevice) >= 4 && cfg.BlockDevice[:4] == "nvme" {
-		cfg.PartNumPrefix = "p"
-	} else {
-		cfg.PartNumPrefix = ""
-	}
+	cfg.PartNumPrefix = partNumPrefix(cfg.BlockDevice)
 	cfg.PartNum = 2
 	return nil
 }

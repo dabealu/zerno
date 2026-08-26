@@ -368,6 +368,7 @@ func secureBoot() task.Task {
 			// paths in the sbctl database for automatic re-signing later
 			for _, path := range []string{
 				"/efi/EFI/systemd/systemd-bootx64.efi",
+				"/efi/EFI/BOOT/BOOTX64.EFI", // firmware fallback path - see secureBootSign
 				"/efi/EFI/Linux/arch-linux.efi",
 			} {
 				if _, err := steps.RunCmd("sbctl", "sign", "-s", path); err != nil {

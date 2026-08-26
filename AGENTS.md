@@ -149,10 +149,11 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block 
 ### Secure Boot (opt-in via `SecureBoot` config param, default false)
 - disabled: zero footprint — sbctl not installed, no keys; sbctl's pacman/mkinitcpio
   hooks ship inside the package, so they are absent too
-- enabled: `sbctl` appended to the pacstrap list conditionally; Phase 2 `secureBoot()`
-  ensures the package, creates keys when missing, keeps bootloader + UKI signed
-  (`sign -s`, idempotent), hard-errors with fix hints on signing failure, prints
-  the activation checklist
+- enabled: Phase 1 `secureBootSign()` pacstraps sbctl into the target itself
+  (all SB setup behind one gate) and signs bootloader copies + UKI; Phase 2
+  `secureBoot()` ensures the package, creates keys when missing, keeps all EFI
+  binaries signed (`sign -s`, idempotent), hard-errors with fix hints on signing
+  failure, prints the activation checklist
 - re-signing automation comes with sbctl itself: mkinitcpio post hook
   (`/usr/lib/initcpio/post/sbctl`) signs every rebuild incl. manual mkinitcpio runs;
   pacman transactions additionally get `zz-sbctl.hook`

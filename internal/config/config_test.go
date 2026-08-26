@@ -281,6 +281,26 @@ func TestParseBoolOr(t *testing.T) {
 	}
 }
 
+func TestPartNumPrefix(t *testing.T) {
+	tests := []struct {
+		dev  string
+		want string
+	}{
+		{"sda", ""},
+		{"vdb", ""},
+		{"hda", ""},
+		{"nvme0n1", "p"},
+		{"nvme1n1", "p"},
+		{"mmcblk0", "p"},
+		{"mmcblk1", "p"},
+	}
+	for _, tt := range tests {
+		if got := partNumPrefix(tt.dev); got != tt.want {
+			t.Errorf("partNumPrefix(%q) = %q, want %q", tt.dev, got, tt.want)
+		}
+	}
+}
+
 func TestValidateStrict(t *testing.T) {
 	valid := Config{
 		Hostname:    "dhost",
