@@ -30,17 +30,21 @@ func WriteFile(path, content string) error {
 	return os.WriteFile(path, []byte(content), 0644)
 }
 
-func CopyFile(from, to string) error {
-	log.Printf("copying %s -> %s", from, to)
+// CopyFile copies from to to, enforcing perm as the final mode (applied even
+// when the destination already exists - re-runs must not keep stale modes).
+func CopyFile(from, to string, perm os.FileMode) error {
+	log.Printf("copying %s -> %s (%o)", from, to, perm)
 	data, err := os.ReadFile(from)
 	if err != nil {
 		return err
 	}
-	dir := filepath.Dir(to)
-	if err := os.MkdirAll(dir, 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(to), 0755); err != nil {
 		return err
 	}
-	return os.WriteFile(to, data, 0644)
+	if err := os.WriteFile(to, data, perm); err != nil {
+		return err
+	}
+	return os.Chmod(to, perm)
 }
 
 // CopyRecursive recursively copies a file or directory tree from src to dst.
@@ -148,17 +152,14 @@ func runFailure(label, out string, cause error) error {
 		f.Close()
 	}
 
-	var lines []string
-	for _, l := range strings.Split(strings.TrimSpace(out), "\n") {
-		if t := strings.TrimSpace(l); t != "" {
-			lines = append(lines, t)
-		}
-	}
+	// single-line tail of the last few raw output lines - usually identifies
+	// the failure without opening the log; %q keeps it one clean line
+	lines := strings.Split(strings.TrimSpace(out), "\n")
 	const maxTailLines = 5
 	if len(lines) > maxTailLines {
 		lines = lines[len(lines)-maxTailLines:]
 	}
-	if len(lines) == 0 {
+	if len(lines) == 1 && lines[0] == "" {
 		return fmt.Errorf("%s failed: %w", label, cause)
 	}
 	return fmt.Errorf("%s failed: %w; last output: %q (full output: %s)",

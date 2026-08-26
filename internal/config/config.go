@@ -110,7 +110,12 @@ func (c *Config) Save() error {
 	if err != nil {
 		return fmt.Errorf("marshal config: %w", err)
 	}
-	return os.WriteFile(paramsFile, data, 0644)
+	// contains the wifi passphrase - group-readable at most, never world
+	if err := os.WriteFile(paramsFile, data, 0640); err != nil {
+		return err
+	}
+	// enforce final mode: re-runs must not keep stale permissive modes behind
+	return os.Chmod(paramsFile, 0640)
 }
 
 func Load() (*Config, error) {
@@ -216,15 +221,24 @@ func selectNetworkDevice(cfg *Config) error {
 	return nil
 }
 
+// parseBoolOr maps common yes/no inputs to a bool; anything unrecognized
+// (including empty) falls back to def.
+func parseBoolOr(s string, def bool) bool {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "y", "yes", "true", "1":
+		return true
+	case "n", "no", "false", "0":
+		return false
+	default:
+		return def
+	}
+}
+
 func promptWiFi(cfg *Config) {
 	defaultWiFi := strings.HasPrefix(cfg.NetDevISO, "wlan") || strings.HasPrefix(cfg.NetDevISO, "wlp")
-	cfg.WiFiEnabled = defaultWiFi
 
 	fmt.Print("configure wifi [", defaultWiFi, "]: ")
-	wifiStr := steps.ReadLine()
-	if wifiStr != "" {
-		cfg.WiFiEnabled = wifiStr == "true" || wifiStr == "1"
-	}
+	cfg.WiFiEnabled = parseBoolOr(steps.ReadLine(), defaultWiFi)
 
 	if cfg.WiFiEnabled {
 		prompt("wifi ssid", &cfg.WiFiSSID, "")
@@ -236,8 +250,7 @@ func promptWiFi(cfg *Config) {
 // Default is false: empty input keeps SB fully out of the install.
 func promptSecureBoot(cfg *Config) {
 	fmt.Print("configure secure boot [false]: ")
-	input := steps.ReadLine()
-	cfg.SecureBoot = input == "true" || input == "1" || input == "y" || input == "yes"
+	cfg.SecureBoot = parseBoolOr(steps.ReadLine(), false)
 }
 
 func LoadOrPrompt() (*Config, error) {

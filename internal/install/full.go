@@ -564,10 +564,11 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			args := append([]string{
+			pkgs := []string{"wdisplays", "libinput-gestures", "google-chrome"}
+			argv := append([]string{
 				"sudo", "-u", cfg.Username, "yay", "--noconfirm", "-Sy",
-			}, "wdisplays", "libinput-gestures", "google-chrome")
-			_, err := steps.RunCmd(args[0], args[1:]...)
+			}, pkgs...)
+			_, err := steps.RunCmd(argv[0], argv[1:]...)
 			return err
 		},
 	}
@@ -791,7 +792,7 @@ func migrateUserConfig() task.Task {
 			if err := os.MkdirAll(dstDir, 0755); err != nil {
 				return err
 			}
-			if err := steps.CopyFile(src, dst); err != nil {
+			if err := steps.CopyFile(src, dst, 0640); err != nil {
 				return err
 			}
 			return steps.ChownRecursive(dstDir, cfg.UserID, cfg.UserGID)

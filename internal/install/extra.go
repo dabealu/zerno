@@ -115,7 +115,7 @@ func CreateISO() error {
 	}
 
 	relengBinPath := filepath.Join(relengCopyDir, "airootfs/usr/local/bin/zerno")
-	if err := steps.CopyFile(binPath, relengBinPath); err != nil {
+	if err := steps.CopyFile(binPath, relengBinPath, 0755); err != nil {
 		return err
 	}
 

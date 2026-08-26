@@ -96,6 +96,9 @@ func TestConfigSaveLoad_Roundtrip(t *testing.T) {
 	if info.IsDir() {
 		t.Error("params path should be a regular file")
 	}
+	if got := info.Mode().Perm(); got != 0640 {
+		t.Errorf("params file mode = %v, want 0640 (contains wifi passphrase)", got)
+	}
 
 	loaded, err := Load()
 	if err != nil {
@@ -250,6 +253,31 @@ func TestConfigJSONRoundtrip(t *testing.T) {
 	}
 	if loaded.WiFiPassword != cfg.WiFiPassword {
 		t.Errorf("WiFiPassword = %v, want %v", loaded.WiFiPassword, cfg.WiFiPassword)
+	}
+}
+
+func TestParseBoolOr(t *testing.T) {
+	tests := []struct {
+		input string
+		def   bool
+		want  bool
+	}{
+		{"y", false, true},
+		{"Yes", true, true},
+		{"TRUE", false, true},
+		{"1", false, true},
+		{"n", true, false},
+		{"No", true, false},
+		{"0", true, false},
+		{"", true, true},       // empty -> default
+		{"", false, false},     // empty -> default
+		{"banana", true, true}, // garbage -> default (safe direction)
+		{"banana", false, false},
+	}
+	for _, tt := range tests {
+		if got := parseBoolOr(tt.input, tt.def); got != tt.want {
+			t.Errorf("parseBoolOr(%q, %v) = %v, want %v", tt.input, tt.def, got, tt.want)
+		}
 	}
 }
 

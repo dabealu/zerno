@@ -106,16 +106,21 @@ func partitions() task.Task {
 		Name: "create_partitions",
 		RunFunc: func(cfg *config.Config) error {
 			dev := fmt.Sprintf("/dev/%s", cfg.BlockDevice)
-			for _, args := range [][]string{
-				{"mklabel", "gpt"},
-				{"mkpart", "efi-system", "fat32", "1MiB", "512MiB"},
-				{"mkpart", "rootfs", "ext4", "512MiB", "100%"},
-				{"set", "1", "boot", "on"},
-			} {
-				argv := append([]string{"-s", dev}, args...)
-				if _, err := steps.RunCmd("parted", argv...); err != nil {
-					return err
-				}
+
+			// 1GiB ESP: headroom for current + fallback UKI and future extras
+			if _, err := steps.RunCmd("parted", "-s", dev, "mklabel", "gpt"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("parted", "-s", dev,
+				"mkpart", "efi-system", "fat32", "1MiB", "1024MiB"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("parted", "-s", dev,
+				"mkpart", "rootfs", "ext4", "1024MiB", "100%"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("parted", "-s", dev, "set", "1", "boot", "on"); err != nil {
+				return err
 			}
 			return nil
 		},
@@ -183,12 +188,8 @@ func pacstrap() task.Task {
 				"man-db",
 				"man-pages",
 			}
-			// signing tooling is opt-in; SB-disabled installs carry no sbctl
-			// footprint (its pacman/mkinitcpio hooks ship inside the package)
-			if cfg.SecureBoot {
-				pkgs = append(pkgs, "sbctl")
-			}
-			_, err := steps.RunCmd("pacstrap", append([]string{"/mnt"}, pkgs...)...)
+			args := append([]string{"pacstrap", "/mnt"}, pkgs...)
+			_, err := steps.RunCmd(args[0], args[1:]...)
 			return err
 		},
 	}
@@ -418,6 +419,12 @@ func secureBootSign() task.Task {
 		RunFunc: func(cfg *config.Config) error {
 			if !cfg.SecureBoot {
 				return nil
+			}
+
+			// sbctl is deliberately absent from the main package list -
+			// all Secure Boot setup stays encapsulated behind this gate
+			if _, err := steps.RunCmd("pacstrap", "/mnt", "sbctl"); err != nil {
+				return err
 			}
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "create-keys"); err != nil {
 				return err
