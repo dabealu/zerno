@@ -5,8 +5,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	osuser "os/user"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -34,6 +36,25 @@ func Qemu(cfg *config.Config) {
 	}
 }
 
+// chownToInvokeUser returns paths to the user who ran sudo, so root-run
+// builds do not accumulate root-owned files in a user-owned repo.
+// Best-effort no-op for plain-root sessions (no SUDO_USER).
+func chownToInvokeUser(paths ...string) {
+	sudoUser := os.Getenv("SUDO_USER")
+	if sudoUser == "" {
+		return
+	}
+	usr, err := osuser.Lookup(sudoUser)
+	if err != nil {
+		return
+	}
+	uid, _ := strconv.Atoi(usr.Uid)
+	gid, _ := strconv.Atoi(usr.Gid)
+	for _, p := range paths {
+		_ = os.Chown(p, uid, gid)
+	}
+}
+
 func UpdateBin() error {
 	if os.Getuid() != 0 {
 		return fmt.Errorf("update-bin requires root privileges")
@@ -48,6 +69,7 @@ func UpdateBin() error {
 	}
 
 	binSrc := filepath.Join(repoDir, "zerno")
+	chownToInvokeUser(binSrc)
 	binDest := "/usr/local/bin/zerno"
 	tmpDest := binDest + ".new"
 	if err := steps.CopyRecursive(binSrc, tmpDest); err != nil {
@@ -115,7 +137,7 @@ func CreateISO() error {
 	}
 
 	relengBinPath := filepath.Join(relengCopyDir, "airootfs/usr/local/bin/zerno")
-	if err := steps.CopyFile(binPath, relengBinPath); err != nil {
+	if err := steps.CopyFile(binPath, relengBinPath, 0755); err != nil {
 		return err
 	}
 
@@ -125,8 +147,8 @@ func CreateISO() error {
 	}
 
 	fmt.Println("building iso, it may take a while...")
-	script := fmt.Sprintf("cd %s && mkarchiso -v -w . -o %s %s", archisoDir, isoBuildsDir, relengCopyDir)
-	if _, err := steps.RunShell(script); err != nil {
+	if _, err := steps.RunCmdIn(archisoDir, "mkarchiso",
+		"-v", "-w", ".", "-o", isoBuildsDir, relengCopyDir); err != nil {
 		return err
 	}
 
@@ -189,18 +211,24 @@ func FormatDevice(devPath, isoPath string) error {
 		return nil
 	}
 
-	fmt.Println("creating partitions")
-	parted := fmt.Sprintf("parted -s %s", devPath)
+	parted := func(args ...string) error {
+		argv := append([]string{"-s", devPath}, args...)
+		_, err := steps.RunCmd("parted", argv...)
+		return err
+	}
 
-	for _, script := range []string{
-		fmt.Sprintf("%s mklabel gpt", parted),
-		fmt.Sprintf("%s mkpart Arch_ISO fat32 1MiB 1024MiB", parted),
-		fmt.Sprintf("mkfs.fat -F 32 %s1", devPath),
-		fmt.Sprintf("fatlabel %s1 %s", devPath, isoLabel),
-	} {
-		if _, err := steps.RunShell(script); err != nil {
-			return err
-		}
+	fmt.Println("creating partitions")
+	if err := parted("mklabel", "gpt"); err != nil {
+		return err
+	}
+	if err := parted("mkpart", "Arch_ISO", "fat32", "1MiB", "1024MiB"); err != nil {
+		return err
+	}
+	if _, err := steps.RunCmd("mkfs.fat", "-F", "32", devPath+"1"); err != nil {
+		return err
+	}
+	if _, err := steps.RunCmd("fatlabel", devPath+"1", isoLabel); err != nil {
+		return err
 	}
 
 	fmt.Printf("copying iso to %s1\n", devPath)
@@ -208,36 +236,36 @@ func FormatDevice(devPath, isoPath string) error {
 	if err := os.MkdirAll(mntDir, 0755); err != nil {
 		return err
 	}
+	if _, err := steps.RunCmd("mount", devPath+"1", mntDir); err != nil {
+		return err
+	}
+	if _, err := steps.RunCmd("bsdtar", "-x", "-f", isoPath, "-C", mntDir); err != nil {
+		steps.RunCmd("umount", mntDir)
+		os.RemoveAll(mntDir)
+		return fmt.Errorf("extract iso: %w", err)
+	}
+	if _, err := steps.RunCmd("umount", mntDir); err != nil {
+		return err
+	}
+	os.RemoveAll(mntDir)
 
-	mounted := false
-	cleanup := func(err error) error {
-		if mounted {
-			steps.RunCmd("umount", mntDir)
+	for _, argv := range [][]string{
+		{"syslinux", "--directory", "syslinux", "--install", devPath + "1"},
+		{"dd", "bs=440", "count=1", "conv=notrunc",
+			"if=/usr/lib/syslinux/bios/gptmbr.bin", "of=" + devPath},
+	} {
+		if _, err := steps.RunCmd(argv[0], argv[1:]...); err != nil {
+			return err
 		}
+	}
+
+	if err := parted("mkpart", "FlashDrive", "ext4", "1024MiB", "100%"); err != nil {
+		return err
+	}
+	if _, err := steps.RunCmd("mkfs.ext4", devPath+"2"); err != nil {
 		return err
 	}
 
-	for _, script := range []string{
-		fmt.Sprintf("mount %s1 %s", devPath, mntDir),
-		fmt.Sprintf("bsdtar -x -f %s -C %s", isoPath, mntDir),
-		fmt.Sprintf("umount %s", mntDir),
-		fmt.Sprintf("syslinux --directory syslinux --install %s1", devPath),
-		fmt.Sprintf("dd bs=440 count=1 conv=notrunc if=/usr/lib/syslinux/bios/gptmbr.bin of=%s", devPath),
-		fmt.Sprintf("%s mkpart FlashDrive ext4 1024MiB 100%%", parted),
-		fmt.Sprintf("mkfs.ext4 %s2", devPath),
-	} {
-		if strings.HasPrefix(script, "mount ") {
-			mounted = true
-		}
-		if _, err := steps.RunShell(script); err != nil {
-			return cleanup(fmt.Errorf("%s: %w", script, err))
-		}
-		if script == fmt.Sprintf("umount %s", mntDir) {
-			mounted = false
-		}
-	}
-
-	os.RemoveAll(mntDir)
 	fmt.Println("done")
 	return nil
 }
@@ -281,20 +309,21 @@ const (
 	pciVendorNVIDIA = "0x10de"
 )
 
-// detectGPUVendor walks /sys/bus/pci/devices and classifies display
+// detectGPUVendor walks <sysFS>/bus/pci/devices and classifies display
 // controllers by class prefix 0x03 (0x030000 = VGA, 0x030200 = 3D — NVIDIA
 // dGPUs in Optimus laptops enumerate as 3D, not VGA). Vendor IDs are read
 // from the same sysfs entries. Discrete AMD wins over Intel iGPU; any NVIDIA
 // is reported as unsupported.
-func detectGPUVendor() (string, error) {
-	entries, err := os.ReadDir("/sys/bus/pci/devices")
+func detectGPUVendor(sysFS string) (string, error) {
+	devicesDir := filepath.Join(sysFS, "bus", "pci", "devices")
+	entries, err := os.ReadDir(devicesDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to list pci devices: %w", err)
 	}
 
 	amd, intel := false, false
 	for _, entry := range entries {
-		base := filepath.Join("/sys/bus/pci/devices", entry.Name())
+		base := filepath.Join(devicesDir, entry.Name())
 		class, err := os.ReadFile(filepath.Join(base, "class"))
 		if err != nil || !strings.HasPrefix(strings.TrimSpace(string(class)), "0x03") {
 			continue
@@ -329,7 +358,7 @@ func InstallSteam() error {
 		return fmt.Errorf("steam requires root privileges")
 	}
 
-	vendor, err := detectGPUVendor()
+	vendor, err := detectGPUVendor("/sys")
 	if err != nil {
 		return err
 	}

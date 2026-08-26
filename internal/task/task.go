@@ -36,6 +36,20 @@ func Command(name, cmdStr string) Task {
 	}
 }
 
+// Run builds a task executing a command with arguments (no shell involved).
+func Run(name string, argv ...string) Task {
+	return Task{
+		Name: name,
+		RunFunc: func(cfg *config.Config) error {
+			if len(argv) == 0 {
+				return fmt.Errorf("%s: no command specified", name)
+			}
+			_, err := steps.RunCmd(argv[0], argv[1:]...)
+			return err
+		},
+	}
+}
+
 func Pacman(name string, pkgs []string) Task {
 	return Task{
 		Name: name,

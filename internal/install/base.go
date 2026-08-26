@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 
 	"zerno/assets"
@@ -105,16 +106,20 @@ func partitions() task.Task {
 		Name: "create_partitions",
 		RunFunc: func(cfg *config.Config) error {
 			dev := fmt.Sprintf("/dev/%s", cfg.BlockDevice)
-			if _, err := steps.RunShell(fmt.Sprintf("parted -s %s mklabel gpt", dev)); err != nil {
+
+			// 1GiB ESP: headroom for current + fallback UKI and future extras
+			if _, err := steps.RunCmd("parted", "-s", dev, "mklabel", "gpt"); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell(fmt.Sprintf("parted -s %s mkpart efi-system fat32 1MiB 512MiB", dev)); err != nil {
+			if _, err := steps.RunCmd("parted", "-s", dev,
+				"mkpart", "efi-system", "fat32", "1MiB", "1024MiB"); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell(fmt.Sprintf("parted -s %s mkpart rootfs ext4 512MiB 100%%", dev)); err != nil {
+			if _, err := steps.RunCmd("parted", "-s", dev,
+				"mkpart", "rootfs", "ext4", "1024MiB", "100%"); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell(fmt.Sprintf("parted -s %s set 1 boot on", dev)); err != nil {
+			if _, err := steps.RunCmd("parted", "-s", dev, "set", "1", "boot", "on"); err != nil {
 				return err
 			}
 			return nil
@@ -126,10 +131,10 @@ func filesystems() task.Task {
 	return task.Task{
 		Name: "create_filesystems",
 		RunFunc: func(cfg *config.Config) error {
-			dev := fmt.Sprintf("/dev/%s%s", cfg.BlockDevice, cfg.PartNumPrefix)
-			rootPart := fmt.Sprintf("%s%d", dev, cfg.PartNum)
+			rootPart := rootPartitionPath(cfg)
+			espPart := fmt.Sprintf("/dev/%s%s1", cfg.BlockDevice, cfg.PartNumPrefix)
 
-			if _, err := steps.RunCmd("mkfs.fat", "-F", "32", dev+"1"); err != nil {
+			if _, err := steps.RunCmd("mkfs.fat", "-F", "32", espPart); err != nil {
 				return err
 			}
 			if _, err := steps.RunCmd("mkfs.ext4", rootPart); err != nil {
@@ -141,7 +146,7 @@ func filesystems() task.Task {
 			if err := os.MkdirAll("/mnt/efi", 0755); err != nil {
 				return err
 			}
-			if _, err := steps.RunCmd("mount", dev+"1", "/mnt/efi"); err != nil {
+			if _, err := steps.RunCmd("mount", espPart, "/mnt/efi"); err != nil {
 				return err
 			}
 			if _, err := steps.RunCmd("parted", "-s", "/dev/"+cfg.BlockDevice, "print"); err != nil {
@@ -162,7 +167,6 @@ func pacstrap() task.Task {
 				"base",
 				"base-devel",
 				"efibootmgr",
-				"sbctl",
 				"systemd-ukify",
 				"systemd-resolvconf",
 				"iwd",
@@ -184,7 +188,8 @@ func pacstrap() task.Task {
 				"man-db",
 				"man-pages",
 			}
-			_, err := steps.RunShell("pacstrap /mnt " + strings.Join(pkgs, " "))
+			args := append([]string{"pacstrap", "/mnt"}, pkgs...)
+			_, err := steps.RunCmd(args[0], args[1:]...)
 			return err
 		},
 	}
@@ -208,7 +213,7 @@ func cpuMicrocode() task.Task {
 				fmt.Println("unknown CPU vendor, skipping microcode installation")
 				return nil
 			}
-			_, err = steps.RunShell(fmt.Sprintf("pacstrap /mnt %s", pkg))
+			_, err = steps.RunCmd("pacstrap", "/mnt", pkg)
 			return err
 		},
 	}
@@ -218,10 +223,12 @@ func setTimezone() task.Task {
 	return task.Task{
 		Name: "set_timezone",
 		RunFunc: func(cfg *config.Config) error {
-			script := fmt.Sprintf(`
-				arch-chroot /mnt ln -sf /usr/share/zoneinfo/%s /etc/localtime && \
-				arch-chroot /mnt hwclock --systohc`, cfg.Timezone)
-			_, err := steps.RunShell(script)
+			zoneinfo := "/usr/share/zoneinfo/" + cfg.Timezone
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "ln", "-sf",
+				zoneinfo, "/etc/localtime"); err != nil {
+				return err
+			}
+			_, err := steps.RunCmd("arch-chroot", "/mnt", "hwclock", "--systohc")
 			return err
 		},
 	}
@@ -237,7 +244,7 @@ func locales() task.Task {
 			if err := steps.ReplaceLine("/mnt/etc/locale.gen", `#.*en_US.UTF-8`, `en_US.UTF-8`); err != nil {
 				return err
 			}
-			if _, err := steps.RunShell("arch-chroot /mnt locale-gen"); err != nil {
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "locale-gen"); err != nil {
 				return err
 			}
 			if err := assets.Restore("base/locale.conf", "/mnt/etc/locale.conf"); err != nil {
@@ -264,12 +271,16 @@ func user() task.Task {
 	return task.Task{
 		Name: "create_user",
 		RunFunc: func(cfg *config.Config) error {
-			script := fmt.Sprintf(`
-				arch-chroot /mnt groupadd -g %d %s && \
-				arch-chroot /mnt useradd -m -u %d -g %d %s && \
-				arch-chroot /mnt usermod -aG wheel,audio,video,storage %s`,
-				cfg.UserGID, cfg.Username, cfg.UserID, cfg.UserGID, cfg.Username, cfg.Username)
-			if _, err := steps.RunShell(script); err != nil {
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "groupadd",
+				"-g", strconv.Itoa(cfg.UserGID), cfg.Username); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "useradd",
+				"-m", "-u", strconv.Itoa(cfg.UserID), "-g", strconv.Itoa(cfg.UserGID), cfg.Username); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "usermod",
+				"-aG", "wheel,audio,video,storage", cfg.Username); err != nil {
 				return err
 			}
 
@@ -298,20 +309,60 @@ func requireUEFI() task.Task {
 	}
 }
 
+// rootPartitionPath returns the device path of the root partition (partition 2).
+func rootPartitionPath(cfg *config.Config) string {
+	return fmt.Sprintf("/dev/%s%s%d", cfg.BlockDevice, cfg.PartNumPrefix, cfg.PartNum)
+}
+
+// baseKernelCmdline renders /etc/kernel/cmdline for a freshly created root fs.
+func baseKernelCmdline(rootUUID string) string {
+	return fmt.Sprintf("loglevel=6 root=UUID=%s\n", rootUUID)
+}
+
+// hibernationKernelCmdline rewrites cmdline with resume parameters pointing
+// at the swapfile (hibernate-to-disk).
+func hibernationKernelCmdline(rootUUID, swapUUID, resumeOffset string) string {
+	return fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",
+		rootUUID, swapUUID, resumeOffset)
+}
+
+const (
+	loaderConf = "timeout 3\nconsole-mode keep\ndefault arch-linux*\n"
+
+	initramfsHooks = "HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)"
+
+	linuxPreset = `# /etc/mkinitcpio.d/linux.preset
+PRESETS=('default')
+ALL_kver="/boot/vmlinuz-linux"
+default_uki="/efi/EFI/Linux/arch-linux.efi"
+`
+
+	preserveOldUKIHook = `[Trigger]
+Type = File
+Operation = Install
+Operation = Upgrade
+Target = usr/lib/modules/*/vmlinuz
+
+[Action]
+Description = Preserving old UKI as fallback...
+When = PreTransaction
+Exec = /bin/sh -c 'if [ -f /efi/EFI/Linux/arch-linux.efi ]; then cp /efi/EFI/Linux/arch-linux.efi /efi/EFI/Linux/arch-linux-fallback.efi; fi'
+`
+)
+
 func kernelCmdline() task.Task {
 	return task.Task{
 		Name: "create_kernel_cmdline",
 		RunFunc: func(cfg *config.Config) error {
-			dev := fmt.Sprintf("/dev/%s%s", cfg.BlockDevice, cfg.PartNumPrefix)
-			rootPart := fmt.Sprintf("%s%d", dev, cfg.PartNum)
+			rootPart := rootPartitionPath(cfg)
 
 			rootUUID, err := steps.RunCmd("blkid", "-s", "UUID", "-o", "value", rootPart)
 			if err != nil {
 				return err
 			}
 
-			cmdline := fmt.Sprintf("loglevel=6 root=UUID=%s\n", strings.TrimSpace(rootUUID))
-			return steps.WriteFile("/mnt/etc/kernel/cmdline", cmdline)
+			return steps.WriteFile("/mnt/etc/kernel/cmdline",
+				baseKernelCmdline(strings.TrimSpace(rootUUID)))
 		},
 	}
 }
@@ -325,45 +376,27 @@ func bootloader() task.Task {
 				return err
 			}
 
-			loaderConf := "timeout 3\nconsole-mode keep\ndefault arch-linux*\n"
 			if err := steps.WriteFile("/mnt/efi/loader/loader.conf", loaderConf); err != nil {
 				return err
 			}
 
-			hooks := "HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block sd-encrypt filesystems fsck)"
 			if err := steps.ReplaceLine("/mnt/etc/mkinitcpio.conf",
-				`^HOOKS=.*`, hooks); err != nil {
+				`^HOOKS=.*`, initramfsHooks); err != nil {
 				return err
 			}
 
-			preset := `# /etc/mkinitcpio.d/linux.preset
-PRESETS=('default')
-ALL_kver="/boot/vmlinuz-linux"
-default_uki="/efi/EFI/Linux/arch-linux.efi"
-`
 			if err := os.MkdirAll("/mnt/etc/mkinitcpio.d", 0755); err != nil {
 				return err
 			}
-			if err := steps.WriteFile("/mnt/etc/mkinitcpio.d/linux.preset", preset); err != nil {
+			if err := steps.WriteFile("/mnt/etc/mkinitcpio.d/linux.preset", linuxPreset); err != nil {
 				return err
 			}
 
-			hookContent := `[Trigger]
-Type = File
-Operation = Install
-Operation = Upgrade
-Target = usr/lib/modules/*/vmlinuz
-
-[Action]
-Description = Preserving old UKI as fallback...
-When = PreTransaction
-Exec = /bin/sh -c 'if [ -f /efi/EFI/Linux/arch-linux.efi ]; then cp /efi/EFI/Linux/arch-linux.efi /efi/EFI/Linux/arch-linux-fallback.efi; fi'
-`
 			if err := os.MkdirAll("/mnt/etc/pacman.d/hooks", 0755); err != nil {
 				return err
 			}
 			if err := steps.WriteFile("/mnt/etc/pacman.d/hooks/90-preserve-old-uki.hook",
-				hookContent); err != nil {
+				preserveOldUKIHook); err != nil {
 				return err
 			}
 
@@ -384,19 +417,32 @@ func secureBootSign() task.Task {
 	return task.Task{
 		Name: "sign_secure_boot",
 		RunFunc: func(cfg *config.Config) error {
-			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "create-keys"); err != nil {
+			if !cfg.SecureBoot {
+				return nil
+			}
+
+			// sbctl is deliberately absent from the main package list -
+			// all Secure Boot setup stays encapsulated behind this gate
+			if _, err := steps.RunCmd("pacstrap", "/mnt", "sbctl"); err != nil {
 				return err
 			}
-			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s",
-				"/efi/EFI/systemd/systemd-bootx64.efi"); err != nil {
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "create-keys"); err != nil {
 				return err
 			}
 			if err := os.MkdirAll("/mnt/efi/EFI/Linux", 0755); err != nil {
 				return err
 			}
-			if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s",
-				"/efi/EFI/Linux/arch-linux.efi"); err != nil {
-				return err
+
+			// BOOTX64.EFI is the firmware's universal fallback path - under
+			// Secure Boot it must be signed too, or recovery boots fail
+			for _, path := range []string{
+				"/efi/EFI/systemd/systemd-bootx64.efi",
+				"/efi/EFI/BOOT/BOOTX64.EFI",
+				"/efi/EFI/Linux/arch-linux.efi",
+			} {
+				if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s", path); err != nil {
+					return err
+				}
 			}
 
 			return nil

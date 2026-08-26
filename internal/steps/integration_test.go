@@ -86,7 +86,7 @@ exec_always waybar
 
 	os.WriteFile(src, []byte(complexContent), 0644)
 
-	if err := CopyFile(src, dst); err != nil {
+	if err := CopyFile(src, dst, 0644); err != nil {
 		t.Fatalf("CopyFile error = %v", err)
 	}
 
@@ -199,7 +199,7 @@ func TestIntegration_CopyFile_NonExistentSource(t *testing.T) {
 	src := filepath.Join(t.TempDir(), "nonexistent")
 	dst := filepath.Join(t.TempDir(), "dest.txt")
 
-	err := CopyFile(src, dst)
+	err := CopyFile(src, dst, 0644)
 	if err == nil {
 		t.Error("CopyFile should return error when source doesn't exist")
 	}

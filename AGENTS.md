@@ -93,7 +93,6 @@ via `swayConfigs()` + `swayExecutables` chmod list.
 ## Testing
 
 - Integration tests use real filesystem in temp dirs
-- Use `internal/testutils` for `TempFile()`, `TempDir()`, `WriteFile()` helpers
 - Set `HOME` env var for tests needing config directories
 
 ## Neovim Config
@@ -146,6 +145,22 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block 
   copies `arch-linux.efi` → `arch-linux-fallback.efi` before the update
 - Kernel PostTransaction hook generates new `arch-linux.efi`
 - Result: always have 2 UKIs (current + previous) after first kernel update
+
+### Secure Boot (opt-in via `SecureBoot` config param, default false)
+- disabled: zero footprint — sbctl not installed, no keys; sbctl's pacman/mkinitcpio
+  hooks ship inside the package, so they are absent too
+- enabled: Phase 1 `secureBootSign()` pacstraps sbctl into the target itself
+  (all SB setup behind one gate) and signs bootloader copies + UKI; Phase 2
+  `secureBoot()` ensures the package, creates keys when missing, keeps all EFI
+  binaries signed (`sign -s`, idempotent), hard-errors with fix hints on signing
+  failure, prints the activation checklist
+- re-signing automation comes with sbctl itself: mkinitcpio post hook
+  (`/usr/lib/initcpio/post/sbctl`) signs every rebuild incl. manual mkinitcpio runs;
+  pacman transactions additionally get `zz-sbctl.hook`
+- **UKI regeneration must always go through mkinitcpio, never raw `ukify`** — raw
+  ukify bypasses the post hook and produces unsigned UKIs
+- activation/enrollment is manual (firmware ritual); README §Secure Boot is the
+  canonical procedure: `sbctl verify` all-green before `enroll-keys -m`
 
 
 ## Network Architecture

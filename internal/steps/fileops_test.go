@@ -205,25 +205,13 @@ func TestCopyFile(t *testing.T) {
 
 	os.WriteFile(src, []byte(content), 0644)
 
-	if err := CopyFile(src, dst); err != nil {
+	if err := CopyFile(src, dst, 0644); err != nil {
 		t.Fatalf("CopyFile() error = %v", err)
 	}
 
 	got, _ := ReadFile(dst)
 	if got != content {
 		t.Errorf("CopyFile() content = %q, want %q", got, content)
-	}
-}
-
-func TestCreateDir(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "a", "b", "c")
-
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		t.Fatalf("CreateDir() error = %v", err)
-	}
-
-	if !FileExists(dir) {
-		t.Errorf("CreateDir() did not create directory")
 	}
 }
 
@@ -402,13 +390,37 @@ func TestCopyFile_CreatesDirs(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := CopyFile(src, dst)
+	err := CopyFile(src, dst, 0644)
 	if err != nil {
 		t.Fatalf("CopyFile() error = %v", err)
 	}
-
 	if _, err := os.Stat(dst); os.IsNotExist(err) {
 		t.Error("CopyFile() did not create nested directories")
+	}
+}
+
+func TestCopyFile_EnforcesPermOnExistingDst(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src.txt")
+	dst := filepath.Join(dir, "dst.txt")
+
+	if err := os.WriteFile(src, []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// pre-existing destination with a permissive mode (simulates re-runs)
+	if err := os.WriteFile(dst, []byte("old"), 0666); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := CopyFile(src, dst, 0640); err != nil {
+		t.Fatalf("CopyFile() error = %v", err)
+	}
+	info, err := os.Stat(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0640 {
+		t.Errorf("CopyFile() mode = %v, want 0640 (final mode must be enforced)", info.Mode().Perm())
 	}
 }
 
