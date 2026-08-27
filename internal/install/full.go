@@ -242,11 +242,10 @@ func installSwayFiles(cfg *config.Config, homeDir string) error {
 		return err
 	}
 
-	// chown only what was written - never walk the whole home directory
-	if err := steps.ChownRecursive(swayDir, cfg.UserID, cfg.UserGID); err != nil {
-		return err
-	}
-	if err := steps.ChownRecursive(ghosttyDir, cfg.UserID, cfg.UserGID); err != nil {
+	// chown ~/.config wholesale - MkdirAll above can leave the parent
+	// root-owned, breaking user services (~/.config is the whole scope
+	// ever written here); never walk the whole home directory
+	if err := steps.ChownRecursive(filepath.Join(homeDir, ".config"), cfg.UserID, cfg.UserGID); err != nil {
 		return err
 	}
 	for _, f := range swayExecutables {
