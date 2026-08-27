@@ -10,12 +10,21 @@ import (
 	"text/template"
 )
 
-//go:embed base conf files qemu sysctl.d nvim
+//go:embed base conf files qemu sysctl.d nvim README.md
 var assetsDir embed.FS
 
 // ReadFile returns the raw embedded content of an asset.
 func ReadFile(path string) ([]byte, error) {
 	return assetsDir.ReadFile(path)
+}
+
+// Readme returns the embedded README.md content, available offline during install.
+func Readme() string {
+	data, err := assetsDir.ReadFile("README.md")
+	if err != nil {
+		return ""
+	}
+	return string(data)
 }
 
 func Restore(path, dst string) error {

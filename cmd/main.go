@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 
+	"zerno/assets"
 	"zerno/internal/config"
 	"zerno/internal/install"
 )
@@ -47,7 +48,8 @@ func printHelp() {
   f, boot-dev <dev> <iso>  format device with storage + boot partitions
   e, steam                 install steam
   v, version               print version and exit
-  r, repo-pull             clone or update repo in ~/src/zerno`)
+  r, readme                print embedded README.md to stdout
+  p, repo-pull             clone or update repo in ~/src/zerno`)
 }
 
 func main() {
@@ -83,7 +85,10 @@ func main() {
 	case "v", "version":
 		fmt.Println(version)
 
-	case "r", "repo-pull":
+	case "r", "readme":
+		fmt.Print(assets.Readme())
+
+	case "p", "repo-pull":
 		fatalOnErr(install.RepoPull(loadConfig()))
 
 	default:
