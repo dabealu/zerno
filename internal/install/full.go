@@ -720,6 +720,10 @@ func utilsFontsThemes() task.Task {
 				"bash-completion",
 				"materia-gtk-theme",
 				"papirus-icon-theme",
+				// Keep: nerd fonts cover latin/glyphs only, no CJK - without this,
+				// Japanese/Chinese/Korean text (e.g. in browser comments) shows as
+				// empty boxes. Do not remove.
+				"noto-fonts-cjk",
 			}
 			if err := steps.PacmanPackages(pkgs); err != nil {
 				return err
