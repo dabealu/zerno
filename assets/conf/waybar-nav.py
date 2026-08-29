@@ -33,8 +33,7 @@ BY_APP = {
 
 
 def glyph(app, title):
-    # vim reports a "nvim"/"vim"-prefixed window title (see nvim options.lua),
-    # so only a prefix match counts as vim - never a word match.
+    # vim reports a "nvim"/"vim"-prefixed window title (see nvim options.lua)
     if title.startswith(("nvim", "vim")):
         return "\uf36f"
     if title.startswith("opencode") or title[:2].lower() == "oc":
