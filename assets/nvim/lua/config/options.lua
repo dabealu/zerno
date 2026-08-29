@@ -36,9 +36,10 @@ opt.colorcolumn = "100"
 -- Plugins/colorschemes may still override their own window borders.
 opt.winborder = "single"
 
--- Terminal title (shows in iTerm2/Alacritty tab header)
+-- Terminal title (shows in iTerm2/Alacritty tab header).
+-- Leading "nvim" token lets sway/waybar-nav pick the right window icon.
 opt.title = true
-opt.titlestring = "%{&modified ? '■ ' : ''}%{fnamemodify(getcwd(), ':t')} - %t"
+opt.titlestring = "nvim: %{fnamemodify(getcwd(), ':t')} - %t"
 
 -- Hide command line (commands appear in popup instead)
 opt.cmdheight = 0
