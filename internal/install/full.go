@@ -470,12 +470,17 @@ func cpuGovernor() task.Task {
 			if err := steps.PacmanPackages([]string{"cpupower"}); err != nil {
 				return err
 			}
-			if !steps.FileExists("/etc/default/cpupower") {
-				if err := steps.WriteFile("/etc/default/cpupower", "# cpupower defaults\ngovernor='performance'\n"); err != nil {
+			// cpupower.service reads /etc/default/cpupower-service.conf with
+			// UPPERCASE vars; the legacy lowercase /etc/default/cpupower is
+			// ignored by the unit, which would silently leave intel_pstate on
+			// 'powersave'. Put the setting in the file the unit actually reads.
+			cpupowerConf := "/etc/default/cpupower-service.conf"
+			if !steps.FileExists(cpupowerConf) {
+				if err := steps.WriteFile(cpupowerConf, "GOVERNOR='performance'\n"); err != nil {
 					return err
 				}
 			} else {
-				if err := steps.ReplaceLine("/etc/default/cpupower", `#governor='ondemand'`, `governor='performance'`); err != nil {
+				if err := steps.ReplaceLine(cpupowerConf, `#GOVERNOR='ondemand'`, `GOVERNOR='performance'`); err != nil {
 					return err
 				}
 			}
