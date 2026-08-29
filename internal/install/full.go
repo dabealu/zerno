@@ -149,6 +149,29 @@ AutoConnect=true
 				return err
 			}
 
+			wlanDev := cfg.NetDevISO
+			if !strings.HasPrefix(wlanDev, "wlan") && !strings.HasPrefix(wlanDev, "wlx") && !strings.HasPrefix(wlanDev, "wlp") {
+				wlanDev = "wlan0"
+			}
+			dropIn := fmt.Sprintf("/etc/systemd/system/iwd.service.d/wait-%s.conf", wlanDev)
+			dropInContent := fmt.Sprintf(`# iwd can start before the Wi-Fi radio is
+# ready and fail its initial autoconnect, leaving the interface down until
+# the link is manually cycled. Waiting for the device and forcing it up
+# before iwd starts fixes that race (ArchWiki FS#63912).
+[Unit]
+After=sys-subsystem-net-devices-%s.device
+Wants=sys-subsystem-net-devices-%s.device
+
+[Service]
+ExecStartPre=ip link set %s up
+`, wlanDev, wlanDev, wlanDev)
+			if err := os.MkdirAll("/etc/systemd/system/iwd.service.d", 0755); err != nil {
+				return err
+			}
+			if err := steps.WriteFile(dropIn, dropInContent); err != nil {
+				return err
+			}
+
 			if _, err := steps.RunCmd("systemctl", "enable", "iwd"); err != nil {
 				return err
 			}

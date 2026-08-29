@@ -46,6 +46,8 @@ window#waybar.hidden {
 tooltip {
   background: #202020;
   border: 1px solid #3a3a3a;
+  font-family: 'JetBrainsMono Nerd Font Mono';
+  font-size: 12pt;
 }
 
 #mpris {

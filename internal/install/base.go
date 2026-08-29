@@ -25,7 +25,7 @@ func Base(cfg *config.Config) {
 		task.Pacman("update_archlinux_keyring", []string{"archlinux-keyring"}),
 		pacstrap(),
 		cpuMicrocode(),
-		task.Command("save_fstab", "genfstab -U /mnt >> /mnt/etc/fstab"),
+		saveFstab(),
 		setTimezone(),
 		locales(),
 		hostname(),
@@ -170,6 +170,7 @@ func pacstrap() task.Task {
 				"systemd-ukify",
 				"systemd-resolvconf",
 				"iwd",
+				"wireless-regdb",
 				"impala",
 				"python",
 				"openssh",
@@ -191,6 +192,21 @@ func pacstrap() task.Task {
 			args := append([]string{"pacstrap", "/mnt"}, pkgs...)
 			_, err := steps.RunCmd(args[0], args[1:]...)
 			return err
+		},
+	}
+}
+
+func saveFstab() task.Task {
+	return task.Task{
+		Name: "save_fstab",
+		RunFunc: func(cfg *config.Config) error {
+			if _, err := steps.RunShell("genfstab -U /mnt >> /mnt/etc/fstab"); err != nil {
+				return err
+			}
+			// Restrict /efi permissions so the boot random-seed isn't world
+			// accessible (bootctl warns about this at every boot otherwise).
+			return steps.ReplaceLine("/mnt/etc/fstab",
+				`fmask=0022,dmask=0022`, `fmask=0077,dmask=0077`)
 		},
 	}
 }
