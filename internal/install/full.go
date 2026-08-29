@@ -724,6 +724,9 @@ func utilsFontsThemes() task.Task {
 				// Japanese/Chinese/Korean text (e.g. in browser comments) shows as
 				// empty boxes. Do not remove.
 				"noto-fonts-cjk",
+				// Keep: no other font here covers emoji - without this, they
+				// render as empty boxes in browsers. Do not remove.
+				"noto-fonts-emoji",
 			}
 			if err := steps.PacmanPackages(pkgs); err != nil {
 				return err
