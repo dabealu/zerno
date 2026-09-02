@@ -31,6 +31,7 @@ type Config struct {
 	WiFiSSID      string
 	WiFiPassword  string
 	SecureBoot    bool
+	CpuGovernor   string
 }
 
 func (c *Config) String() string {
@@ -77,6 +78,9 @@ func (c *Config) ValidateStrict() error {
 	}
 	if c.NetDev == "" {
 		return fmt.Errorf("network device is required")
+	}
+	if c.CpuGovernor != "" && !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(c.CpuGovernor) {
+		return fmt.Errorf("invalid cpu governor %q: allowed: letters, digits, '_', '-'", c.CpuGovernor)
 	}
 	return nil
 }
@@ -151,6 +155,7 @@ func Prompt() (*Config, error) {
 	}
 	promptWiFi(cfg)
 	promptSecureBoot(cfg)
+	promptGovernor(cfg)
 
 	if err := cfg.ValidateStrict(); err != nil {
 		return nil, err
@@ -256,6 +261,51 @@ func promptWiFi(cfg *Config) {
 func promptSecureBoot(cfg *Config) {
 	fmt.Print("configure secure boot [false]: ")
 	cfg.SecureBoot = parseBoolOr(steps.ReadLine(), false)
+}
+
+// availableGovernors lists the CPU governors the running kernel exposes for
+// CPU0, with 'powersave' placed first when offered (the recommended default on
+// laptops: boosts on demand instead of pinning max boost). Unable to read the
+// sysfs list -> empty, caller falls back to the common two.
+func availableGovernors() []string {
+	data, err := os.ReadFile("/sys/devices/system/cpu/cpu0/cpufreq/scaling_available_governors")
+	if err != nil {
+		return nil
+	}
+	options := strings.Fields(string(data))
+	if len(options) == 0 {
+		return nil
+	}
+	ordered := make([]string, 0, len(options))
+	for _, g := range options {
+		if g == "powersave" {
+			ordered = append(ordered, g)
+		}
+	}
+	for _, g := range options {
+		if g != "powersave" {
+			ordered = append(ordered, g)
+		}
+	}
+	return ordered
+}
+
+// promptGovernor asks which CPU frequency governor the installed system should
+// enforce at boot. There is no universal winner: powersave (vendor default)
+// idles cores down and keeps package heat in check, performance pins max boost
+// for workloads that want it. The offered list comes from the running kernel;
+// empty input selects powersave.
+func promptGovernor(cfg *Config) {
+	options := availableGovernors()
+	if len(options) == 0 {
+		options = []string{"powersave", "performance"}
+	}
+	fmt.Printf("cpu governor %v [powersave]: ", options)
+	choice := steps.ReadLine()
+	if choice == "" {
+		choice = "powersave"
+	}
+	cfg.CpuGovernor = choice
 }
 
 func LoadOrPrompt() (*Config, error) {

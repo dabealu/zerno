@@ -460,7 +460,7 @@ func hibernation() task.Task {
 
 func cpuGovernor() task.Task {
 	return task.Task{
-		Name: "set_performance_cpu_governor",
+		Name: "set_cpu_governor",
 		RunFunc: func(cfg *config.Config) error {
 			if !steps.FileExists("/sys/devices/system/cpu/cpu0/cpufreq") {
 				fmt.Println("cpu doesn't support cpufreq control")
@@ -470,18 +470,34 @@ func cpuGovernor() task.Task {
 			if err := steps.PacmanPackages([]string{"cpupower"}); err != nil {
 				return err
 			}
-			// cpupower.service reads /etc/default/cpupower-service.conf with
-			// UPPERCASE vars; the legacy lowercase /etc/default/cpupower is
+
+			// Governor comes from parameters.json (prompted at install time,
+			// default powersave). cpupower.service reads /etc/default/cpupower-service.conf
+			// with UPPERCASE vars; the legacy lowercase /etc/default/cpupower is
 			// ignored by the unit, which would silently leave intel_pstate on
 			// 'powersave'. Put the setting in the file the unit actually reads.
+			gov := cfg.CpuGovernor
+			if gov == "" {
+				gov = "powersave"
+			}
+			govLine := "GOVERNOR='" + gov + "'"
 			cpupowerConf := "/etc/default/cpupower-service.conf"
 			if !steps.FileExists(cpupowerConf) {
-				if err := steps.WriteFile(cpupowerConf, "GOVERNOR='performance'\n"); err != nil {
+				if err := steps.WriteFile(cpupowerConf, govLine+"\n"); err != nil {
 					return err
 				}
 			} else {
-				if err := steps.ReplaceLine(cpupowerConf, `#GOVERNOR='ondemand'`, `GOVERNOR='performance'`); err != nil {
+				if err := steps.ReplaceLine(cpupowerConf, `(?m)^#?GOVERNOR=.*`, govLine); err != nil {
 					return err
+				}
+				data, err := os.ReadFile(cpupowerConf)
+				if err != nil {
+					return fmt.Errorf("read cpupower conf: %w", err)
+				}
+				if !strings.Contains(string(data), "GOVERNOR=") {
+					if err := steps.WriteFile(cpupowerConf, string(data)+govLine+"\n"); err != nil {
+						return err
+					}
 				}
 			}
 			if _, err := steps.RunCmd("systemctl", "enable", "cpupower"); err != nil {

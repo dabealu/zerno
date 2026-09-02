@@ -54,6 +54,32 @@ func TestConfigSaveLoad(t *testing.T) {
 	}
 }
 
+func TestValidateStrictCpuGovernor(t *testing.T) {
+	base := &Config{
+		Hostname:    "testhost",
+		Username:    "testuser",
+		BlockDevice: "sda",
+		Timezone:    "UTC",
+		NetDev:      "enp0s3",
+	}
+	base.CpuGovernor = "powersave"
+	if err := base.ValidateStrict(); err != nil {
+		t.Errorf("valid governor rejected: %v", err)
+	}
+	base.CpuGovernor = "performance"
+	if err := base.ValidateStrict(); err != nil {
+		t.Errorf("valid governor rejected: %v", err)
+	}
+	base.CpuGovernor = "userspace;rm"
+	if err := base.ValidateStrict(); err == nil {
+		t.Error("shell-hostile governor accepted")
+	}
+	base.CpuGovernor = ""
+	if err := base.ValidateStrict(); err != nil {
+		t.Errorf("empty governor should be allowed (old parameters.json): %v", err)
+	}
+}
+
 func TestConfigLoad_FileNotFound(t *testing.T) {
 	paramsFileOverride = filepath.Join(t.TempDir(), "parameters.json")
 	t.Cleanup(func() { paramsFileOverride = "" })
