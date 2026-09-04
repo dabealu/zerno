@@ -28,7 +28,6 @@ func Full(cfg *config.Config) {
 		swayConfigs(),
 		pipewire(),
 		swap(),
-		hibernation(),
 		secureBoot(),
 		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
 		splitLockMitigate(),
@@ -404,55 +403,6 @@ func secureBoot() task.Task {
   3. sudo sbctl enroll-keys -m  # -m includes Microsoft certs
   4. enable Secure Boot in firmware settings
 see README -> Secure Boot for details and troubleshooting`)
-			return nil
-		},
-	}
-}
-
-// Requires swap() to have run first - relies on /swapfile existing
-func hibernation() task.Task {
-	return task.Task{
-		Name: "enable_hibernation_and_suspend",
-		RunFunc: func(cfg *config.Config) error {
-			rootUUID, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/")
-			if err != nil {
-				return err
-			}
-			rootUUID = strings.TrimSpace(rootUUID)
-
-			swapDevice, err := steps.RunCmd("findmnt", "-no", "UUID", "-T", "/swapfile")
-			if err != nil {
-				return err
-			}
-			swapDevice = strings.TrimSpace(swapDevice)
-
-			out, err := steps.RunCmd("filefrag", "-v", "/swapfile")
-			if err != nil {
-				return err
-			}
-			var offset string
-			for _, line := range strings.Split(string(out), "\n") {
-				if strings.HasPrefix(strings.TrimSpace(line), "0:") {
-					fields := strings.Fields(line)
-					if len(fields) >= 4 {
-						offset = strings.TrimSuffix(fields[3], "..")
-					}
-					break
-				}
-			}
-			if offset == "" {
-				return fmt.Errorf("failed to parse resume offset from filefrag output, refusing to write broken cmdline")
-			}
-
-			if err := steps.WriteFile("/etc/kernel/cmdline",
-				hibernationKernelCmdline(rootUUID, swapDevice, strings.TrimSpace(offset))); err != nil {
-				return err
-			}
-
-			if _, err := steps.RunCmd("mkinitcpio", "-p", "linux"); err != nil {
-				return err
-			}
-
 			return nil
 		},
 	}

@@ -335,13 +335,6 @@ func baseKernelCmdline(rootUUID string) string {
 	return fmt.Sprintf("loglevel=6 root=UUID=%s\n", rootUUID)
 }
 
-// hibernationKernelCmdline rewrites cmdline with resume parameters pointing
-// at the swapfile (hibernate-to-disk).
-func hibernationKernelCmdline(rootUUID, swapUUID, resumeOffset string) string {
-	return fmt.Sprintf("loglevel=6 root=UUID=%s resume=UUID=%s resume_offset=%s\n",
-		rootUUID, swapUUID, resumeOffset)
-}
-
 const (
 	loaderConf = "timeout 3\nconsole-mode keep\ndefault arch-linux*\n"
 

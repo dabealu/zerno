@@ -34,14 +34,6 @@ func TestBaseKernelCmdline(t *testing.T) {
 	}
 }
 
-func TestHibernationKernelCmdline(t *testing.T) {
-	got := hibernationKernelCmdline("root-u", "swap-u", "38400")
-	want := "loglevel=6 root=UUID=root-u resume=UUID=swap-u resume_offset=38400\n"
-	if got != want {
-		t.Errorf("hibernationKernelCmdline() = %q, want %q", got, want)
-	}
-}
-
 // Boot-critical strings are embedded constants; these assertions catch
 // accidental drift when editing bootloader().
 func TestBootloaderAssets(t *testing.T) {

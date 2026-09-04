@@ -125,8 +125,8 @@ Power on → firmware → systemd-boot on ESP → menu →
 ### Kernel cmdline
 - Stored in `/etc/kernel/cmdline` (not `/etc/default/grub`)
 - Baked into the UKI by mkinitcpio's `systemd` hook
-- Base install writes: `loglevel=6 root=UUID=...`
-- `hibernation()` rewrites with: `loglevel=6 root=UUID=... resume=UUID=... resume_offset=...`
+- Base install writes: `loglevel=6 root=UUID=...` (Phase 1)
+- Phase 2 `hibernation()` only rebuilds the UKI — no resume params needed; systemd writes `HibernateLocation` EFI variable automatically on `systemctl hibernate`
 - Future LUKS: add `rd.luks.name=...` from a separate task
 
 ### mkinitcpio hooks
