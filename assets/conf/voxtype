@@ -1,0 +1,55 @@
+# Voxtype Configuration
+#
+# Location: ~/.config/voxtype/config.toml
+# All settings can be overridden via CLI flags
+
+# State file for external integrations (Waybar, polybar, etc.)
+# The daemon writes state ("idle", "recording", "transcribing") to this file
+# whenever it changes. Required for `voxtype record toggle` and `voxtype status`.
+state_file = "auto"
+
+[hotkey]
+# Hotkey is configured in Sway ($mod+t). Disable voxtype's built-in hotkey.
+enabled = false
+
+[audio]
+# Audio input device ("default" uses system default)
+device = "default"
+
+# Sample rate in Hz (whisper expects 16000)
+sample_rate = 16000
+
+# Maximum recording duration in seconds (safety limit)
+max_duration_secs = 120
+
+# Pause MPRIS media players during recording
+pause_media = true
+
+[whisper]
+# Model selected during install; install-full re-runs keep it in sync.
+# Multilingual only (tiny/base/small/medium) so en+ru are both supported.
+model = "{{.VoiceToText}}"
+
+# Constrained auto-detect between English and Russian. Whisper misdetects the
+# language on short clips, so limit detection to the two used languages.
+language = ["en", "ru"]
+
+# No translation: transcribe in the spoken language.
+translate = false
+
+[output]
+# Primary output mode: "type" (requires wtype) or "clipboard" (requires wl-copy)
+mode = "type"
+
+# Fall back to clipboard if typing fails
+fallback_to_clipboard = true
+
+# Delay between typed characters in milliseconds
+# 0 = fastest possible, increase if characters are dropped
+type_delay_ms = 1
+
+[output.notification]
+# Quiet: status is shown via the recording state, not notifications
+on_recording_start = false
+on_recording_stop = false
+on_transcription = false

@@ -199,7 +199,7 @@ func RunShell(script string) (string, error) {
 }
 
 func PacmanPackages(pkgs []string) error {
-	_, err := RunShell("pacman -Sy --noconfirm " + strings.Join(pkgs, " "))
+	_, err := RunShell("pacman -S --needed --noconfirm " + strings.Join(pkgs, " "))
 	return err
 }
 

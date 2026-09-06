@@ -1,13 +1,13 @@
 package install
 
 import (
-	"encoding/hex"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"zerno/assets"
 	"zerno/internal/config"
@@ -20,7 +20,8 @@ func Full(cfg *config.Config) {
 		task.RequireUser("root"),
 		network(),
 		resolved(),
-		wifi(),
+		wifiSetup(),
+		upgradeSystem(),
 		globalVars(),
 		setupDevTools(),
 		swayPackages(),
@@ -38,6 +39,7 @@ func Full(cfg *config.Config) {
 		userSrcDir(),
 		yayAur(),
 		aurPackages(),
+		voiceToText(),
 		task.Run("add_user_to_input_group", "usermod", "-aG", "input", cfg.Username),
 		pipewireUser(),
 		bashrc(),
@@ -108,52 +110,41 @@ func resolved() task.Task {
 	}
 }
 
-func SSIDFilename(ssid string) string {
-	for _, r := range ssid {
-		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' ||
-			r == ' ' || r == '_' || r == '-' {
-			continue
-		}
-		return "=" + hex.EncodeToString([]byte(ssid))
+func upgradeSystem() task.Task {
+	return task.Task{
+		Name: "upgrade_system",
+		RunFunc: func(cfg *config.Config) error {
+			_, err := steps.RunCmd("pacman", "-Syu", "--noconfirm")
+			return err
+		},
 	}
-	return ssid
 }
 
-func wifi() task.Task {
-	return task.Task{
-		Name: "configure_iwd_wifi",
-		RunFunc: func(cfg *config.Config) error {
-			if !cfg.WiFiEnabled {
-				return nil
-			}
+// wifiDevice returns the wifi interface to manage. NetDevISO holds the
+// install-time device name; fall back to the predictable wlan0 name unless it
+// looks like a real wireless interface.
+func wifiDevice(cfg *config.Config) string {
+	dev := cfg.NetDevISO
+	if !strings.HasPrefix(dev, "wlan") && !strings.HasPrefix(dev, "wlx") && !strings.HasPrefix(dev, "wlp") {
+		return "wlan0"
+	}
+	return dev
+}
 
-			profilePath := fmt.Sprintf("/var/lib/iwd/%s.psk", SSIDFilename(cfg.WiFiSSID))
-			profileContent := fmt.Sprintf(`[Security]
-Passphrase=%s
+// waitForStation blocks until iwctl can address the station, i.e. iwd has come
+// up and registered the interface. timeout is in seconds (checked once per
+// second).
+func waitForStation(dev string, timeout int) error {
+	for range timeout {
+		if _, err := steps.RunCmd("iwctl", "station", dev, "show"); err == nil {
+			return nil
+		}
+		time.Sleep(1 * time.Second)
+	}
+	return fmt.Errorf("timeout waiting for iwd station %s after %d seconds", dev, timeout)
+}
 
-[Settings]
-AutoConnect=true
-`, cfg.WiFiPassword)
-			if err := os.MkdirAll("/var/lib/iwd", 0755); err != nil {
-				return err
-			}
-			if err := steps.WriteFile(profilePath, profileContent); err != nil {
-				return err
-			}
-			if err := os.Chmod(profilePath, 0600); err != nil {
-				return err
-			}
-
-			if err := assets.Restore("files/iwd-main.conf", "/etc/iwd/main.conf"); err != nil {
-				return err
-			}
-
-			wlanDev := cfg.NetDevISO
-			if !strings.HasPrefix(wlanDev, "wlan") && !strings.HasPrefix(wlanDev, "wlx") && !strings.HasPrefix(wlanDev, "wlp") {
-				wlanDev = "wlan0"
-			}
-			dropIn := fmt.Sprintf("/etc/systemd/system/iwd.service.d/wait-%s.conf", wlanDev)
-			dropInContent := fmt.Sprintf(`# iwd can start before the Wi-Fi radio is
+const iwdWaitDropInTemplate = `# iwd can start before the Wi-Fi radio is
 # ready and fail its initial autoconnect, leaving the interface down until
 # the link is manually cycled. Waiting for the device and forcing it up
 # before iwd starts fixes that race (ArchWiki FS#63912).
@@ -163,7 +154,31 @@ Wants=sys-subsystem-net-devices-%s.device
 
 [Service]
 ExecStartPre=ip link set %s up
-`, wlanDev, wlanDev, wlanDev)
+`
+
+// wifiConnectCmd returns the full iwctl command (binary + argv) that connects
+// to ssid on dev, as single unquoted arguments - no shell. The global
+// --passphrase option is included only when a password is set so open
+// networks can connect too.
+func wifiConnectCmd(dev, ssid, pass string) []string {
+	cmd := []string{"iwctl"}
+	if pass != "" {
+		cmd = append(cmd, "--passphrase", pass)
+	}
+	return append(cmd, "station", dev, "connect", ssid)
+}
+
+func wifiSetup() task.Task {
+	return task.Task{
+		Name: "configure_iwd_wifi",
+		RunFunc: func(cfg *config.Config) error {
+			if !cfg.WiFiEnabled {
+				return nil
+			}
+
+			dev := wifiDevice(cfg)
+			dropIn := fmt.Sprintf("/etc/systemd/system/iwd.service.d/wait-%s.conf", dev)
+			dropInContent := fmt.Sprintf(iwdWaitDropInTemplate, dev, dev, dev)
 			if err := os.MkdirAll("/etc/systemd/system/iwd.service.d", 0755); err != nil {
 				return err
 			}
@@ -171,14 +186,38 @@ ExecStartPre=ip link set %s up
 				return err
 			}
 
-			if _, err := steps.RunCmd("systemctl", "enable", "iwd"); err != nil {
-				return err
-			}
-			if _, err := steps.RunCmd("systemctl", "restart", "iwd"); err != nil {
+			if err := assets.Restore("files/iwd-main.conf", "/etc/iwd/main.conf"); err != nil {
 				return err
 			}
 
-			return steps.WaitForDefaultRoute(20)
+			if _, err := steps.RunCmd("systemctl", "enable", "iwd"); err != nil {
+				return err
+			}
+			// start, never restart: an already-running daemon is left alone so
+			// a working connection survives a re-run of install-full
+			if _, err := steps.RunCmd("systemctl", "start", "iwd"); err != nil {
+				return err
+			}
+
+			// 90s matches systemd's device-unit wait in the drop-in above
+			if err := waitForStation(dev, 90); err != nil {
+				return err
+			}
+
+			// Purge a possibly-stale profile for the configured SSID: a
+			// previously unconnectable network would otherwise keep iwd's
+			// autoconnect retrying it (and only it) on every boot, leaving
+			// wifi dead until a manual connect. Best effort - an absent
+			// network is forgotten silently.
+			steps.RunCmd("iwctl", "known-networks", cfg.WiFiSSID, "forget")
+
+			// Drive the connection through iwd itself via iwctl.
+			cmd := wifiConnectCmd(dev, cfg.WiFiSSID, cfg.WiFiPassword)
+			if out, err := steps.RunCmd(cmd[0], cmd[1:]...); err != nil {
+				return fmt.Errorf("iwctl connect %q, err: %v, out: %s", cfg.WiFiSSID, err, strings.TrimSpace(out))
+			}
+
+			return steps.WaitForDefaultRoute(30)
 		},
 	}
 }
@@ -306,6 +345,7 @@ func pipewire() task.Task {
 			pkgs := []string{
 				"pipewire",
 				"pipewire-pulse",
+				"pipewire-alsa",
 				"wireplumber",
 				"gst-plugin-pipewire",
 				"xdg-desktop-portal-wlr",
@@ -560,10 +600,69 @@ func aurPackages() task.Task {
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := []string{"wdisplays", "libinput-gestures", "google-chrome"}
 			argv := append([]string{
-				"sudo", "-u", cfg.Username, "yay", "--noconfirm", "-Sy",
+				"sudo", "-u", cfg.Username, "yay", "--noconfirm", "-S", "--needed",
 			}, pkgs...)
 			_, err := steps.RunCmd(argv[0], argv[1:]...)
 			return err
+		},
+	}
+}
+
+// voiceToText configures local voice dictation
+func voiceToText() task.Task {
+	return task.Task{
+		Name: "setup_voice_to_text",
+		RunFunc: func(cfg *config.Config) error {
+			if cfg.VoiceToText == "" {
+				return nil
+			}
+
+			// wtype simulates keyboard input (type mode)
+			if err := steps.PacmanPackages([]string{"wtype"}); err != nil {
+				return err
+			}
+
+			if _, err := steps.RunCmd("sudo", "-u", cfg.Username, "yay",
+				"--noconfirm", "-S", "--needed", "voxtype-bin"); err != nil {
+				return err
+			}
+
+			voxtypeDir := filepath.Join("/home", cfg.Username, ".config", "voxtype")
+			if err := os.MkdirAll(voxtypeDir, 0755); err != nil {
+				return err
+			}
+			if err := assets.RestoreTemplate("conf/voxtype",
+				filepath.Join(voxtypeDir, "config.toml"), cfg); err != nil {
+				return err
+			}
+			if err := steps.ChownRecursive(voxtypeDir, cfg.UserID, cfg.UserGID); err != nil {
+				return err
+			}
+
+			// download model + enable systemd user service, as the target user
+			if _, err := steps.RunCmd("sudo", "-u", cfg.Username, "voxtype",
+				"setup", "--download", "--no-post-install"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("sudo", "-u", cfg.Username, "voxtype",
+				"setup", "systemd"); err != nil {
+				return err
+			}
+			// persist the service so dictation comes up on every login
+			if _, err := steps.RunCmd("systemctl", "--user", "-M",
+				cfg.Username+"@.host", "enable", "voxtype"); err != nil {
+				return err
+			}
+
+			// start the daemon now when a user session is already active
+			// (re-run/sync case); a fresh install has no session yet and the
+			// service comes up on the first login via graphical-session.target
+			if _, err := steps.RunCmd("systemctl", "--user", "-M",
+				cfg.Username+"@.host", "start", "voxtype"); err != nil {
+				fmt.Printf("note: voxtype will start at your next login: %v\n", err)
+			}
+
+			return nil
 		},
 	}
 }
@@ -793,8 +892,12 @@ func migrateUserConfig() task.Task {
 			if err := os.MkdirAll(dstDir, 0755); err != nil {
 				return err
 			}
-			if err := steps.CopyFile(src, dst, 0640); err != nil {
-				return err
+			// seed the user's copy only once - an existing one holds their
+			// edits and must never be overwritten by the /root state
+			if !steps.FileExists(dst) {
+				if err := steps.CopyFile(src, dst, 0640); err != nil && !os.IsNotExist(err) {
+					return err
+				}
 			}
 			return steps.ChownRecursive(dstDir, cfg.UserID, cfg.UserGID)
 		},

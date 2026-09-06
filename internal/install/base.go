@@ -22,7 +22,7 @@ func Base(cfg *config.Config) {
 		partitions(),
 		filesystems(),
 		kernelCmdline(),
-		task.Pacman("update_archlinux_keyring", []string{"archlinux-keyring"}),
+		updateArchlinuxKeyring(),
 		pacstrap(),
 		cpuMicrocode(),
 		saveFstab(),
@@ -74,6 +74,21 @@ func migrateToChroot() task.Task {
 	}
 }
 
+// updateArchlinuxKeyring refreshes the live ArchISO's own keyring from the
+// mirror before pacstrap. Explicit -Sy on purpose: it runs on the disposable
+// ISO where nothing is installed, so there is no partial-upgrade hazard (and
+// the frozen ISO database would otherwise pin an archlinux-keyring version
+// the mirrors may no longer carry, making the download fail outright).
+func updateArchlinuxKeyring() task.Task {
+	return task.Task{
+		Name: "update_archlinux_keyring",
+		RunFunc: func(cfg *config.Config) error {
+			_, err := steps.RunCmd("pacman", "-Sy", "--noconfirm", "archlinux-keyring")
+			return err
+		},
+	}
+}
+
 func wifiConnect() task.Task {
 	return task.Task{
 		Name: "wifi_connect",
@@ -90,9 +105,8 @@ func wifiConnect() task.Task {
 				return nil
 			}
 
-			script := fmt.Sprintf(`iwctl --passphrase '%s' station %s connect '%s'`,
-				cfg.WiFiPassword, cfg.NetDevISO, cfg.WiFiSSID)
-			if _, err := steps.RunShell(script); err != nil {
+			cmd := wifiConnectCmd(cfg.NetDevISO, cfg.WiFiSSID, cfg.WiFiPassword)
+			if _, err := steps.RunCmd(cmd[0], cmd[1:]...); err != nil {
 				return err
 			}
 
@@ -406,7 +420,7 @@ func bootloader() task.Task {
 			if err := os.MkdirAll("/mnt/etc/pacman.d/hooks", 0755); err != nil {
 				return err
 			}
-			if err := steps.WriteFile("/mnt/etc/pacman.d/hooks/90-preserve-old-uki.hook",
+			if err := steps.WriteFile("/mnt/etc/pacman.d/hooks/00-preserve-old-uki.hook",
 				preserveOldUKIHook); err != nil {
 				return err
 			}
