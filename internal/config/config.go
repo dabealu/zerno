@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"strings"
 
+	"zerno/internal/paths"
 	"zerno/internal/steps"
 )
 
@@ -32,6 +33,7 @@ type Config struct {
 	WiFiPassword  string
 	SecureBoot    bool
 	CpuGovernor   string
+	VoiceToText   string
 }
 
 func (c *Config) String() string {
@@ -86,11 +88,7 @@ func (c *Config) ValidateStrict() error {
 }
 
 func getConfigDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		home = os.Getenv("HOME")
-	}
-	return filepath.Join(home, ".zerno")
+	return paths.ConfDir(false)
 }
 
 // paramsFileOverride redirects getParametersFile() to a custom location;
@@ -101,7 +99,19 @@ func getParametersFile() string {
 	if paramsFileOverride != "" {
 		return paramsFileOverride
 	}
-	return filepath.Join(getConfigDir(), "parameters.json")
+	path := filepath.Join(getConfigDir(), "parameters.json")
+	// root under sudo with no config in the invoking user's home yet: fall
+	// back to the canonical /root copy that install-base laid down on the
+	// installed disk, so a fresh install's first `zerno i` loads it instead
+	// of re-prompting. The user copy appears after migrate_user_config runs.
+	if os.Geteuid() == 0 && os.Getenv("SUDO_USER") != "" {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			if _, err := os.Stat("/root/.zerno/parameters.json"); err == nil {
+				return "/root/.zerno/parameters.json"
+			}
+		}
+	}
+	return path
 }
 
 func (c *Config) Save() error {
@@ -156,6 +166,7 @@ func Prompt() (*Config, error) {
 	promptWiFi(cfg)
 	promptSecureBoot(cfg)
 	promptGovernor(cfg)
+	promptVoiceToText(cfg)
 
 	if err := cfg.ValidateStrict(); err != nil {
 		return nil, err
@@ -306,6 +317,29 @@ func promptGovernor(cfg *Config) {
 		choice = "powersave"
 	}
 	cfg.CpuGovernor = choice
+}
+
+// promptVoiceToText asks whether local voice dictation (voxtype) should be
+// configured and, if so, which whisper model to use. Empty input leaves the
+// feature disabled; a model name enables it with that model. Only the models
+// voxtype actually accepts are taken - anything else re-prompts instead of
+// publishing a typo that surfaces later as a failed model download.
+func promptVoiceToText(cfg *Config) {
+	models := []string{"tiny", "base", "small", "medium"}
+	for {
+		fmt.Printf("voice dictation model %v [Enter to skip]: ", models)
+		model := strings.ToLower(strings.TrimSpace(steps.ReadLine()))
+		if model == "" {
+			return
+		}
+		for _, m := range models {
+			if model == m {
+				cfg.VoiceToText = model
+				return
+			}
+		}
+		fmt.Printf("unknown model %q - pick one of %v or Enter to skip\n", model, models)
+	}
 }
 
 func LoadOrPrompt() (*Config, error) {

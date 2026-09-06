@@ -26,9 +26,24 @@ Templates use Go's `text/template` and receive `*config.Config` for substitution
 
 Contains function to perform operations with files and run commands
 
+- `PacmanPackages()` runs `pacman -S --needed --noconfirm` (**no `-Sy`/`-u`**) -
+  package installs are never partial upgrades (unsupported in Arch; a `-Sy`
+  install once pulled a freshly-rebuilt `nodejs` that required a newer `ada`,
+  breaking node mid-install). Freshness is guaranteed by the `upgrade_system`
+  task at the start of `install-full` running `pacman -Syu --noconfirm`, so all
+  later installs operate on a synced, consistent system. Standalone commands
+  that install packages (`zerno e`) assume a recently synced system.
+- Exception: `update_archlinux_keyring` in `install-base` runs `pacman -Sy`
+  directly - it runs on the disposable live ArchISO (nothing installed, no
+  partial-upgrade hazard), where the frozen ISO database would otherwise pin
+  an archlinux-keyring version the mirrors no longer carry and fail outright.
+
 ### internal/config
 
-Config struct and loading. Saved to `~/.zerno/parameters.json`.
+Config struct and loading. Saved to `parameters.json` in the user's `.zerno/`
+dir (`~/.zerno/parameters.json` when run as root via sudo; `/root/.zerno/parameters.json`
+when running in a direct root shell like the live ArchISO, so Phase 1 writes it
+onto the installed disk for Phase 2 to pick up).
 
 ## Code Conventions
 
@@ -95,6 +110,15 @@ via `swayConfigs()` + `swayExecutables` chmod list.
 - Integration tests use real filesystem in temp dirs
 - Set `HOME` env var for tests needing config directories
 
+### Open: command-runner test seam (discuss before implementing)
+
+The suite covers file ops, config, assets — but not **what commands zerno runs**
+(pacman args, iwctl argv). That blind spot let 4 bugs through (partial `-Sy`
+upgrade, iwctl SSID quoting, upgrade_system ordering, SUDO_USER resolve).
+Planned: a steps-level `runCmd` seam + recorder tests asserting e.g.
+`pacman -S --needed`, `pacman -Syu`, and iwctl `connect <ssid>` as one unquoted
+argv element. Do NOT implement without discussing design first.
+
 ## Neovim Config
 
 Neovim configuration is in `assets/nvim/` (embedded, deployed via `install-full`).
@@ -142,7 +166,10 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block 
 
 ### UKI fallback strategy
 - Initial install: single UKI (`arch-linux.efi`)
-- Pacman hook (`90-preserve-old-uki.hook`) runs **PreTransaction** on kernel upgrades:
+- Pacman hook (`00-preserve-old-uki.hook`) runs **PreTransaction** on kernel upgrades
+  (the `00-` prefix keeps it ahead of mkinitcpio's own `60-mkinitcpio-remove.hook`,
+  which deletes the old UKI at PreTransaction — same-When hooks run in filename
+  order, a later-named preserve hook would find nothing to copy):
   copies `arch-linux.efi` → `arch-linux-fallback.efi` before the update
 - Kernel PostTransaction hook generates new `arch-linux.efi`
 - Result: always have 2 UKIs (current + previous) after first kernel update
@@ -179,16 +206,35 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
 ### Phase 1 (ArchISO)
 
 - Uses `iwctl` directly — ArchISO ships iwd pre-installed and running (no separate service management needed).
-- `wifiConnect()` in `base.go`: `iwctl --passphrase '<password>' station <dev> connect '<ssid>'`
+- `wifiConnect()` in `base.go`: `iwctl --passphrase <password> station <dev> connect <ssid>` (SSID passed as a single argv element via `steps.RunCmd`/`exec.Command` — no shell, so spaces inside an SSID need no quoting; iwctl rejects lowercase-quoted names as invalid network name chars)
 
 ### Phase 2 (installed system)
 
 - `network()` in `full.go` writes a `.network` file:
   - **WiFi**: `10-wlan.network` with `[Match] Type=wlan`, `DHCP=yes`, `IgnoreCarrierLoss=3s`.
   - **Ethernet**: `0-eth-dhcp.network` (fixed filename) with `[Match] Name={cfg.NetDev}`.
-- `wifi()` in `full.go` writes `/var/lib/iwd/{SSID}.psk` (profile), `/etc/iwd/main.conf` (daemon config), enables `iwd.service`.
-- `iwd` profiles use `Passphrase=` in `[Security]` section; profile file is chmod 0600.
-- Profile filename via `SSIDFilename()` (`full.go`): SSID kept as-is when it contains only `[a-zA-Z0-9 _-]`, otherwise the whole string is hex-encoded with `=` prefix (e.g. `=436166c3a9.psk`).
+- `wifiSetup()` in `full.go` drives the connection through `iwd` itself via
+  `iwctl --passphrase ... station <dev> connect <ssid>` (same mechanism as Phase 1
+  `wifiConnect()`), so **iwd generates and owns the profile** in `/var/lib/iwd/`
+  (PreSharedKey/SAE state, AutoConnect) by actually authenticating - never a
+  hand-written `.psk`. Also restores `/etc/iwd/main.conf`, enables iwd and
+  **starts, never restarts** it (a running daemon keeps the live link; a restart
+  is what once dropped the link AND blocked iwd's own restart for ~10min when the
+  netdev briefly vanished - the drop-in's device-unit `After=` waits 90s on a
+  missing device and the ExecStartPre `ip link set wlan0 up` fails).
+- Connect policy is **fail-fast and deterministic**: `wifiSetup()` always re-connects
+  to the configured SSID (even when a network is already live - a ~1-3s blip,
+  acceptable for a rare command; `zerno i` is re-run to sync, not on a timer).
+  A failed connect is a **hard install error with the immediate recovery command
+  printed** - bad SSID or password surfaces at sync time instead of poisoning
+  autoconnect and dying at the worst possible offline moment later. No state
+  parsing of command output (brittle); the behavior is the same every run.
+- A stale profile for the configured SSID is forgotten
+  (`iwctl known-networks <ssid> forget`) before connecting, so a previously
+  unconnectable network can't keep iwd retrying it on every boot.
+- `iwctl` is the scriptable CLI used by zerno; `impala` (also in base packages)
+  is the interactive TUI for humans. Both are thin D-Bus clients of the same
+  iwd daemon, so connecting from either produces the same profile.
 
 ### QEMU bridge
 
@@ -200,7 +246,7 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
 | File | Purpose |
 |------|---------|
 | `internal/install/base.go` | Phase 1 `wifiConnect()` + `pacstrap()` |
-| `internal/install/full.go` | Phase 2 `network()` + `wifi()` |
+| `internal/install/full.go` | Phase 2 `network()` + `wifiSetup()` |
 | `internal/install/extra.go` | QEMU uplink |
 | `assets/files/iwd-main.conf` | iwd daemon config (`EnableNetworkConfiguration=false`, `NameResolvingService=systemd`) |
 | `assets/qemu/uplink.network` | QEMU bridge uplink template |
@@ -238,6 +284,10 @@ ghostty config, nvim colorscheme (see vim.md).
 
 ## Design Decisions
 
+- **Reliability over convenience** - prefer predictable behavior that fails
+  loudly at sync time over clever/silent shortcuts that delay failure to the
+  worst moment (e.g. wifi always reconnects to the configured SSID instead of
+  guessing whether to "skip because it's probably fine").
 - **No external dependencies** - use stdlib where possible
 - **No Makefile** - use `build.sh` instead
 - **Binary in repo root** - `zerno`
