@@ -214,7 +214,7 @@ func wifiSetup() task.Task {
 			// Drive the connection through iwd itself via iwctl.
 			cmd := wifiConnectCmd(dev, cfg.WiFiSSID, cfg.WiFiPassword)
 			if out, err := steps.RunCmd(cmd[0], cmd[1:]...); err != nil {
-				return fmt.Errorf("iwctl connect %q: %v\n%s\nimmediate recovery: `iwctl station %s connect <working-ssid>`\npermanent fix: correct WiFiSSID/WiFiPassword in parameters.json", cfg.WiFiSSID, err, strings.TrimSpace(out), dev)
+				return fmt.Errorf("iwctl connect %q, err: %v, out: %s", cfg.WiFiSSID, err, strings.TrimSpace(out))
 			}
 
 			return steps.WaitForDefaultRoute(30)
