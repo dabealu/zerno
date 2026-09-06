@@ -2,13 +2,16 @@
 
 ## Installation
 
-```sh
-zerno steam    # or: zerno e
+Enable in `~/.zerno/parameters.json`:
+```json
+...
+  "Steam": true
+...
 ```
+Then run `sudo zerno install-full`.
 
 GPU vendor is auto-detected from sysfs (AMD `0x1002`, Intel `0x8086`; discrete
-AMD preferred over Intel iGPU). NVIDIA is not supported yet — see
-[NVIDIA](#nvidia-manual-setup) below.
+AMD preferred over Intel iGPU). NVIDIA is not supported yet — see [NVIDIA](#nvidia-manual-setup) below.
 
 This enables multilib and installs Steam, gamescope and the matching Vulkan driver:
 
@@ -42,7 +45,7 @@ Proton includes DXVK (DirectX 9/10/11 → Vulkan) and VKD3D-Proton (DirectX 12 �
 
 ## Optimizations
 
-`gamescope` is installed automatically by `zerno steam`.
+`gamescope` is installed automatically when Steam is enabled.
 `gamemode` + `mangohud` (optional, not installed): gamemode switches CPU/GPU
 to performance mode on demand, mangohud overlays fps/CPU/GPU stats — consider
 adding `gamemode lib32-gamemode mangohud lib32-mangohud` if needed.
