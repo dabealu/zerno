@@ -34,6 +34,8 @@ type Config struct {
 	SecureBoot    bool
 	CpuGovernor   string
 	VoiceToText   string
+	Steam         bool
+	Qemu          bool
 }
 
 func (c *Config) String() string {

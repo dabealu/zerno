@@ -2,111 +2,66 @@ package install
 
 import (
 	"fmt"
-	"log"
 	"os"
-	"os/exec"
-	osuser "os/user"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
+	"zerno/assets"
 	"zerno/internal/config"
 	"zerno/internal/paths"
 	"zerno/internal/steps"
 	"zerno/internal/task"
 )
 
-func Qemu(cfg *config.Config) {
-	if err := task.RunTaskList([]task.Task{
-		task.RequireUser("root"),
-		task.Pacman("install_qemu_packages", []string{"qemu-base", "virt-manager", "dmidecode"}),
-		task.Command("add_user_to_libvirt_group", "usermod -a -G libvirt "+cfg.Username),
-		task.CopyFile("qemu/qemu0.netdev", "/etc/systemd/network/qemu0.netdev"),
-		task.CopyFile("qemu/qemu0.network", "/etc/systemd/network/qemu0.network"),
-		task.CopyTemplate("qemu/uplink.network", "/etc/systemd/network/qemu0-uplink.network", cfg),
-		task.CopyFile("qemu/bridge.conf", "/etc/qemu/bridge.conf"),
-		task.Command("enable_libvirtd_service", "systemctl enable libvirtd"),
-		task.Command("start_networkd_and_libvirtd_services", "systemctl restart systemd-networkd libvirtd"),
-		task.Command("print_services_status", "systemctl status systemd-networkd libvirtd | grep -E '(.service|Active:)'"),
-		task.Info("done, to open gui run `virt-manager`"),
-	}, cfg); err != nil {
-		log.Fatalf("qemu installation failed: %v", err)
-	}
-}
+// qemu configures KVM/QEMU when cfg.Qemu is set. The service handling is
+// reload-safe: networkd is not restarted (that would drop the live link), the
+// new .network files are picked up via `networkctl reload` instead, and
+// libvirtd uses `start` (a no-op when already running) so re-runs of
+// install-full/sync are idempotent.
+func qemu() task.Task {
+	return task.Task{
+		Name: "install_qemu_kvm",
+		RunFunc: func(cfg *config.Config) error {
+			if !cfg.Qemu {
+				return nil
+			}
 
-// chownToInvokeUser returns paths to the user who ran sudo, so root-run
-// builds do not accumulate root-owned files in a user-owned repo.
-// Best-effort no-op for plain-root sessions (no SUDO_USER).
-func chownToInvokeUser(paths ...string) {
-	sudoUser := os.Getenv("SUDO_USER")
-	if sudoUser == "" {
-		return
-	}
-	usr, err := osuser.Lookup(sudoUser)
-	if err != nil {
-		return
-	}
-	uid, _ := strconv.Atoi(usr.Uid)
-	gid, _ := strconv.Atoi(usr.Gid)
-	for _, p := range paths {
-		_ = os.Chown(p, uid, gid)
-	}
-}
+			if err := steps.PacmanPackages([]string{"qemu-base", "virt-manager", "dmidecode"}); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("usermod", "-aG", "libvirt", cfg.Username); err != nil {
+				return err
+			}
 
-func UpdateBin() error {
-	if os.Getuid() != 0 {
-		return fmt.Errorf("update-bin requires root privileges")
+			for _, f := range []struct{ src, dst string }{
+				{"qemu/qemu0.netdev", "/etc/systemd/network/qemu0.netdev"},
+				{"qemu/qemu0.network", "/etc/systemd/network/qemu0.network"},
+				{"qemu/bridge.conf", "/etc/qemu/bridge.conf"},
+			} {
+				if err := assets.Restore(f.src, f.dst); err != nil {
+					return err
+				}
+			}
+			if err := assets.RestoreTemplate("qemu/uplink.network", "/etc/systemd/network/qemu0-uplink.network", cfg); err != nil {
+				return err
+			}
+
+			if _, err := steps.RunCmd("systemctl", "enable", "libvirtd"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("systemctl", "start", "libvirtd"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("networkctl", "reload"); err != nil {
+				return err
+			}
+
+			fmt.Println("done, to open gui run `virt-manager`")
+			return nil
+		},
 	}
-
-	repoDir := paths.RepoDir(false)
-
-	cmd := exec.Command("./build.sh", "all")
-	cmd.Dir = paths.RepoDir(false)
-	if err := cmd.Run(); err != nil {
-		return err
-	}
-
-	binSrc := filepath.Join(repoDir, "zerno")
-	chownToInvokeUser(binSrc)
-	binDest := "/usr/local/bin/zerno"
-	tmpDest := binDest + ".new"
-	if err := steps.CopyRecursive(binSrc, tmpDest); err != nil {
-		return err
-	}
-	if err := os.Rename(tmpDest, binDest); err != nil {
-		os.Remove(tmpDest)
-		return err
-	}
-
-	fmt.Println("done, bin path:", binDest)
-	return nil
-}
-
-func RepoPull(cfg *config.Config) error {
-	homeSrcDir := paths.RepoSrcDir()
-
-	if _, err := os.Stat(homeSrcDir); err == nil {
-		cmd := exec.Command("git", "pull")
-		cmd.Dir = homeSrcDir
-		if err := cmd.Run(); err != nil {
-			return fmt.Errorf("pulling: %w", err)
-		}
-		fmt.Println("updated:", homeSrcDir)
-	} else {
-		if err := os.MkdirAll(filepath.Dir(homeSrcDir), 0755); err != nil {
-			return err
-		}
-		if _, err := steps.RunCmd("git", "clone", paths.RepoURL, homeSrcDir); err != nil {
-			return fmt.Errorf("cloning: %w", err)
-		}
-		if err := steps.ChownRecursive(homeSrcDir, cfg.UserID, cfg.UserGID); err != nil {
-			return err
-		}
-		fmt.Println("cloned to:", homeSrcDir)
-	}
-	return nil
 }
 
 func CreateISO() error {
@@ -122,7 +77,7 @@ func CreateISO() error {
 	relengCopyDir := filepath.Join(archisoDir, "releng")
 
 	fmt.Println("building a binary")
-	if err := UpdateBin(); err != nil {
+	if _, err := steps.RunCmdIn(repoDir, "./build.sh", "--no-install"); err != nil {
 		return err
 	}
 
@@ -352,37 +307,43 @@ func detectGPUVendor(sysFS string) (string, error) {
 	}
 }
 
-// TODO: organize as a task list
-func InstallSteam() error {
-	if os.Getuid() != 0 {
-		return fmt.Errorf("steam requires root privileges")
-	}
+// steam installs Steam + gamescope when cfg.Steam is set. The GPU vendor is
+// auto-detected here (amd/intel); nvidia is unsupported (see steam.md).
+func steam() task.Task {
+	return task.Task{
+		Name: "install_steam",
+		RunFunc: func(cfg *config.Config) error {
+			if !cfg.Steam {
+				return nil
+			}
 
-	vendor, err := detectGPUVendor("/sys")
-	if err != nil {
-		return err
-	}
-	fmt.Println("detected gpu vendor:", vendor)
+			vendor, err := detectGPUVendor("/sys")
+			if err != nil {
+				return err
+			}
+			fmt.Println("detected gpu vendor:", vendor)
 
-	driverPackages := map[string]string{
-		"intel": "vulkan-intel lib32-vulkan-intel",
-		"amd":   "vulkan-radeon lib32-vulkan-radeon",
-	}
+			driverPackages := map[string]string{
+				"intel": "vulkan-intel lib32-vulkan-intel",
+				"amd":   "vulkan-radeon lib32-vulkan-radeon",
+			}
 
-	pkgs := []string{
-		"ttf-liberation",
-		"vulkan-icd-loader",
-		"vulkan-tools",
-		"lib32-mesa",
-		"lib32-systemd",
-		"steam",
-		"gamescope",
-		driverPackages[vendor],
-	}
+			pkgs := []string{
+				"ttf-liberation",
+				"vulkan-icd-loader",
+				"vulkan-tools",
+				"lib32-mesa",
+				"lib32-systemd",
+				"steam",
+				"gamescope",
+				driverPackages[vendor],
+			}
 
-	if err := ensureMultilib(); err != nil {
-		return err
-	}
+			if err := ensureMultilib(); err != nil {
+				return err
+			}
 
-	return steps.PacmanPackages(pkgs)
+			return steps.PacmanPackages(pkgs)
+		},
+	}
 }

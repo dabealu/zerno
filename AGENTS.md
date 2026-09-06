@@ -31,8 +31,8 @@ Contains function to perform operations with files and run commands
   install once pulled a freshly-rebuilt `nodejs` that required a newer `ada`,
   breaking node mid-install). Freshness is guaranteed by the `upgrade_system`
   task at the start of `install-full` running `pacman -Syu --noconfirm`, so all
-  later installs operate on a synced, consistent system. Standalone commands
-  that install packages (`zerno e`) assume a recently synced system.
+  later installs operate on a synced, consistent system. Flag-driven installs
+  (e.g. `steam()`, `qemu()`) also assume a recently synced system.
 - Exception: `update_archlinux_keyring` in `install-base` runs `pacman -Sy`
   directly - it runs on the disposable live ArchISO (nothing installed, no
   partial-upgrade hazard), where the frozen ISO database would otherwise pin
@@ -81,15 +81,14 @@ via `swayConfigs()` + `swayExecutables` chmod list.
 ## Commands
 
 ```bash
-./build.sh all      # fmt, vet, test, build
-./build.sh test     # run tests
-./build.sh vet      # run go vet
-./build.sh fmt      # format code
-./build.sh build    # build binary
-./build.sh coverage # run tests with coverage report
-./build.sh run      # run the built binary
-./build.sh clean    # cleanup
+./build.sh               # fmt, vet, test, build, and install to /usr/local/bin/zerno
+./build.sh --no-install  # fmt, vet, test, build only (outputs ./zerno in repo root)
 ```
+
+`build.sh` has no other subcommands - it always runs fmt+vet+test+build. With no
+args it then installs the fresh binary to `/usr/local/bin/zerno` (via sudo when
+not root). `--no-install` just builds so callers (e.g. `build-iso`,
+`CreateISO`) can copy `./zerno` wherever they need it.
 
 ## Available Commands
 
@@ -97,13 +96,14 @@ via `swayConfigs()` + `swayExecutables` chmod list.
 |---------|-------|-------------|
 | install-base | b | (Phase 1) Run base system installation (chroot stage) |
 | install-full | i | (Phase 2) Desktop/full installation (after reboot, re-run to sync) |
-| qemu | q | Install and configure qemu/kvm |
-| update-bin | u | Compile new bin from local repo |
 | build-iso | m | Create iso with zerno bin included |
 | boot-dev | f | Format device creating storage and boot partitions |
-| steam | e | (sudo) Install steam + gamescope, gpu vendor auto-detected (nvidia unsupported, see steam.md) |
 | version | v | Print version and exit |
-| repo-pull | r | Clone or update repo in ~/src/zerno |
+| readme | r | Print embedded README.md to stdout |
+
+Steam and QEMU are no longer separate commands - they are `Steam`/`Qemu` bool
+config params (default false), installed by the `steam()`/`qemu()` tasks during
+`install-full` when enabled.
 
 ## Testing
 
@@ -292,7 +292,7 @@ ghostty config, nvim colorscheme (see vim.md).
 - **No Makefile** - use `build.sh` instead
 - **Binary in repo root** - `zerno`
 - **Assets embedded** - configs/templates embedded in binary
-- **Repo optional** - only needed for `update-bin`, `build-iso`, `repo-pull`
+- **Repo optional** - only needed for `build-iso`
 - **systemd-boot over GRUB** — simpler, modern (UKI, auto-discovery, Secure Boot native), no scripting language
 - **MBR/BIOS dropped** — systemd-boot requires UEFI; legacy BIOS is increasingly rare for new installs
 - **Single `linux.preset`** — always describes the "active" kernel

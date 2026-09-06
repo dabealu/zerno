@@ -112,13 +112,3 @@ func TestIsoMountDir(t *testing.T) {
 		t.Errorf("IsoMountDir() = %q, want suffix /src/zerno-iso-mnt", path)
 	}
 }
-
-func TestRepoSrcDir(t *testing.T) {
-	path := RepoSrcDir()
-	if path == "" {
-		t.Error("RepoSrcDir() should not return empty string")
-	}
-	if !strings.HasSuffix(path, "/src/zerno") {
-		t.Errorf("RepoSrcDir() = %q, want suffix /src/zerno", path)
-	}
-}
