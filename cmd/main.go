@@ -42,14 +42,10 @@ func printHelp() {
 	fmt.Println(`available commands:
   b, install-base          base system installation (chroot)
   i, install-full          full installation and sync configs
-  q, qemu                  install and configure qemu/kvm
-  u, update-bin            compile new bin from the local repo
   m, build-iso             create iso with zerno bin included
   f, boot-dev <dev> <iso>  format device with storage + boot partitions
-  e, steam                 install steam
   v, version               print version and exit
-  r, readme                print embedded README.md to stdout
-  p, repo-pull             clone or update repo in ~/src/zerno`)
+  r, readme                print embedded README.md to stdout`)
 }
 
 func main() {
@@ -65,12 +61,6 @@ func main() {
 	case "i", "install-full":
 		install.Full(loadConfig())
 
-	case "q", "qemu":
-		install.Qemu(loadConfig())
-
-	case "u", "update-bin":
-		fatalOnErr(install.UpdateBin())
-
 	case "m", "build-iso":
 		fatalOnErr(install.CreateISO())
 
@@ -78,18 +68,11 @@ func main() {
 		requireArgCount(4)
 		fatalOnErr(install.FormatDevice(os.Args[2], os.Args[3]))
 
-	case "e", "steam":
-		requireArgCount(2)
-		fatalOnErr(install.InstallSteam())
-
 	case "v", "version":
 		fmt.Println(version)
 
 	case "r", "readme":
 		fmt.Print(assets.Readme())
-
-	case "p", "repo-pull":
-		fatalOnErr(install.RepoPull(loadConfig()))
 
 	default:
 		log.Println("unknown command...")

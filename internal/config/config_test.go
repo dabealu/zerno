@@ -213,6 +213,60 @@ func TestGetConfigDir(t *testing.T) {
 	}
 }
 
+func TestValidate(t *testing.T) {
+	valid := Config{
+		Hostname:    "dhost",
+		BlockDevice: "sda",
+		Username:    "user",
+		PartNum:     2,
+		NetDev:      "enp0s3",
+	}
+	if err := valid.Validate(); err != nil {
+		t.Fatalf("fully valid config rejected: %v", err)
+	}
+
+	cases := []struct {
+		name   string
+		mutate func(*Config)
+	}{
+		{"hostname required", func(c *Config) { c.Hostname = "" }},
+		{"block device required", func(c *Config) { c.BlockDevice = "" }},
+		{"username required", func(c *Config) { c.Username = "" }},
+		{"partnum zero", func(c *Config) { c.PartNum = 0 }},
+		{"partnum negative", func(c *Config) { c.PartNum = -1 }},
+		{"netdev required", func(c *Config) { c.NetDev = "" }},
+	}
+	for _, tc := range cases {
+		cfg := valid
+		tc.mutate(&cfg)
+		if err := cfg.Validate(); err == nil {
+			t.Errorf("%s: expected error", tc.name)
+		}
+	}
+}
+
+func TestGetParametersFile_DefaultPath(t *testing.T) {
+	paramsFileOverride = ""
+	t.Cleanup(func() { paramsFileOverride = "" })
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	t.Setenv("SUDO_USER", "")
+	got := getParametersFile()
+	want := filepath.Join(home, ".zerno", "parameters.json")
+	if got != want {
+		t.Errorf("getParametersFile() = %q, want %q", got, want)
+	}
+}
+
+func TestGetParametersFile_Override(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "params.json")
+	paramsFileOverride = path
+	t.Cleanup(func() { paramsFileOverride = "" })
+	if got := getParametersFile(); got != path {
+		t.Errorf("getParametersFile() = %q, want %q", got, path)
+	}
+}
+
 func TestConfigPartialFields(t *testing.T) {
 	cfg := &Config{
 		WiFiEnabled:  false,

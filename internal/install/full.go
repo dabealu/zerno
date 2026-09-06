@@ -46,8 +46,10 @@ func Full(cfg *config.Config) {
 		desktopApps(),
 		utilsFontsThemes(),
 		installUtils(),
+		qemu(),
+		steam(),
 		migrateUserConfig(),
-		task.Info("installation complete: reboot and run `de`"),
+		task.Info("installation complete"),
 	}, cfg); err != nil {
 		log.Fatalf("full installation failed: %v", err)
 	}

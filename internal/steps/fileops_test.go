@@ -1,6 +1,8 @@
 package steps
 
 import (
+	"bufio"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -459,5 +461,85 @@ func TestReplaceLine_MultipleMatches(t *testing.T) {
 	data, _ := os.ReadFile(path)
 	if strings.Count(string(data), "bar") != 3 {
 		t.Errorf("ReplaceLine() should replace all matches, got: %q", data)
+	}
+}
+
+func TestMove_SameFilesystem(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "original.txt")
+	dst := filepath.Join(dir, "moved.txt")
+	content := "hello"
+
+	if err := os.WriteFile(src, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Move(src, dst); err != nil {
+		t.Fatalf("Move() error = %v", err)
+	}
+
+	if FileExists(src) {
+		t.Error("Move() source still exists")
+	}
+	got, err := ReadFile(dst)
+	if err != nil {
+		t.Fatalf("Move() dst not readable: %v", err)
+	}
+	if got != content {
+		t.Errorf("Move() content = %q, want %q", got, content)
+	}
+}
+
+func TestMove_MissingSrc(t *testing.T) {
+	err := Move(filepath.Join(t.TempDir(), "nope"), filepath.Join(t.TempDir(), "dest"))
+	if err == nil {
+		t.Error("Move() missing source should return error")
+	}
+}
+
+func TestReadLine(t *testing.T) {
+	old := stdin
+	t.Cleanup(func() { stdin = old })
+
+	stdin = bufio.NewReader(strings.NewReader("  hello  \n"))
+	if got := ReadLine(); got != "hello" {
+		t.Errorf("ReadLine() = %q, want %q", got, "hello")
+	}
+
+	stdin = bufio.NewReader(strings.NewReader("no newline"))
+	if got := ReadLine(); got != "no newline" {
+		t.Errorf("ReadLine() without trailing newline = %q, want %q", got, "no newline")
+	}
+}
+
+func TestAskConfirmation_YesNoLoop(t *testing.T) {
+	old := stdin
+	t.Cleanup(func() { stdin = old })
+
+	// invalid input then y
+	stdin = bufio.NewReader(strings.NewReader("x\ny\n"))
+	if !AskConfirmation("?") {
+		t.Error("AskConfirmation() should return true for y")
+	}
+
+	// n
+	stdin = bufio.NewReader(strings.NewReader("n\n"))
+	if AskConfirmation("?") {
+		t.Error("AskConfirmation() should return false for n")
+	}
+}
+
+func TestRunFailure(t *testing.T) {
+	cause := errors.New("exit status 1")
+	err := runFailure("pacman -S --needed nginx", "error: target not found: nginx\n", cause)
+	if err == nil {
+		t.Fatal("runFailure() should return non-nil error")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "pacman -S --needed nginx") {
+		t.Errorf("error should contain command label: %v", msg)
+	}
+	if !strings.Contains(msg, "target not found") {
+		t.Errorf("error should contain last output line: %v", msg)
 	}
 }

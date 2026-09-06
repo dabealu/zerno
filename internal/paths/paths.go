@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	RepoURL  = "https://github.com/dabealu/zerno.git"
 	RepoPath = "src/zerno"
 	BinPath  = "/usr/local/bin/zerno"
 )
@@ -57,8 +56,4 @@ func IsoBuildsDir() string {
 
 func IsoMountDir() string {
 	return filepath.Join(SrcDir(false), "zerno-iso-mnt")
-}
-
-func RepoSrcDir() string {
-	return filepath.Join(HomeDir(), RepoPath)
 }

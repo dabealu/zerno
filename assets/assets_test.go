@@ -111,6 +111,42 @@ func TestRestore_CreatesDirs(t *testing.T) {
 	}
 }
 
+func TestRestoreDir(t *testing.T) {
+	tmp := t.TempDir()
+	dst := filepath.Join(tmp, "nvim")
+
+	if err := RestoreDir("nvim", dst); err != nil {
+		t.Fatalf("RestoreDir() error = %v", err)
+	}
+
+	for _, p := range []string{
+		"init.lua",
+		"lua/config/options.lua",
+		"lua/config/keymaps.lua",
+		"lua/plugins/treesitter.lua",
+	} {
+		if _, err := os.Stat(filepath.Join(dst, p)); err != nil {
+			t.Errorf("RestoreDir() missing %s: %v", p, err)
+		}
+	}
+}
+
+func TestRestoreDir_NonexistentAsset(t *testing.T) {
+	if err := RestoreDir("does-not-exist", t.TempDir()); err == nil {
+		t.Error("RestoreDir() should return error for nonexistent asset dir")
+	}
+}
+
+func TestReadme(t *testing.T) {
+	content := Readme()
+	if content == "" {
+		t.Error("Readme() returned empty string")
+	}
+	if !strings.Contains(content, "zerno") {
+		t.Error("Readme() should contain 'zerno'")
+	}
+}
+
 func TestConfScriptsContent(t *testing.T) {
 	navPy, err := ReadFile("conf/waybar-nav.py")
 	if err != nil {
