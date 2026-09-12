@@ -27,14 +27,14 @@ func Full(cfg *config.Config) {
 		swayPackages(),
 		task.Info("base desktop installed"),
 		swayConfigs(),
-		pipewire(),
+		soundSetup(),
 		swap(),
 		secureBoot(),
 		task.CopyFile("sysctl.d/01-swappiness.conf", "/etc/sysctl.d/01-swappiness.conf"),
 		splitLockMitigate(),
 		cpuGovernor(),
-		task.Command("enable_fstrim_timer", "systemctl enable fstrim.timer"),
 		bluetooth(),
+		hardwareTuning(),
 		docker(),
 		userSrcDir(),
 		yayAur(),
@@ -340,15 +340,19 @@ func swayConfigs() task.Task {
 	}
 }
 
-func pipewire() task.Task {
+// soundSetup installs the audio stack: PipeWire (pulse/alsa compat) with
+// WirePlumber as the session manager, plus rtkit so audio threads run at
+// realtime priority (avoids underruns under CPU load).
+func soundSetup() task.Task {
 	return task.Task{
-		Name: "install_pipewire",
+		Name: "sound_setup",
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := []string{
 				"pipewire",
 				"pipewire-pulse",
 				"pipewire-alsa",
 				"wireplumber",
+				"rtkit",
 				"gst-plugin-pipewire",
 				"xdg-desktop-portal-wlr",
 			}
@@ -547,6 +551,27 @@ func bluetooth() task.Task {
 			}
 			_, err := steps.RunCmd("systemctl", "start", "bluetooth")
 			return err
+		},
+	}
+}
+
+// hardwareTuning deploys kernel module parameters and system maintenance configs.
+func hardwareTuning() task.Task {
+	return task.Task{
+		Name: "configure_hardware_tuning",
+		RunFunc: func(cfg *config.Config) error {
+			for src, dst := range map[string]string{
+				"files/modprobe-iwlwifi.conf": "/etc/modprobe.d/iwlwifi.conf",
+				"files/modprobe-btusb.conf":   "/etc/modprobe.d/btusb.conf",
+			} {
+				if err := assets.Restore(src, dst); err != nil {
+					return err
+				}
+			}
+			if _, err := steps.RunCmd("systemctl", "enable", "fstrim.timer"); err != nil {
+				return err
+			}
+			return nil
 		},
 	}
 }

@@ -334,6 +334,7 @@ func steam() task.Task {
 				"vulkan-tools",
 				"lib32-mesa",
 				"lib32-systemd",
+				"lib32-pulseaudio",
 				"steam",
 				"gamescope",
 				driverPackages[vendor],

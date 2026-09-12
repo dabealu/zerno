@@ -228,6 +228,13 @@ func LineInFile(path, line string) error {
 	return err
 }
 
+// ReplaceLine applies regex substitution to every matching line of the file:
+// for each line where pattern matches, the matched portion is replaced (not
+// the whole line). Naming the function "ReplaceLine" is a slight overstatement -
+// it's in-line regex substitution on selected lines. The replacement string is
+// a regexp replacement template, so '$' is special (e.g. "$1" = first capture
+// group; use "$$" for a literal dollar). No match is not an error; the file is
+// left unchanged.
 func ReplaceLine(path, pattern, replacement string) error {
 	log.Printf("replacing in %s: %s -> %s", path, pattern, replacement)
 	data, err := os.ReadFile(path)

@@ -282,6 +282,28 @@ No theme engine - colors are literal hex values. To retheme, touch these places
 Independent palettes NOT covered by the above (own schemes): `alacritty.toml`,
 ghostty config, nvim colorscheme (see vim.md).
 
+## Audio (soundSetup / WirePlumber)
+
+- `soundSetup()` in `full.go` installs pipewire/wireplumber/rtkit. rtkit gives audio
+  threads realtime priority (SCHED_FIFO) via D-Bus - the standard ArchWiki path; do
+  not use the `realtime` group instead. rtkit is D-Bus-activated: it starts on-demand
+  when PipeWire first requests realtime scheduling and manages its own lifetime, so
+  do NOT `systemctl enable/start rtkit-daemon.service` (leave it disabled, `inactive`
+  is the healthy resting state). Verify with
+  `busctl --system get-property org.freedesktop.RealtimeKit1 /org/freedesktop/RealtimeKit1 org.freedesktop.RealtimeKit1 MaxRealtimePriority`
+  (prints `i 20`; triggers activation if idle) or `ps -eLo comm,cls,rtprio | grep pipewire`
+  (look for `FF`).
+- Known minor annoyance (not yet acted on): WirePlumber suspends idle audio nodes
+  after `session.suspend-timeout-seconds` (default **5s**). On resume, sink/source
+  re-activation can chop the first sound or clip the input head - worse over BT.
+  Every mainstream distro ships the 5s default; Bazzite sets **0** (never suspend)
+  and SteamOS uses 3600 for amp warm-up only. If it ever becomes a real problem,
+  drop `/etc/wireplumber/wireplumber.conf.d/51-disable-suspension.conf` with
+  `monitor.{alsa,bluez}.properties = { session.suspend-timeout-seconds = 0 }` and
+  restart pipewire/wireplumber. `= 0` is the spec'd "never suspend" value, not a
+  smaller number. Caveat: `= 0` is necessary but not always sufficient for BT
+  (Nixpkgs #528030 residual ~1s delay).
+
 ## Design Decisions
 
 - **Reliability over convenience** - prefer predictable behavior that fails
