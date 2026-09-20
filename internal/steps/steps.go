@@ -278,14 +278,18 @@ func AskConfirmation(msg string) bool {
 	}
 }
 
+func HasDefaultRoute() bool {
+	out, _ := RunCmd("ip", "route", "show", "default")
+	return strings.TrimSpace(out) != ""
+}
+
 func WaitForDefaultRoute(timeout int) error {
 	log.Printf("waiting for default route to come up...")
 	for range timeout {
-		time.Sleep(1 * time.Second)
-		out, _ := RunCmd("ip", "route", "show", "default")
-		if strings.TrimSpace(out) != "" {
+		if HasDefaultRoute() {
 			return nil
 		}
+		time.Sleep(1 * time.Second)
 	}
 	return fmt.Errorf("timeout: no default route after %d seconds", timeout)
 }

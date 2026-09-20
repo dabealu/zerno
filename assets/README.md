@@ -24,8 +24,11 @@ iwctl station wlan0 connect "SSID"
 `iwctl station wlan0 get-networks` scans for available networks
 
 ### DNS
-systemd-resolved is configured with hardcoded public resolvers (`assets/files/dns_servers.conf`);
-they override DHCP-provided DNS servers.
+Pins the resolvers in `dns_servers` (`parameters.json`) for every network
+(default: Cloudflare/Quad9/Google, dual-stack). Set `"dns_servers": []` to use
+each network's DHCP-provided DNS instead. Per-connection override: add a networkd
+drop-in such as `/etc/systemd/network/10-wlan.network.d/override.conf` with
+`[Network] DNS=...` (zerno overwrites `.network` files, not `.d` drop-ins).
 
 ### Running on VM
 - select `QXL` video device in QEMU, run sway via `WLR_NO_HARDWARE_CURSORS=1 sway`

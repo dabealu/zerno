@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"zerno/internal/paths"
@@ -16,6 +17,19 @@ import (
 
 // ErrAborted is returned when the user declines to proceed.
 var ErrAborted = errors.New("aborted by user")
+
+// DNSServersDefault is the resolver list for a fresh parameters.json
+// (Cloudflare/Quad9/Google, dual-stack). [] in parameters.json opts out of
+// pinning (per-link DHCP DNS wins); an absent key loads as [] too, so the
+// default only applies at generation time, never at load.
+var DNSServersDefault = []string{
+	"1.1.1.1",
+	"9.9.9.10",
+	"8.8.8.8",
+	"2606:4700:4700::1111",
+	"2620:fe::10",
+	"2001:4860:4860::8888",
+}
 
 type Config struct {
 	BlockDevice   string
@@ -36,6 +50,7 @@ type Config struct {
 	VoiceToText   string
 	Steam         bool
 	Qemu          bool
+	DnsServers    []string
 }
 
 func (c *Config) String() string {
@@ -151,7 +166,10 @@ func Load() (*Config, error) {
 }
 
 func Prompt() (*Config, error) {
-	cfg := &Config{}
+	cfg := &Config{
+		// Clone to ensure original array won't be changed.
+		DnsServers: slices.Clone(DNSServersDefault),
+	}
 
 	fmt.Println("enter parameters:")
 
