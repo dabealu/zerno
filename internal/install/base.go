@@ -97,20 +97,10 @@ func wifiConnect() task.Task {
 				return nil
 			}
 
-			out, err := steps.RunCmd("ip", "route", "show", "default")
-			if err != nil {
-				return err
-			}
-			if strings.TrimSpace(out) != "" {
+			if steps.HasDefaultRoute() {
 				return nil
 			}
-
-			cmd := wifiConnectCmd(cfg.NetDevISO, cfg.WiFiSSID, cfg.WiFiPassword)
-			if _, err := steps.RunCmd(cmd[0], cmd[1:]...); err != nil {
-				return err
-			}
-
-			return steps.WaitForDefaultRoute(20)
+			return connectWifi(cfg.NetDevISO, cfg.WiFiSSID, cfg.WiFiPassword)
 		},
 	}
 }

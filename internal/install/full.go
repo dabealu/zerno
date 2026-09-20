@@ -100,9 +100,19 @@ func resolved() task.Task {
 			if err := os.MkdirAll("/etc/systemd/resolved.conf.d", 0755); err != nil {
 				return err
 			}
-			if err := assets.Restore("files/dns_servers.conf", "/etc/systemd/resolved.conf.d/dns_servers.conf"); err != nil {
+
+			// Pin DNS globally: Domains=~. routes every network's lookups to
+			// cfg.DnsServers, bypassing per-link DHCP DNS. Empty list opts out.
+			dropIn := "/etc/systemd/resolved.conf.d/dns_servers.conf"
+			if len(cfg.DnsServers) > 0 {
+				content := fmt.Sprintf("[Resolve]\nDNS=%s\nDomains=~.\n", strings.Join(cfg.DnsServers, " "))
+				if err := steps.WriteFile(dropIn, content); err != nil {
+					return err
+				}
+			} else if err := os.Remove(dropIn); err != nil && !os.IsNotExist(err) {
 				return err
 			}
+
 			if _, err := steps.RunCmd("systemctl", "enable", "systemd-resolved"); err != nil {
 				return err
 			}
@@ -170,6 +180,17 @@ func wifiConnectCmd(dev, ssid, pass string) []string {
 	return append(cmd, "station", dev, "connect", ssid)
 }
 
+// connectWifi forgets a stale known-network profile, connects
+// to ssid on dev through iwd, and waits for the default route.
+func connectWifi(dev, ssid, pass string) error {
+	steps.RunCmd("iwctl", "known-networks", ssid, "forget")
+	cmd := wifiConnectCmd(dev, ssid, pass)
+	if out, err := steps.RunCmd(cmd[0], cmd[1:]...); err != nil {
+		return fmt.Errorf("iwctl connect %q, err: %v, out: %s", ssid, err, strings.TrimSpace(out))
+	}
+	return steps.WaitForDefaultRoute(30)
+}
+
 func wifiSetup() task.Task {
 	return task.Task{
 		Name: "configure_iwd_wifi",
@@ -206,20 +227,12 @@ func wifiSetup() task.Task {
 				return err
 			}
 
-			// Purge a possibly-stale profile for the configured SSID: a
-			// previously unconnectable network would otherwise keep iwd's
-			// autoconnect retrying it (and only it) on every boot, leaving
-			// wifi dead until a manual connect. Best effort - an absent
-			// network is forgotten silently.
-			steps.RunCmd("iwctl", "known-networks", cfg.WiFiSSID, "forget")
-
-			// Drive the connection through iwd itself via iwctl.
-			cmd := wifiConnectCmd(dev, cfg.WiFiSSID, cfg.WiFiPassword)
-			if out, err := steps.RunCmd(cmd[0], cmd[1:]...); err != nil {
-				return fmt.Errorf("iwctl connect %q, err: %v, out: %s", cfg.WiFiSSID, err, strings.TrimSpace(out))
+			if steps.HasDefaultRoute() {
+				log.Printf("already have a default route, skipping wifi connect to %q", cfg.WiFiSSID)
+				return nil
 			}
 
-			return steps.WaitForDefaultRoute(30)
+			return connectWifi(dev, cfg.WiFiSSID, cfg.WiFiPassword)
 		},
 	}
 }
@@ -237,6 +250,7 @@ func swayPackages() task.Task {
 				"brightnessctl",
 				"xorg-xwayland",
 				"bemenu-wayland",
+				"wdisplays",
 				"libnotify",
 				"dunst",
 				"wl-clipboard",
@@ -265,16 +279,15 @@ func globalVars() task.Task {
 
 // swayConfAssets maps embedded asset paths to file names under ~/.config/sway.
 var swayConfAssets = map[string]string{
-	"conf/alacritty.toml":         "alacritty.toml",
-	"conf/config":                 "config",
-	"conf/dunstrc":                "dunstrc",
-	"conf/libinput-gestures.conf": "libinput-gestures.conf",
-	"conf/power-menu.sh":          "power-menu.sh",
-	"conf/fav-apps.sh":            "fav-apps.sh",
-	"conf/waybar.css":             "waybar.css",
-	"conf/waybar.json":            "waybar.json",
-	"conf/waybar.sh":              "waybar.sh",
-	"conf/waybar-nav.py":          "waybar-nav.py",
+	"conf/alacritty.toml": "alacritty.toml",
+	"conf/config":         "config",
+	"conf/dunstrc":        "dunstrc",
+	"conf/power-menu.sh":  "power-menu.sh",
+	"conf/fav-apps.sh":    "fav-apps.sh",
+	"conf/waybar.css":     "waybar.css",
+	"conf/waybar.json":    "waybar.json",
+	"conf/waybar.sh":      "waybar.sh",
+	"conf/waybar-nav.py":  "waybar-nav.py",
 }
 
 // swayExecutables get chmod 0755 after restore, relative to the user's home.
@@ -335,7 +348,17 @@ func swayConfigs() task.Task {
 			if err := os.Chmod(deDst, 0755); err != nil {
 				return err
 			}
-			return steps.Symlink(deDst, filepath.Join(homeDir, "de"))
+			if err := steps.Symlink(deDst, filepath.Join(homeDir, "de")); err != nil {
+				return err
+			}
+
+			// Lift RefuseManualStart on graphical-session.target (default blocks manual start)
+			// so sway's exec can start it and WantedBy= services like voxtype autostart at login.
+			gtDropIn := filepath.Join(homeDir, ".config/systemd/user/graphical-session.target.d/override.conf")
+			if err := assets.Restore("conf/graphical-session-target.conf", gtDropIn); err != nil {
+				return err
+			}
+			return steps.ChownRecursive(filepath.Join(homeDir, ".config/systemd"), cfg.UserID, cfg.UserGID)
 		},
 	}
 }
@@ -625,7 +648,7 @@ func aurPackages() task.Task {
 	return task.Task{
 		Name: "install_aur_packages",
 		RunFunc: func(cfg *config.Config) error {
-			pkgs := []string{"wdisplays", "libinput-gestures", "google-chrome"}
+			pkgs := []string{"google-chrome"}
 			argv := append([]string{
 				"sudo", "-u", cfg.Username, "yay", "--noconfirm", "-S", "--needed",
 			}, pkgs...)

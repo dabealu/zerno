@@ -269,6 +269,12 @@ bindsym --to-code {
     $mod+t exec voxtype record toggle
 }
 
+# Touchpad gestures
+bindgesture swipe:3:right workspace next
+bindgesture swipe:3:left  workspace prev
+bindgesture swipe:3:up    focus right
+bindgesture swipe:3:down  focus left
+
 # Set GTK theme and icon theme https://wiki.gentoo.org/wiki/Sway#GTK3_Themes_and_Fonts
 exec_always {
     gsettings set org.gnome.desktop.interface gtk-theme 'Materia-dark'
@@ -281,7 +287,6 @@ exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DE
 
 # Apps and helpers
 exec dunst -config ~/.config/sway/dunstrc
-exec libinput-gestures -c ~/.config/sway/libinput-gestures.conf
 exec blueman-applet
 exec google-chrome-stable
 exec telegram-desktop
@@ -289,4 +294,9 @@ exec telegram-desktop
 # Include config files:
 include /etc/sway/config.d/*
 include $HOME/.config/sway/conf.d/*
+
+# Start the user graphical session so services bound to
+# graphical-session.target (voxtype) autostart; needs zerno's
+# RefuseManualStart=no drop-in. Must run after the includes above.
+exec systemctl --user start graphical-session.target
 

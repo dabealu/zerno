@@ -222,13 +222,15 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
   is what once dropped the link AND blocked iwd's own restart for ~10min when the
   netdev briefly vanished - the drop-in's device-unit `After=` waits 90s on a
   missing device and the ExecStartPre `ip link set wlan0 up` fails).
-- Connect policy is **fail-fast and deterministic**: `wifiSetup()` always re-connects
-  to the configured SSID (even when a network is already live - a ~1-3s blip,
-  acceptable for a rare command; `zerno i` is re-run to sync, not on a timer).
-  A failed connect is a **hard install error with the immediate recovery command
-  printed** - bad SSID or password surfaces at sync time instead of poisoning
-  autoconnect and dying at the worst possible offline moment later. No state
-  parsing of command output (brittle); the behavior is the same every run.
+- Connect policy is **skip-if-online, fail-fast when offline**: `wifiSetup()` (and
+  Phase 1 `wifiConnect()`) only attempt the configured SSID when no default
+  route exists - re-running `zerno i` on a hotel/office network with a working
+  uplink must not yank it to try credentials for a home SSID that is out of
+  range. Once offline, connecting goes through the **shared `connectWifi()`**
+  tail (forget stale profile, `iwctl ... connect`, wait for default route) and
+  failure is a **hard install error with the immediate recovery command
+  printed** - bad SSID or password surfaces whenever the machine is actually
+  offline, not silently. No state parsing of command output (brittle).
 - A stale profile for the configured SSID is forgotten
   (`iwctl known-networks <ssid> forget`) before connecting, so a previously
   unconnectable network can't keep iwd retrying it on every boot.
@@ -240,6 +242,29 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
 
 - The `qemu0-uplink.network` template uses `[Match] Type=wlan` for WiFi interfaces, `[Match] Name={NetDev}` for ethernet.
 - The bridge interface (`qemu0`) gets a static IP + DHCPServer for VMs.
+
+### DNS (systemd-resolved)
+
+- **Global pinning by default**: `resolved()` writes a drop-in
+  `/etc/systemd/resolved.conf.d/dns_servers.conf` with `DNS=<cfg.DnsServers>` +
+  `Domains=~.`, so every network's lookups route to the configured public
+  resolvers (Cloudflare/Quad9/Google, dual-stack), bypassing per-link DHCP DNS.
+- `dns_servers` in `parameters.json` is the pinned list. An **empty list `[]`
+  opts out** of pinning: no drop-in is written (a stale one is removed), per-link
+  DHCP-provided DNS wins, and systemd-resolved' compiled-in fallback servers
+  (Quad9/Cloudflare/Google) cover links that provide none. Defaults are
+  materialized only at parameters.json generation (Prompt writes
+  `DNSServersDefault` explicitly); Load() does no nil-defaulting, so an absent
+  key on old files behaves as `[]` - update the live file when migrating.
+- **Per-connection DNS override**: don't edit the interface's `.network` file -
+  `network()` in full.go rewrites it verbatim on every `zerno i`. Persistent
+  per-link overrides go in a networkd drop-in, e.g.
+  `/etc/systemd/network/10-wlan.network.d/override.conf` with `[Network] DNS=...`;
+  zerno never touches `.d` dirs. Missing `DNS=` (or `[DHCPv4] UseDNS=yes`, the
+  default) = DHCP-provided DNS for that link; `UseDNS=no` suppresses it. While
+  global pinning is active, per-link `DNS=` only affects that link's search
+  domains (`Domains=~.` claims everything else), so per-connection DNS typically
+  pairs with `"dns_servers": []`.
 
 ### Key files
 
@@ -308,8 +333,9 @@ ghostty config, nvim colorscheme (see vim.md).
 
 - **Reliability over convenience** - prefer predictable behavior that fails
   loudly at sync time over clever/silent shortcuts that delay failure to the
-  worst moment (e.g. wifi always reconnects to the configured SSID instead of
-  guessing whether to "skip because it's probably fine").
+  worst moment (e.g. wifi only reconnects to the configured SSID when the
+  machine is offline, instead of yanking a working guest uplink to "test"
+  credentials for an out-of-range home network).
 - **No external dependencies** - use stdlib where possible
 - **No Makefile** - use `build.sh` instead
 - **Binary in repo root** - `zerno`

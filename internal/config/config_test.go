@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -51,6 +52,42 @@ func TestConfigSaveLoad(t *testing.T) {
 	}
 	if loaded.WiFiSSID != cfg.WiFiSSID {
 		t.Errorf("WiFiSSID = %v, want %v", loaded.WiFiSSID, cfg.WiFiSSID)
+	}
+}
+
+func TestConfigDnsServersRoundTrip(t *testing.T) {
+	cfg := &Config{
+		Hostname:    "testhost",
+		Username:    "testuser",
+		BlockDevice: "sda",
+		PartNum:     2,
+		NetDev:      "enp0s3",
+		DnsServers:  []string{"1.1.1.1", "9.9.9.9"},
+	}
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var loaded Config
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(loaded.DnsServers, cfg.DnsServers) {
+		t.Errorf("DnsServers = %v, want %v", loaded.DnsServers, cfg.DnsServers)
+	}
+
+	// "dns_servers": [] (DHCP mode) must round-trip as [] not nil - absent key stays nil.
+	dhcp := &Config{DnsServers: []string{}}
+	data, err = json.Marshal(dhcp)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var loadedDHCP Config
+	if err := json.Unmarshal(data, &loadedDHCP); err != nil {
+		t.Fatal(err)
+	}
+	if loadedDHCP.DnsServers == nil || len(loadedDHCP.DnsServers) != 0 {
+		t.Errorf("empty DnsServers must round-trip as [], got %#v", loadedDHCP.DnsServers)
 	}
 }
 
