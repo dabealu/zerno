@@ -24,8 +24,8 @@ iwctl station wlan0 connect "SSID"
 `iwctl station wlan0 get-networks` scans for available networks
 
 ### DNS
-Pins the resolvers in `dns_servers` (`parameters.json`) for every network
-(default: Cloudflare/Quad9/Google, dual-stack). Set `"dns_servers": []` to use
+Pins the resolvers in `DnsServers` (`parameters.json`) for every network
+(default: Cloudflare/Quad9/Google, dual-stack). Set `"DnsServers": []` to use
 each network's DHCP-provided DNS instead. Per-connection override: add a networkd
 drop-in such as `/etc/systemd/network/10-wlan.network.d/override.conf` with
 `[Network] DNS=...` (zerno overwrites `.network` files, not `.d` drop-ins).

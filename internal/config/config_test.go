@@ -76,7 +76,7 @@ func TestConfigDnsServersRoundTrip(t *testing.T) {
 		t.Errorf("DnsServers = %v, want %v", loaded.DnsServers, cfg.DnsServers)
 	}
 
-	// "dns_servers": [] (DHCP mode) must round-trip as [] not nil - absent key stays nil.
+	// "DnsServers": [] (DHCP mode) must round-trip as [] not nil - absent key stays nil.
 	dhcp := &Config{DnsServers: []string{}}
 	data, err = json.Marshal(dhcp)
 	if err != nil {

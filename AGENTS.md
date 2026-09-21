@@ -249,7 +249,7 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
   `/etc/systemd/resolved.conf.d/dns_servers.conf` with `DNS=<cfg.DnsServers>` +
   `Domains=~.`, so every network's lookups route to the configured public
   resolvers (Cloudflare/Quad9/Google, dual-stack), bypassing per-link DHCP DNS.
-- `dns_servers` in `parameters.json` is the pinned list. An **empty list `[]`
+- `DnsServers` in `parameters.json` is the pinned list. An **empty list `[]`
   opts out** of pinning: no drop-in is written (a stale one is removed), per-link
   DHCP-provided DNS wins, and systemd-resolved' compiled-in fallback servers
   (Quad9/Cloudflare/Google) cover links that provide none. Defaults are
@@ -264,7 +264,7 @@ iwd (WiFi daemon) ─── systemd-networkd ─── systemd-resolved
   default) = DHCP-provided DNS for that link; `UseDNS=no` suppresses it. While
   global pinning is active, per-link `DNS=` only affects that link's search
   domains (`Domains=~.` claims everything else), so per-connection DNS typically
-  pairs with `"dns_servers": []`.
+  pairs with `"DnsServers": []`.
 
 ### Key files
 
