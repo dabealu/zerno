@@ -8,18 +8,42 @@ require("blink.cmp").setup({
     nerd_font_variant = "mono",
   },
   completion = {
-    documentation = {
+    menu = {
       auto_show = true,
-      auto_show_delay_ms = 300,
+      auto_show_delay_ms = 100,
+    },
+    list = {
+      max_items = 8,
+      selection = {
+        preselect = true,
+        auto_insert = false,
+      },
+    },
+    documentation = {
+      auto_show = false,
     },
     accept = { auto_brackets = { enabled = true } },
-    ghost_text = { enabled = true },
-  },
-  snippets = {
-    preset = "default",
+    ghost_text = { enabled = false },
   },
   sources = {
-    default = { "lsp", "snippets", "path", "buffer" },
+    default = { "lsp", "buffer" },
+    min_keyword_length = 2,
+    providers = {
+      buffer = {
+        min_keyword_length = 3,
+        opts = {
+          get_bufnrs = function()
+            return { vim.api.nvim_get_current_buf() }
+          end,
+        },
+      },
+    },
+  },
+  fuzzy = {
+    max_typos = 0,
+    use_proximity = false,
+    frecency = { enabled = false },
+    sorts = { "exact", "score", "sort_text" },
   },
   signature = { enabled = true },
 })
@@ -33,6 +57,7 @@ vim.lsp.config("gopls", {
         shadow = true,
       },
       staticcheck = true,
+      experimentalPostfixCompletions = false,
     },
   },
 })

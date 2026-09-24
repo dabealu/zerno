@@ -131,6 +131,21 @@ Treesitter scope (same indentation): `ii`, `ai`, `[i`, `]i`.
 | `[d` / `]d` | Previous / next diagnostic |
 | `[w` / `]w` | Previous / next LSP reference highlight |
 
+## Completion (blink.cmp)
+
+| Key | Action |
+|-----|--------|
+| `Tab` | Accept selected suggestion |
+| `S-Tab` | Select previous suggestion (wraps to bottom) |
+| `Up` / `Down` | Select previous / next suggestion |
+| `C-p` / `C-n` | Select previous / next suggestion (same as Up/Down) |
+| `C-Space` | Manually trigger suggestions + toggle docs for selected item |
+| `C-e` | Dismiss suggestions (stay in insert mode) |
+| `C-k` | Toggle signature help (function args) |
+| `C-b` / `C-f` | Scroll documentation up / down |
+| `Esc` | Dismiss suggestions and leave insert mode |
+| `Enter` | Insert newline normally (does not accept) |
+
 ## Flash (supercharged `s`)
 
 | Key | Action |
@@ -209,6 +224,7 @@ Treesitter scope (same indentation): `dii`, `dai`, `vii`, `[i` / `]i`.
 MODES:    i=insert  Esc=normal  v=visual  V=line  C-v=block
 SAVE/QUIT:  :w  :q  :wq  :q!
 LSP:      gd=def  grr=refs  gri=impl  grt=type  K=hover  [d/]d=diag
+CMP:      Tab=accept  S-Tab/Up/Down/C-p/C-n=select  C-Space=trigger  C-k=signature
 FLASH:    s=jump  S=treesitter  r=remote
 SURROUND: ys=add  ds=delete  cs=change  S=visual
 MACROS:   qa=record  @a=play

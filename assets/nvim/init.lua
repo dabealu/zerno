@@ -29,7 +29,6 @@ vim.pack.add({
   { src = "https://github.com/folke/trouble.nvim" },
   { src = "https://github.com/nvim-treesitter/nvim-treesitter" },
   { src = "https://github.com/MeanderingProgrammer/render-markdown.nvim", version = vim.version.range("~8") },
-  { src = "https://github.com/rafamadriz/friendly-snippets" },
   { src = "https://github.com/nvim-lua/plenary.nvim" },
   { src = "https://github.com/folke/todo-comments.nvim" },
   { src = "https://github.com/folke/flash.nvim" },

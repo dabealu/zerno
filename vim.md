@@ -56,7 +56,7 @@ Update plugins: `:lua vim.pack.update()`
 | [nvim-lspconfig](https://github.com/neovim/nvim-lspconfig) | LSP server configs | Provides config files consumed by native `vim.lsp.config()` |
 | [mason.nvim](https://github.com/mason-org/mason.nvim) | LSP server installer | Auto-installs gopls, terraform-ls, etc. |
 | [mason-lspconfig](https://github.com/mason-org/mason-lspconfig.nvim) | Mason <-> lspconfig bridge | Auto-enables servers installed by Mason |
-| [blink.cmp](https://github.com/saghen/blink.cmp) | Autocompletion | Zero-config, async, fast fuzzy matching |
+| [blink.cmp](https://github.com/saghen/blink.cmp) | Autocompletion | Automatic LSP completion with current-buffer fallback |
 | [which-key.nvim](https://github.com/folke/which-key.nvim) | Keybinding popup | Press Space and wait — shows all available keys |
 | [gitsigns.nvim](https://github.com/lewis6991/gitsigns.nvim) | Git gutter + blame | Shows added/modified/deleted lines, inline blame |
 | [oil.nvim](https://github.com/stevearc/oil.nvim) | File manager as buffer | Edit filesystem like text: rename, delete, create files |
@@ -68,7 +68,6 @@ Update plugins: `:lua vim.pack.update()`
 | [trouble.nvim](https://github.com/folke/trouble.nvim) | Diagnostic viewer | Tree-structured diagnostics, symbols, references |
 | [kanagawa.nvim](https://github.com/rebelot/kanagawa.nvim) | Colorscheme | Dark theme with pastel colors, inspired by the kanagawa wave |
 | [nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) | Treesitter | Enhanced syntax highlighting and text objects |
-| [friendly-snippets](https://github.com/rafamadriz/friendly-snippets) | Snippets | Collection of pre-made code snippets for LSP |
 | [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) | Utilities | Lua utility functions (dependency for other plugins) |
 | [todo-comments.nvim](https://github.com/folke/todo-comments.nvim) | Todo highlights | Highlight and search TODO/FIXME/HACK/NOTE comments |
 
@@ -107,6 +106,18 @@ See [vim-cheatsheet.md](vim-cheatsheet.md) for the full keybinding reference.
 | `K` | Hover documentation |
 | `<Space>ln` / `grn` | Rename symbol |
 | `<Space>la` | Code action |
+
+### Completion
+
+Completion appears automatically as you type, or on an LSP trigger such as `.`. Words from the current buffer are used only when the LSP returns nothing.
+
+| Key | Action |
+|-----|--------|
+| `Up` / `Down` | Select previous / next suggestion |
+| `Tab` | Accept selected suggestion |
+| `C-e` | Dismiss suggestions and remain in insert mode |
+| `Esc` | Dismiss suggestions and leave insert mode |
+| `Enter` | Insert a newline normally |
 
 ## Plugin Administration
 
