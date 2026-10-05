@@ -73,21 +73,22 @@
         }
     },
     "cpu": {
-        "format": "<span font-size='16pt' rise='-2000'></span> {usage}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {usage}",
         "tooltip": true,
         "states": {
             "critical": 95
         }
     },
     "memory": {
-        "format": "<span font-size='16pt' rise='-2000'></span> {}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {}",
+        "tooltip-format": "{used:0.1f}GiB used / {total:0.1f}GiB total",
         "states": {
             "critical": 95
         }
     },
     "disk": {
         "interval": 30,
-        "format": "<span font-size='16pt' rise='-2000'></span> {percentage_used}%",
+        "format": "<span font-size='16pt' rise='-2000'></span> {percentage_used}",
         "path": "/",
         "states": {
             "warning": 85,
@@ -100,9 +101,9 @@
             "warning": 20,
             "critical": 10
         },
-        "format": "<span font-size='16pt' rise='-2000'>{icon}</span> {capacity}%",
-        "format-charging": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
-        "format-plugged": "<span font-size='16pt' rise='-2000'></span> {capacity}%",
+        "format": "<span font-size='16pt' rise='-2000'>{icon}</span> {capacity}",
+        "format-charging": "<span font-size='16pt' rise='-2000'></span> {capacity}",
+        "format-plugged": "<span font-size='16pt' rise='-2000'></span> {capacity}",
         "format-alt": "<span font-size='16pt' rise='-2000'>{icon}</span> {time}",
         // "format-good": "", // An empty format will hide the module
         // "format-full": "",
@@ -130,7 +131,7 @@
             "paused": "",
             "stopped": "⏹"
         },
-        "title-len": 40,
+        "title-len": 32,
         "ellipsis": "…",
         "tooltip-format": "{status_icon} {dynamic} [{player}]",
         "dynamic-order": ["title", "artist", "album"],
@@ -138,11 +139,11 @@
     },
     "pulseaudio": {
         "scroll-step": 1, // %, can be a float
-        "format": "<span font-size='16pt' rise='-2000'>󰕾</span> {volume}% <span font-size='16pt' rise='-2000'>󰍬</span> {format_source}",
-        "format-bluetooth": "<span font-size='16pt' rise='-2000'>󰕾</span> {volume}% <span font-size='16pt' rise='-2000'>󰍬</span> {format_source}",
+        "format": "<span font-size='16pt' rise='-2000'>󰕾</span> {volume} <span font-size='16pt' rise='-2000'>󰍬</span> {format_source}",
+        "format-bluetooth": "<span font-size='16pt' rise='-2000'>󰕾</span> {volume} <span font-size='16pt' rise='-2000'>󰍬</span> {format_source}",
         "format-bluetooth-muted": "<span font-size='16pt' rise='-2000'></span> {format_source}",
         "format-muted": "<span font-size='16pt' rise='-2000'></span> {format_source}",
-        "format-source": "{volume}%",
+        "format-source": "{volume}",
         "format-source-muted": "<span font-size='16pt' rise='-2000'></span>",
         "on-click": "pavucontrol"
     }
