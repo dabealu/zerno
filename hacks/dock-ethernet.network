@@ -1,0 +1,24 @@
+# dock-ethernet.network - DHCP for USB/dock Ethernet dongles
+#
+# Install:
+#   sudo cp hacks/dock-ethernet.network /etc/systemd/network/
+#   sudo networkctl reload
+#   sudo networkctl reconfigure enp0   # or just replug the dongle
+#   networkctl status enp0             # expect "routable (configured)"
+#
+# If the stock `0-eth-dhcp.network`  also exists it wins lexically.
+
+[Match]
+# Type catches exactly the wired links we want DHCP on
+Type=ether
+
+[Network]
+DHCP=yes
+# Keep the link manager from flapping when the dock's carrier drops briefly
+IgnoreCarrierLoss=3s
+
+# Prefer wired over WiFi when both are up: lower metric wins, and when the
+# dock is unplugged the eth route disappears so WiFi takes over automatically.
+# Default DHCP metric is 1024 for both.
+[DHCPv4]
+RouteMetric=512
