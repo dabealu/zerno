@@ -134,7 +134,7 @@ See [vim.md](vim.md) for plugin docs, keybindings, and [vim-cheatsheet.md](vim-c
   ```
   /efi/EFI/systemd/               ← systemd-boot EFI application
   /efi/EFI/Linux/arch-linux.efi   ← current kernel (UKI)
-  /efi/EFI/Linux/arch-linux-fallback.efi  ← previous kernel (preserved on upgrade)
+  /efi/EFI/Linux/arch-linux-lts.efi        ← LTS kernel (stable-ish fallback stream)
   ```
 - **Auto-discovery** — systemd-boot scans `/efi/EFI/Linux/` and creates a menu entry for every `.efi` file found. Drop a file, it appears. No config needed.
 - **`/boot/`** stays on root partition — contains the kernel binary (`vmlinuz-linux`) as a **build input** for mkinitcpio, NOT a bootloader directory
@@ -165,14 +165,18 @@ HOOKS=(base systemd autodetect microcode modconf kms keyboard sd-vconsole block 
 - **Source of truth**: the upstream [mkinitcpio.conf](https://github.com/archlinux/mkinitcpio/blob/master/mkinitcpio.conf) contains commented examples; our list is the "systemd + encrypted root" example verbatim. When Arch changes hooks, it'll be front-page news. Review the constant `initramfsHooks` in `base.go` against upstream source once in a while.
 
 ### UKI fallback strategy
-- Initial install: single UKI (`arch-linux.efi`)
-- Pacman hook (`00-preserve-old-uki.hook`) runs **PreTransaction** on kernel upgrades
-  (the `00-` prefix keeps it ahead of mkinitcpio's own `60-mkinitcpio-remove.hook`,
-  which deletes the old UKI at PreTransaction — same-When hooks run in filename
-  order, a later-named preserve hook would find nothing to copy):
-  copies `arch-linux.efi` → `arch-linux-fallback.efi` before the update
-- Kernel PostTransaction hook generates new `arch-linux.efi`
-- Result: always have 2 UKIs (current + previous) after first kernel update
+- Initial install: two UKIs — `arch-linux.efi` (current stable) and
+  `arch-linux-lts.efi` (LTS stream), both present from the first boot
+- `linux-lts` ships the same mkinitcpio template as `linux`, but the
+  Linux packages' generated preset never sets `default_uki`, so Phase 1
+  writes its own `/etc/mkinitcpio.d/linux-lts.preset` (explicit
+  `default_uki=/efi/EFI/Linux/arch-linux-lts.efi`) after pacstrapping
+  `linux-lts`, and runs `mkinitcpio -p linux-lts` so that the UKI exists
+- LTS vs stable diverging rarely: a hardware regression introduced in
+  stable's current cycle usually hasn't reached the LTS stream, so the
+  LTS boot entry survives the breakage
+- Re-running `zerno i` preserves/upgrades both kernels through pacman +
+  mkinitcpio's own PostTransaction hooks
 
 ### Secure Boot (opt-in via `SecureBoot` config param, default false)
 - disabled: zero footprint — sbctl not installed, no keys; sbctl's pacman/mkinitcpio

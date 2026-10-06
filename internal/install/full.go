@@ -460,6 +460,7 @@ func secureBoot() task.Task {
 				"/efi/EFI/systemd/systemd-bootx64.efi",
 				"/efi/EFI/BOOT/BOOTX64.EFI", // firmware fallback path - see secureBootSign
 				"/efi/EFI/Linux/arch-linux.efi",
+				"/efi/EFI/Linux/arch-linux-lts.efi",
 			} {
 				if _, err := steps.RunCmd("sbctl", "sign", "-s", path); err != nil {
 					return fmt.Errorf("sign %s: %w\nfix hints: run `sbctl status`, inspect README 'Secure Boot' section; broken keys can be recreated via `sbctl create-keys` followed by re-running `zerno install-full`", path, err)

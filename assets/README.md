@@ -105,7 +105,7 @@ Config is embedded from `assets/nvim/`.
 See `vim.md` for detailed documentation, plugins, and keybindings.
 
 ### Boot: systemd-boot + UKI
-Zerno uses systemd-boot with Unified Kernel Images (UKIs). Kernel cmdline is embedded in the UKI via `/etc/kernel/cmdline`. systemd-boot auto-discovers UKIs in `/efi/EFI/Linux/`. A pacman hook preserves the previous kernel as fallback on upgrades. See `AGENTS.md` for full boot architecture.
+Zerno uses systemd-boot with Unified Kernel Images (UKIs). Kernel cmdline is embedded in the UKI via `/etc/kernel/cmdline`. systemd-boot auto-discovers UKIs in `/efi/EFI/Linux/`. `linux-lts` provides LTS boot entry in addition to the main `linux` kernel.
 
 ### Secure Boot
 

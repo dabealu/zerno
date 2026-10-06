@@ -111,7 +111,7 @@ func partitions() task.Task {
 		RunFunc: func(cfg *config.Config) error {
 			dev := fmt.Sprintf("/dev/%s", cfg.BlockDevice)
 
-			// 1GiB ESP: headroom for current + fallback UKI and future extras
+			// 1GiB ESP: headroom for current + LTS UKIs and future extras
 			if _, err := steps.RunCmd("parted", "-s", dev, "mklabel", "gpt"); err != nil {
 				return err
 			}
@@ -167,6 +167,7 @@ func pacstrap() task.Task {
 		RunFunc: func(cfg *config.Config) error {
 			pkgs := []string{
 				"linux",
+				"linux-lts",
 				"linux-firmware",
 				"base",
 				"base-devel",
@@ -352,16 +353,13 @@ ALL_kver="/boot/vmlinuz-linux"
 default_uki="/efi/EFI/Linux/arch-linux.efi"
 `
 
-	preserveOldUKIHook = `[Trigger]
-Type = File
-Operation = Install
-Operation = Upgrade
-Target = usr/lib/modules/*/vmlinuz
-
-[Action]
-Description = Preserving old UKI as fallback...
-When = PreTransaction
-Exec = /bin/sh -c 'if [ -f /efi/EFI/Linux/arch-linux.efi ]; then cp /efi/EFI/Linux/arch-linux.efi /efi/EFI/Linux/arch-linux-fallback.efi; fi'
+	// linux-lts ships the same default preset template as linux, but its
+	// generated preset does NOT get a default_uki line - rather than rely on
+	// package behavior, write our own so this second kernel also produces a UKI.
+	ltsPreset = `# /etc/mkinitcpio.d/linux-lts.preset
+PRESETS=('default')
+ALL_kver="/boot/vmlinuz-linux-lts"
+default_uki="/efi/EFI/Linux/arch-linux-lts.efi"
 `
 )
 
@@ -406,12 +404,7 @@ func bootloader() task.Task {
 			if err := steps.WriteFile("/mnt/etc/mkinitcpio.d/linux.preset", linuxPreset); err != nil {
 				return err
 			}
-
-			if err := os.MkdirAll("/mnt/etc/pacman.d/hooks", 0755); err != nil {
-				return err
-			}
-			if err := steps.WriteFile("/mnt/etc/pacman.d/hooks/00-preserve-old-uki.hook",
-				preserveOldUKIHook); err != nil {
+			if err := steps.WriteFile("/mnt/etc/mkinitcpio.d/linux-lts.preset", ltsPreset); err != nil {
 				return err
 			}
 
@@ -420,6 +413,9 @@ func bootloader() task.Task {
 			}
 
 			if _, err := steps.RunCmd("arch-chroot", "/mnt", "mkinitcpio", "-p", "linux"); err != nil {
+				return err
+			}
+			if _, err := steps.RunCmd("arch-chroot", "/mnt", "mkinitcpio", "-p", "linux-lts"); err != nil {
 				return err
 			}
 
@@ -454,6 +450,7 @@ func secureBootSign() task.Task {
 				"/efi/EFI/systemd/systemd-bootx64.efi",
 				"/efi/EFI/BOOT/BOOTX64.EFI",
 				"/efi/EFI/Linux/arch-linux.efi",
+				"/efi/EFI/Linux/arch-linux-lts.efi",
 			} {
 				if _, err := steps.RunCmd("arch-chroot", "/mnt", "sbctl", "sign", "-s", path); err != nil {
 					return err

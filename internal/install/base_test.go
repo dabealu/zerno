@@ -48,9 +48,7 @@ func TestBootloaderAssets(t *testing.T) {
 	if !strings.Contains(linuxPreset, `default_uki="/efi/EFI/Linux/arch-linux.efi"`) {
 		t.Error("linux.preset must build the UKI at /efi/EFI/Linux/arch-linux.efi")
 	}
-	for _, want := range []string{"When = PreTransaction", "arch-linux-fallback.efi"} {
-		if !strings.Contains(preserveOldUKIHook, want) {
-			t.Errorf("preserve-old-uki hook missing %q", want)
-		}
+	if !strings.Contains(ltsPreset, `default_uki="/efi/EFI/Linux/arch-linux-lts.efi"`) {
+		t.Error("linux-lts.preset must build the UKI at /efi/EFI/Linux/arch-linux-lts.efi")
 	}
 }
