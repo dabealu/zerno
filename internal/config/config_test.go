@@ -485,3 +485,93 @@ func TestValidateStrict(t *testing.T) {
 	}
 
 }
+
+func TestDefaultSwapPercent(t *testing.T) {
+	const gib = 1024 * 1024 // KiB per GiB
+	cases := []struct {
+		name       string
+		memTotalKB int64
+		want       int
+	}{
+		{"4 GiB", 4 * gib, 100},
+		{"8 GiB", 8 * gib, 100},
+		{"16 GiB", 16 * gib, 100},
+		{"just above 16 GiB", 16*gib + 1, 60},
+		{"32 GiB", 32 * gib, 60},
+		{"48 GiB", 48 * gib, 60},
+	}
+	for _, tc := range cases {
+		if got := DefaultSwapPercent(tc.memTotalKB); got != tc.want {
+			t.Errorf("%s: DefaultSwapPercent = %d, want %d", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestSwapSizePercentRoundTrip(t *testing.T) {
+	pct := 60
+	cfg := &Config{SwapSizePercent: &pct}
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var loaded Config
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatal(err)
+	}
+	if loaded.SwapSizePercent == nil || *loaded.SwapSizePercent != 60 {
+		t.Errorf("SwapSizePercent = %v, want 60", loaded.SwapSizePercent)
+	}
+
+	// An explicit 0 (swap disabled) must survive as 0, not become nil.
+	zero := 0
+	cfg = &Config{SwapSizePercent: &zero}
+	data, err = json.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(data, &loaded); err != nil {
+		t.Fatal(err)
+	}
+	if loaded.SwapSizePercent == nil || *loaded.SwapSizePercent != 0 {
+		t.Errorf("explicit 0 SwapSizePercent = %v, want 0", loaded.SwapSizePercent)
+	}
+
+	// A legacy parameters.json without the key must load as nil (meaning
+	// "use the default"), never as 0 (which would silently disable swap).
+	var legacy Config
+	if err := json.Unmarshal([]byte(`{"Hostname":"h"}`), &legacy); err != nil {
+		t.Fatal(err)
+	}
+	if legacy.SwapSizePercent != nil {
+		t.Errorf("absent SwapSizePercent = %v, want nil", *legacy.SwapSizePercent)
+	}
+}
+
+func TestValidateStrictSwapSizePercent(t *testing.T) {
+	base := &Config{
+		Hostname:    "testhost",
+		Username:    "testuser",
+		BlockDevice: "sda",
+		Timezone:    "UTC",
+		NetDev:      "enp0s3",
+	}
+
+	for _, pct := range []int{0, 1, 60, 100} {
+		p := pct
+		base.SwapSizePercent = &p
+		if err := base.ValidateStrict(); err != nil {
+			t.Errorf("valid swap size %d%% rejected: %v", pct, err)
+		}
+	}
+	for _, pct := range []int{-1, 101} {
+		p := pct
+		base.SwapSizePercent = &p
+		if err := base.ValidateStrict(); err == nil {
+			t.Errorf("out-of-range swap size %d%% accepted", pct)
+		}
+	}
+	base.SwapSizePercent = nil
+	if err := base.ValidateStrict(); err != nil {
+		t.Errorf("nil swap size should be allowed (legacy parameters.json): %v", err)
+	}
+}

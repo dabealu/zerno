@@ -272,3 +272,13 @@ func TestRunShell_WithArgs(t *testing.T) {
 		t.Errorf("RunShell() wc -l output = %q, want contains '2'", out)
 	}
 }
+
+func TestMemTotalKB(t *testing.T) {
+	kb, err := MemTotalKB()
+	if err != nil {
+		t.Fatalf("MemTotalKB() error = %v", err)
+	}
+	if kb <= 0 {
+		t.Errorf("MemTotalKB() = %d, want > 0", kb)
+	}
+}

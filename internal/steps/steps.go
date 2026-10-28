@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -292,4 +293,21 @@ func WaitForDefaultRoute(timeout int) error {
 		time.Sleep(1 * time.Second)
 	}
 	return fmt.Errorf("timeout: no default route after %d seconds", timeout)
+}
+
+// MemTotalKB returns the total usable RAM in KiB, read from /proc/meminfo.
+func MemTotalKB() (int64, error) {
+	data, err := os.ReadFile("/proc/meminfo")
+	if err != nil {
+		return 0, err
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.HasPrefix(line, "MemTotal:") {
+			fields := strings.Fields(line)
+			if len(fields) >= 2 {
+				return strconv.ParseInt(fields[1], 10, 64)
+			}
+		}
+	}
+	return 0, fmt.Errorf("MemTotal not found in /proc/meminfo")
 }

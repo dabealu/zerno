@@ -46,7 +46,7 @@ output * bg  #232323 solid_color
 # Set resolution, run `swaymsg -t get_outputs` to list outputs
 # output HDMI-A-1 resolution 1920x1080 position 1920,0
 
-exec swayidle -w timeout 2400 'swaylock -f -c 000000' before-sleep 'swaylock -f -c 000000'
+exec swayidle -w timeout 3600 'swaylock -f -c 000000' timeout 7200 'systemctl suspend' before-sleep 'swaylock -f -c 000000'
 
 # Get inputs by running: swaymsg -t get_inputs
 input type:touchpad {

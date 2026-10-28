@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"zerno/internal/paths"
@@ -51,6 +52,23 @@ type Config struct {
 	Steam         bool
 	Qemu          bool
 	DnsServers    []string
+	// SwapSizePercent is the swapfile size as a percentage of RAM. zerno's swap
+	// exists solely for hibernation. nil (absent key) means "use the
+	// recommended default", 0 explicitly disables swap (and hibernation).
+	SwapSizePercent *int
+}
+
+// DefaultSwapPercent is the recommended swap size as a percentage of RAM for a
+// machine with the given MemTotal (KiB). Hibernation only has to save anonymous
+// memory - systemd-logind gates on Active(anon), not total RAM - so a fraction
+// of RAM is normally enough. Machines up to 16 GiB get a RAM-sized swap (cheap,
+// and covers the worst case); larger machines get 60%.
+func DefaultSwapPercent(memTotalKB int64) int {
+	const thresholdKB = 16 * 1024 * 1024 // 16 GiB
+	if memTotalKB <= thresholdKB {
+		return 100
+	}
+	return 60
 }
 
 func (c *Config) String() string {
@@ -100,6 +118,9 @@ func (c *Config) ValidateStrict() error {
 	}
 	if c.CpuGovernor != "" && !regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(c.CpuGovernor) {
 		return fmt.Errorf("invalid cpu governor %q: allowed: letters, digits, '_', '-'", c.CpuGovernor)
+	}
+	if c.SwapSizePercent != nil && (*c.SwapSizePercent < 0 || *c.SwapSizePercent > 100) {
+		return fmt.Errorf("invalid swap size %d%%: must be between 0 and 100", *c.SwapSizePercent)
 	}
 	return nil
 }
@@ -187,6 +208,9 @@ func Prompt() (*Config, error) {
 	promptSecureBoot(cfg)
 	promptGovernor(cfg)
 	promptVoiceToText(cfg)
+	if err := promptSwap(cfg); err != nil {
+		return nil, err
+	}
 
 	if err := cfg.ValidateStrict(); err != nil {
 		return nil, err
@@ -359,6 +383,37 @@ func promptVoiceToText(cfg *Config) {
 			}
 		}
 		fmt.Printf("unknown model %q - pick one of %v or Enter to skip\n", model, models)
+	}
+}
+
+// promptSwap asks for the swapfile size as a percentage of RAM. zerno's swap is
+// used only for hibernation, so empty input takes the recommended default and 0
+// disables swap (hibernation included). Anything outside 0-100 re-prompts.
+func promptSwap(cfg *Config) error {
+	memTotalKB, err := steps.MemTotalKB()
+	if err != nil {
+		return err
+	}
+	def := DefaultSwapPercent(memTotalKB)
+
+	for {
+		fmt.Printf("swap size in %% of RAM (RAM: %d GiB) [%d%%]: ",
+			memTotalKB/(1024*1024), def)
+		input := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(steps.ReadLine()), "%"))
+		if input == "" {
+			cfg.SwapSizePercent = &def
+			return nil
+		}
+		pct, err := strconv.Atoi(input)
+		if err != nil || pct < 0 || pct > 100 {
+			fmt.Println("enter an integer between 0 and 100, or Enter for the default")
+			continue
+		}
+		if pct == 0 {
+			fmt.Println("swap disabled - hibernation will be unavailable")
+		}
+		cfg.SwapSizePercent = &pct
+		return nil
 	}
 }
 

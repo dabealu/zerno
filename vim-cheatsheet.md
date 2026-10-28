@@ -32,6 +32,7 @@
 | `gf` / `gF` | Go to file / go to file + line |
 | `C-o` / `C-i` | Jump back / forward in history |
 | `'`{mark} / `` ` ``{mark} | Jump to mark (line / line+column) |
+| `m{mark}` | Set mark at cursor (`a`-`z` buffer-local, `A`-`Z` global/file) |
 | `''` / ``` `` ``` | Jump back to previous position |
 
 > **word** = letters, digits, underscores. **WORD** = any non-whitespace characters (e.g. `foo.bar()` is 1 WORD but 3 words).

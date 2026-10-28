@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -393,27 +392,29 @@ func swap() task.Task {
 				return nil
 			}
 
-			memInfo, err := os.ReadFile("/proc/meminfo")
+			memTotalKB, err := steps.MemTotalKB()
 			if err != nil {
 				return err
 			}
-			var memSizeKB int64
-			for _, line := range strings.Split(string(memInfo), "\n") {
-				if strings.HasPrefix(line, "MemTotal:") {
-					fields := strings.Fields(line)
-					if len(fields) >= 2 {
-						parsed, err := strconv.ParseInt(fields[1], 10, 64)
-						if err != nil {
-							return fmt.Errorf("failed to parse memory size: %w", err)
-						}
-						memSizeKB = parsed
-					}
-					break
-				}
+
+			// nil = never set (legacy parameters.json): fall back to the
+			// recommended default rather than the meaningless zero value.
+			pct := config.DefaultSwapPercent(memTotalKB)
+			if cfg.SwapSizePercent != nil {
+				pct = *cfg.SwapSizePercent
+			}
+			if pct < 0 || pct > 100 {
+				return fmt.Errorf("invalid swap size %d%%: must be between 0 and 100", pct)
+			}
+			if pct == 0 {
+				fmt.Println("swap disabled (0% of RAM), skipping")
+				return nil
 			}
 
+			swapSizeKB := memTotalKB * int64(pct) / 100
+			fmt.Printf("creating a %d%% swapfile (%d KiB)\n", pct, swapSizeKB)
 			if _, err := steps.RunCmd("fallocate", "-l",
-				fmt.Sprintf("%dK", memSizeKB), "/swapfile"); err != nil {
+				fmt.Sprintf("%dK", swapSizeKB), "/swapfile"); err != nil {
 				return err
 			}
 			if err := os.Chmod("/swapfile", 0600); err != nil {
