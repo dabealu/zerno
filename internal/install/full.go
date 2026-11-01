@@ -26,6 +26,7 @@ func Full(cfg *config.Config) {
 		swayPackages(),
 		task.Info("base desktop installed"),
 		swayConfigs(),
+		videoAcceleration(),
 		soundSetup(),
 		swap(),
 		secureBoot(),
@@ -256,6 +257,8 @@ func swayPackages() task.Task {
 				"alacritty",
 				"ghostty",
 				"python",
+				"xdg-desktop-portal",
+				"xdg-desktop-portal-wlr",
 			}
 			return steps.PacmanPackages(pkgs)
 		},
@@ -376,7 +379,37 @@ func soundSetup() task.Task {
 				"wireplumber",
 				"rtkit",
 				"gst-plugin-pipewire",
-				"xdg-desktop-portal-wlr",
+			}
+			return steps.PacmanPackages(pkgs)
+		},
+	}
+}
+
+// videoAcceleration installs VA-API backends for hardware video decode/encode
+// https://wiki.archlinux.org/title/Hardware_video_acceleration.
+// Only affects video playback; no impact on general graphics/compositing.
+func videoAcceleration() task.Task {
+	return task.Task{
+		Name: "setup_video_acceleration",
+		RunFunc: func(cfg *config.Config) error {
+			wikiUrl := "https://wiki.archlinux.org/title/Hardware_video_acceleration"
+			vendor, err := detectGPUVendor("/sys")
+			if err != nil {
+				log.Printf("video acceleration: %v, skipping auto-install (see %s)", err, wikiUrl)
+				return nil
+			}
+			var pkgs []string
+			switch vendor {
+			case "intel":
+				pkgs = []string{"intel-media-driver", "libva-utils"}
+			case "amd":
+				pkgs = []string{"libva-mesa-driver", "libva-utils"}
+			case "nvidia":
+				log.Printf("video acceleration: NVIDIA detected; skipping auto-install (see %s)", wikiUrl)
+				return nil
+			default:
+				log.Printf("video acceleration: unknown vendor %q; skipping auto-install (see %s)", vendor, wikiUrl)
+				return nil
 			}
 			return steps.PacmanPackages(pkgs)
 		},
