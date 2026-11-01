@@ -53,7 +53,10 @@ adding `gamemode lib32-gamemode mangohud lib32-mangohud` if needed.
 Example Steam launch options:
 ```sh
 gamemoderun gamescope -w 1280 -h 720 -W 1920 -H 1080 -F fsr -- %command%
+# gamescope + mangohud with early FPS limiter and disabled vsync (1 to disable)
+MANGOHUD_CONFIG="fps_limit=45,fps_limit_method=early,vsync=1" mangohud gamescope -f -w 1920 -h 1080 -W 2560 -H 1440 -- %command%
 ```
+
 - `gamemoderun` — sets CPU governor to performance, raises GPU power state, bumps IO/nice priority
 - `gamescope` — sandboxed compositor, decouples game rendering from your desktop compositor
 - `-w 1280 -h 720` — game renders internally at 720p (saves GPU)

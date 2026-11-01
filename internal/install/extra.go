@@ -337,6 +337,7 @@ func steam() task.Task {
 				"lib32-pulseaudio",
 				"steam",
 				"gamescope",
+				"mangohud",
 				driverPackages[vendor],
 			}
 
